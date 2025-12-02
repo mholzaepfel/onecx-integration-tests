@@ -77,7 +77,7 @@ export class Logger {
   /**
    * Log error message
    */
-  error(messageKey: LogMessageKey, context?: string, error?: any): void {
+  error(messageKey: LogMessageKey, context?: string, error?: unknown): void {
     const message = this.formatMessage('ERROR', messageKey, context)
     if (error) {
       console.error(`\x1b[31m${message}\x1b[0m`, error)

@@ -142,7 +142,7 @@ export class Logger {
   /**
    * Log error message - accepts LogMessages values only
    */
-  error(message: string, context?: string, error?: any): void {
+  error(message: string, context?: string, error?: unknown): void {
     if (!this.loggingEnabled()) return
     const formattedMessage = this.formatMessage('ERROR', message, context)
     if (error) {

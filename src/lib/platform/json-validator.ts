@@ -13,7 +13,7 @@ export interface ValidationResult {
 }
 
 export class PlatformConfigJsonValidator {
-  private ajv: Ajv
+  private ajv: InstanceType<typeof Ajv>
   private readonly CONFIG_FILE_PATTERN = /integration-tests\.json$/
   private readonly SEARCH_ROOT = path.join(__dirname, '../../../')
   private readonly SCHEMA = 'integration-tests.schema.json'
@@ -67,7 +67,7 @@ export class PlatformConfigJsonValidator {
       logger.success(LogMessages.CONFIG_LOAD_SUCCESS, configPath)
       return {
         isValid: true,
-        config: (config as any).platformConfig,
+        config: (config as { platformConfig: PlatformConfig }).platformConfig,
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown validation error'
@@ -159,7 +159,7 @@ export class PlatformConfigJsonValidator {
   /**
    * Parses the config file JSON content
    */
-  private parseConfigFile(content: string, configPath: string): any {
+  private parseConfigFile(content: string, configPath: string): unknown {
     try {
       return JSON.parse(content)
     } catch (error) {
@@ -172,11 +172,12 @@ export class PlatformConfigJsonValidator {
   /**
    * Formats AJV validation errors into readable messages
    */
-  private formatValidationErrors(errors: any[]): string[] {
+  private formatValidationErrors(errors: unknown[]): string[] {
     return errors.map((error) => {
-      const instancePath = error.instancePath || 'root'
-      const message = error.message || 'Unknown validation error'
-      const allowedValues = error.params?.allowedValues ? ` (allowed: ${error.params.allowedValues.join(', ')})` : ''
+      const err = error as { instancePath?: string; message?: string; params?: { allowedValues?: string[] } }
+      const instancePath = err.instancePath || 'root'
+      const message = err.message || 'Unknown validation error'
+      const allowedValues = err.params?.allowedValues ? ` (allowed: ${err.params.allowedValues.join(', ')})` : ''
 
       return `${instancePath}: ${message}${allowedValues}`
     })

@@ -13,7 +13,7 @@ xdescribe('PlatformManager - Integration Test', () => {
     // Clean up any started containers
     try {
       await platformManager.stopAllContainers()
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors in tests
     }
   }, 30000)

@@ -73,13 +73,10 @@ export class DataImporter {
           }
         }, 2000)
 
-        setTimeout(
-          () => {
-            clearInterval(checkInterval)
-            reject(new Error('Import timeout after 1 minutes'))
-          },
-          1 * 60 * 1000
-        )
+        setTimeout(() => {
+          clearInterval(checkInterval)
+          reject(new Error('Import timeout after 1 minutes'))
+        }, 1 * 60 * 1000)
       })
 
       logger.success(LogMessages.DATA_IMPORT_SUCCESS)
@@ -257,7 +254,7 @@ export class DataImporter {
       // Check if the import process is still running by looking for the node process
       const processResult = await importer.exec(['pgrep', '-f', 'import-runner.ts'])
       return processResult.exitCode === 0 // true if process is still running
-    } catch (error) {
+    } catch {
       // If exec fails, assume import is completed
       return false
     }
