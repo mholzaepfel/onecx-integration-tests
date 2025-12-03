@@ -1,0 +1,28 @@
+name: Build Affected Libs
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version to use"
+        required: false
+        type: string
+        default: "22"
+
+jobs:
+  build-affected-libs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+        with:
+          node: ${{ inputs.node-version }}
+
+      - name: Run affected Build
+        run: |
+          npx nx affected -t build
