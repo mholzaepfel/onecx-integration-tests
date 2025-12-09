@@ -26,7 +26,7 @@ jobs:
 
       - name: Run affected Tests
         run: |
-          npx nx affected -t test test-migrations --watch=false --browsers=ChromeHeadless --code-coverage
+          npx nx test test-migrations --watch=false --browsers=ChromeHeadless --code-coverage
 
       # store github action pr number to file
       - name: Create sonar json file
