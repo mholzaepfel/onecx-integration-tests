@@ -23,6 +23,6 @@ jobs:
         with:
           node: ${{ inputs.node-version }}
 
-      - name: Run affected Lint
+      - name: Run Lint
         run: |
-          npx nx affected -t lint
+          npx nx lint

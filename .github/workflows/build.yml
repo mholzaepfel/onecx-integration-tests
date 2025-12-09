@@ -23,6 +23,6 @@ jobs:
         with:
           node: ${{ inputs.node-version }}
 
-      - name: Run affected Build
+      - name: Run Build
         run: |
-          npx nx affected -t build
+          npx nx build
