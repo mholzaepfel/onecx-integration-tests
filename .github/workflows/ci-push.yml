@@ -15,8 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
+  ci-push:
     uses: ./.github/workflows/ci-common.yml
     secrets: inherit
-    with:
-      node-version: "22"

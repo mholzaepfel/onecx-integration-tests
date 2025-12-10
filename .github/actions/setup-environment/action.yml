@@ -1,21 +1,21 @@
-name: 'setup-environment'
-description: 'Setup Node.js, install dependencies'
+name: "setup-environment"
+description: "Setup Node.js, install dependencies"
 inputs:
   node:
-    description: 'Node version'
-    default: '20'
+    description: "Node version"
+    default: "22"
     required: false
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node }}
-        cache: 'npm'
+        cache: "npm"
 
-    - name: Set SHAs for affected commands
+    - name: Set SHAs for commands
       uses: nrwl/nx-set-shas@v4
     - name: Show npm registry
       run: npm config get registry

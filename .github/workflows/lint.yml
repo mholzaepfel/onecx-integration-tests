@@ -1,16 +1,10 @@
-name: Lint Affected Libs
+name: Lint Libs
 
 on:
   workflow_call:
-    inputs:
-      node-version:
-        description: "Node.js version to use"
-        required: false
-        type: string
-        default: "22"
 
 jobs:
-  lint-affected-libs:
+  lint-libs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -20,8 +14,6 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
-        with:
-          node: ${{ inputs.node-version }}
 
       - name: Run Lint
         run: |

@@ -1,16 +1,10 @@
-name: Test Affected Libs
+name: Test Libs
 
 on:
   workflow_call:
-    inputs:
-      node-version:
-        description: "Node.js version to use"
-        required: false
-        type: string
-        default: "22"
 
 jobs:
-  test-affected-libs:
+  test-libs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -21,10 +15,8 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
-        with:
-          node: ${{ inputs.node-version }}
 
-      - name: Run affected Tests
+      - name: Run Tests
         run: |
           npx nx test test-migrations --watch=false --browsers=ChromeHeadless --code-coverage
 

@@ -2,12 +2,6 @@ name: CI-Common
 
 on:
     workflow_call:
-        inputs:
-            node-version:
-                description: "Node.js version to use"
-                required: false
-                type: string
-                default: "22"
 
 jobs:
     codeql:
@@ -17,19 +11,13 @@ jobs:
     lint:
         uses: ./.github/workflows/lint.yml
         secrets: inherit
-        with:
-            node-version: ${{ inputs.node-version }}
 
     build:
         needs: lint
         uses: ./.github/workflows/build.yml
         secrets: inherit
-        with:
-            node-version: ${{ inputs.node-version }}
 
     test:
         needs: lint
         uses: ./.github/workflows/test.yml
         secrets: inherit
-        with:
-            node-version: ${{ inputs.node-version }}

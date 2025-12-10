@@ -25,5 +25,3 @@ jobs:
     ci-pr:
         uses: ./.github/workflows/ci-common.yml
         secrets: inherit
-        with:
-            node-version: "22"
