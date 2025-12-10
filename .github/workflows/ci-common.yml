@@ -5,7 +5,7 @@ on:
 
 jobs:
     codeql:
-        uses: onecx/ci-angular/.github/workflows/angular-codeql.yml@v1
+        uses: ./.github/workflows/codeql.yml
         secrets: inherit
 
     lint:
