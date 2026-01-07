@@ -1,4 +1,4 @@
-name: Lint Libs
+name: Lint Lib
 
 on:
   workflow_call:
