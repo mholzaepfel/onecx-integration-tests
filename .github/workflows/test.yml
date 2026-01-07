@@ -1,4 +1,4 @@
-name: Test Libs
+name: Test Lib
 
 on:
   workflow_call:
@@ -18,7 +18,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          npx nx test test-migrations --watch=false --browsers=ChromeHeadless --code-coverage
+          npx nx test --watch=false --browsers=ChromeHeadless --code-coverage
 
       # store github action pr number to file
       - name: Create sonar json file
