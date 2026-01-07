@@ -1,0 +1,29 @@
+name: On PR
+
+on:
+    pull_request:
+        branches:
+            - main
+            - develop
+            - "v*"
+
+permissions:
+    contents: read
+    pull-requests: write
+    actions: read
+    security-events: write
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    dependency-review-pr:
+        uses: onecx/ci-common/.github/workflows/dependency-review.yml@v1
+        secrets: inherit
+        with:
+            failOnSeverity: "high"
+
+    ci-pr:
+        uses: ./.github/workflows/ci-common.yml
+        secrets: inherit

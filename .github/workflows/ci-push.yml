@@ -1,0 +1,22 @@
+name: On Push
+
+on:
+  push:
+    branches:
+      - "*"
+      - "*/*"
+      - "**"
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-push:
+    uses: ./.github/workflows/ci-common.yml
+    secrets: inherit
