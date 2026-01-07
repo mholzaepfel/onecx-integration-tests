@@ -1,0 +1,23 @@
+name: CI-Common
+
+on:
+    workflow_call:
+
+jobs:
+    codeql:
+        uses: ./.github/workflows/codeql.yml
+        secrets: inherit
+
+    lint:
+        uses: ./.github/workflows/lint.yml
+        secrets: inherit
+
+    build:
+        needs: lint
+        uses: ./.github/workflows/build.yml
+        secrets: inherit
+
+    test:
+        needs: lint
+        uses: ./.github/workflows/test.yml
+        secrets: inherit
