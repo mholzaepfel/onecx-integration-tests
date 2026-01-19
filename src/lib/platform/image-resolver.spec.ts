@@ -19,6 +19,8 @@ jest.mock('../utils/logger', () => ({
 import { ImagePullChecker } from "./image-pull-checker"
 import { ImageResolver } from "./image-resolver"
 import { ContainerImageOverrideMapper } from '../utils/container-image-override-mapper'
+import { PlatformConfig } from "../models/platform-config.interface"
+import { OnecxBff, OnecxService, OnecxUi } from "../config/env"
 
 jest.mock('../config/env', () => {
   return {
@@ -95,7 +97,7 @@ describe('ImageResolver', () => {
     const postgresImage = 'docker.io/library/postgres:13.4'
     it('should return override image if available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {
             postgres: {
@@ -111,7 +113,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if override is available but not verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValueOnce(false)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {
             postgres: {
@@ -131,7 +133,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if no override is available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {},
         },
@@ -143,7 +145,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if no override is available and default is not verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {},
         },
@@ -160,7 +162,7 @@ describe('ImageResolver', () => {
     const keycloakImage = 'quay.io/keycloak/keycloak:23.0.4'
     it('should return override image if available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {
             keycloak: {
@@ -176,7 +178,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if override is available but not verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValueOnce(false)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {
             keycloak: {
@@ -196,7 +198,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if no override is available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {},
         },
@@ -208,7 +210,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if no override is available and default is not verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {},
         },
@@ -225,7 +227,7 @@ describe('ImageResolver', () => {
     const nodeImage = 'docker.io/library/node:20'
     it('should return override image if available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {
             importmanager: {
@@ -241,7 +243,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if override is available but not verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValueOnce(false)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {
             importmanager: {
@@ -261,7 +263,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if no override is available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {},
         },
@@ -273,7 +275,7 @@ describe('ImageResolver', () => {
 
     it('should return default image if no override is available and default is not verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false)
-      const config: any = {
+      const config: PlatformConfig = {
         platformOverrides: {
           core: {},
         },
@@ -287,14 +289,14 @@ describe('ImageResolver', () => {
 
   describe('getServiceImage()', () => {
     const serviceName = 'onecx/test-svc:latest'
-    const config: any = { platformOverrides: { services: {} } }
+    const config: PlatformConfig = { platformOverrides: { services: {} } }
     const overrideImage = 'my-custom/service:latest'
 
     it('should return override image if available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true);
       (ContainerImageOverrideMapper.getServiceImageOverride as jest.Mock).mockReturnValue(overrideImage);
 
-      const result = await resolver.getServiceImage(serviceName as any, config)
+      const result = await resolver.getServiceImage(serviceName as OnecxService, config)
 
       expect(result).toBe(overrideImage)
       expect(ContainerImageOverrideMapper.getServiceImageOverride).toHaveBeenCalledWith(serviceName, config)
@@ -305,7 +307,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false);
       (ContainerImageOverrideMapper.getServiceImageOverride as jest.Mock).mockReturnValue(overrideImage);
 
-      const result = await resolver.getServiceImage(serviceName as any, config)
+      const result = await resolver.getServiceImage(serviceName as OnecxService, config)
 
       expect(result).toBe(serviceName)
       expect(ContainerImageOverrideMapper.getServiceImageOverride).toHaveBeenCalledWith(serviceName, config)
@@ -317,7 +319,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true);
       (ContainerImageOverrideMapper.getServiceImageOverride as jest.Mock).mockReturnValue(undefined);
 
-      const result = await resolver.getServiceImage(serviceName as any, config)
+      const result = await resolver.getServiceImage(serviceName as OnecxService, config)
 
       expect(result).toBe(serviceName)
       expect(ContainerImageOverrideMapper.getServiceImageOverride).toHaveBeenCalledWith(serviceName, config)
@@ -328,7 +330,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false);
       (ContainerImageOverrideMapper.getServiceImageOverride as jest.Mock).mockReturnValue(undefined);
 
-      const result = await resolver.getServiceImage(serviceName as any, config)
+      const result = await resolver.getServiceImage(serviceName as OnecxService, config)
 
       expect(result).toBe(serviceName)
       expect(ContainerImageOverrideMapper.getServiceImageOverride).toHaveBeenCalledWith(serviceName, config)
@@ -339,14 +341,14 @@ describe('ImageResolver', () => {
 
   describe('getBffImage()', () => {
     const bffName = 'onecx/test-bff:latest'
-    const config: any = { platformOverrides: { bffs: {} } }
+    const config: PlatformConfig = { platformOverrides: { bff: {} } }
     const overrideImage = 'my-custom/bff:latest'
 
     it('should return override image if available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true);
       (ContainerImageOverrideMapper.getBffImageOverride as jest.Mock).mockReturnValue(overrideImage);
 
-      const result = await resolver.getBffImage(bffName as any, config)
+      const result = await resolver.getBffImage(bffName as OnecxBff, config)
 
       expect(result).toBe(overrideImage)
       expect(ContainerImageOverrideMapper.getBffImageOverride).toHaveBeenCalledWith(bffName, config)
@@ -357,7 +359,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false);
       (ContainerImageOverrideMapper.getBffImageOverride as jest.Mock).mockReturnValue(overrideImage);
 
-      const result = await resolver.getBffImage(bffName as any, config)
+      const result = await resolver.getBffImage(bffName as OnecxBff, config)
 
       expect(result).toBe(bffName)
       expect(ContainerImageOverrideMapper.getBffImageOverride).toHaveBeenCalledWith(bffName, config)
@@ -369,7 +371,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true);
       (ContainerImageOverrideMapper.getBffImageOverride as jest.Mock).mockReturnValue(undefined);
 
-      const result = await resolver.getBffImage(bffName as any, config)
+      const result = await resolver.getBffImage(bffName as OnecxBff, config)
 
       expect(result).toBe(bffName)
       expect(ContainerImageOverrideMapper.getBffImageOverride).toHaveBeenCalledWith(bffName, config)
@@ -380,7 +382,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false);
       (ContainerImageOverrideMapper.getBffImageOverride as jest.Mock).mockReturnValue(undefined);
 
-      const result = await resolver.getBffImage(bffName as any, config)
+      const result = await resolver.getBffImage(bffName as OnecxBff, config)
 
       expect(result).toBe(bffName)
       expect(ContainerImageOverrideMapper.getBffImageOverride).toHaveBeenCalledWith(bffName, config)
@@ -391,14 +393,14 @@ describe('ImageResolver', () => {
 
   describe('getUiImage()', () => {
     const uiName = 'onecx/test-ui:latest'
-    const config: any = { platformOverrides: { uis: {} } }
+    const config: PlatformConfig = { platformOverrides: { ui: {} } }
     const overrideImage = 'my-custom/ui:latest'
 
     it('should return override image if available and verified', async () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true);
       (ContainerImageOverrideMapper.getUiImageOverride as jest.Mock).mockReturnValue(overrideImage);
 
-      const result = await resolver.getUiImage(uiName as any, config)
+      const result = await resolver.getUiImage(uiName as OnecxUi, config)
 
       expect(result).toBe(overrideImage)
       expect(ContainerImageOverrideMapper.getUiImageOverride).toHaveBeenCalledWith(uiName, config)
@@ -409,7 +411,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false);
       (ContainerImageOverrideMapper.getUiImageOverride as jest.Mock).mockReturnValue(overrideImage);
 
-      const result = await resolver.getUiImage(uiName as any, config)
+      const result = await resolver.getUiImage(uiName as OnecxUi, config)
 
       expect(result).toBe(uiName)
       expect(ContainerImageOverrideMapper.getUiImageOverride).toHaveBeenCalledWith(uiName, config)
@@ -421,7 +423,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(true);
       (ContainerImageOverrideMapper.getUiImageOverride as jest.Mock).mockReturnValue(undefined);
 
-      const result = await resolver.getUiImage(uiName as any, config)
+      const result = await resolver.getUiImage(uiName as OnecxUi, config)
 
       expect(result).toBe(uiName)
       expect(ContainerImageOverrideMapper.getUiImageOverride).toHaveBeenCalledWith(uiName, config)
@@ -432,7 +434,7 @@ describe('ImageResolver', () => {
       (ImagePullChecker.verifyImagePull as jest.Mock).mockResolvedValue(false);
       (ContainerImageOverrideMapper.getUiImageOverride as jest.Mock).mockReturnValue(undefined);
 
-      const result = await resolver.getUiImage(uiName as any, config)
+      const result = await resolver.getUiImage(uiName as OnecxUi, config)
 
       expect(result).toBe(uiName)
       expect(ContainerImageOverrideMapper.getUiImageOverride).toHaveBeenCalledWith(uiName, config)
