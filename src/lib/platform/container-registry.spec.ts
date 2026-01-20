@@ -20,7 +20,7 @@ import { ContainerRegistry } from './container-registry'
 
 describe('ContainerRegistry', () => {
   describe('initial state', () => {
-    let containerRegistry: ContainerRegistry = new ContainerRegistry()
+    const containerRegistry = new ContainerRegistry()
 
     it('should be empty initially', () => {
       expect(containerRegistry.size()).toBe(0)
@@ -29,11 +29,7 @@ describe('ContainerRegistry', () => {
   })
 
   describe('add container', () => {
-    let containerRegistry: ContainerRegistry
-
-    beforeEach(() => {
-      containerRegistry = new ContainerRegistry()
-    })
+    const containerRegistry = new ContainerRegistry()
 
     it('should add a container', () => {
       const containerKey = 'CONTAINER'

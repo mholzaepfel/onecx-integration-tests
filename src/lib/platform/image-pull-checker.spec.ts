@@ -46,7 +46,7 @@ describe('ImagePullChecker', () => {
 
     it('should return false when timeout', async () => {
       jest.useFakeTimers()
-      const startMock = jest.fn().mockReturnValue(new Promise(() => { }))
+      const startMock = jest.fn().mockReturnValue(new Promise(() => { /* never resolves */ }))
 
         ; (GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
           withCommand: jest.fn().mockReturnThis(),
