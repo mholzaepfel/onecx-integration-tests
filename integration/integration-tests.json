@@ -1,9 +1,9 @@
 {
-  "$schema": "../src/lib/model/integration-tests.schema.json",
+  "$schema": "../src/lib/models/integration-tests.schema.json",
   "platformConfig": {
     "importData": true,
     "enableLogging": true,
-    "hearthbeat": {
+    "heartbeat": {
       "enabled": true
     }
   }
