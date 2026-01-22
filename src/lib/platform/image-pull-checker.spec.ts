@@ -1,5 +1,5 @@
-import { GenericContainer } from "testcontainers"
-import { ImagePullChecker } from "./image-pull-checker"
+import { GenericContainer } from 'testcontainers'
+import { ImagePullChecker } from './image-pull-checker'
 
 jest.mock('testcontainers')
 jest.mock('../utils/logger')
@@ -12,8 +12,8 @@ describe('ImagePullChecker', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (GenericContainer as unknown as jest.Mock).mockReturnValue(mockContainer);
+    jest.clearAllMocks()
+    ;(GenericContainer as unknown as jest.Mock).mockReturnValue(mockContainer)
   })
 
   describe('verifyImagePull', () => {
@@ -21,10 +21,10 @@ describe('ImagePullChecker', () => {
       const stopMock = jest.fn().mockResolvedValue(undefined)
       const startMock = jest.fn().mockResolvedValue({ stop: stopMock })
 
-        ; (GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
-          withCommand: jest.fn().mockReturnThis(),
-          start: startMock
-        }))
+      ;(GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
+        withCommand: jest.fn().mockReturnThis(),
+        start: startMock,
+      }))
       const result = await ImagePullChecker.verifyImagePull('docker.io/library/postgres:13.4')
 
       expect(result).toBe(true)
@@ -35,10 +35,10 @@ describe('ImagePullChecker', () => {
     it('should return false when image pull fails', async () => {
       const startMock = jest.fn().mockRejectedValue(new Error('Pull failed'))
 
-        ; (GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
-          withCommand: jest.fn().mockReturnThis(),
-          start: startMock
-        }))
+      ;(GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
+        withCommand: jest.fn().mockReturnThis(),
+        start: startMock,
+      }))
       const result = await ImagePullChecker.verifyImagePull('non-existent:image')
       expect(result).toBe(false)
       expect(startMock).toHaveBeenCalled()
@@ -46,12 +46,16 @@ describe('ImagePullChecker', () => {
 
     it('should return false when timeout', async () => {
       jest.useFakeTimers()
-      const startMock = jest.fn().mockReturnValue(new Promise(() => { /* never resolves */ }))
+      const startMock = jest.fn().mockReturnValue(
+        new Promise(() => {
+          /* never resolves */
+        })
+      )
 
-        ; (GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
-          withCommand: jest.fn().mockReturnThis(),
-          start: startMock
-        }))
+      ;(GenericContainer as unknown as jest.Mock).mockImplementation(() => ({
+        withCommand: jest.fn().mockReturnThis(),
+        start: startMock,
+      }))
       const promise = ImagePullChecker.verifyImagePull('any:image')
       jest.advanceTimersByTime(30000)
       const result = await promise
@@ -63,18 +67,18 @@ describe('ImagePullChecker', () => {
 
   describe('verifyMultipleImages', () => {
     it('should return results for multiple images using GenericContainer mock directly', async () => {
-      (GenericContainer as unknown as jest.Mock).mockImplementation((imageName: string) => {
+      ;(GenericContainer as unknown as jest.Mock).mockImplementation((imageName: string) => {
         if (imageName === 'image1:latest') {
           return {
             withCommand: jest.fn().mockReturnThis(),
             start: jest.fn().mockResolvedValue({
-              stop: jest.fn().mockResolvedValue(undefined)
-            })
+              stop: jest.fn().mockResolvedValue(undefined),
+            }),
           }
         } else {
           return {
             withCommand: jest.fn().mockReturnThis(),
-            start: jest.fn().mockRejectedValue(new Error('Pull failed'))
+            start: jest.fn().mockRejectedValue(new Error('Pull failed')),
           }
         }
       })
@@ -82,7 +86,7 @@ describe('ImagePullChecker', () => {
       const results = await ImagePullChecker.verifyMultipleImages(images)
       expect(results).toEqual({
         'image1:latest': true,
-        'image2:latest': false
+        'image2:latest': false,
       })
 
       expect(GenericContainer).toHaveBeenCalledTimes(2)
