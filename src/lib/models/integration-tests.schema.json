@@ -35,7 +35,7 @@
           ],
           "default": true
         },
-        "hearthbeat": {
+        "heartbeat": {
           "$ref": "#/definitions/heartbeatConfig"
         },
         "platformOverrides": {
