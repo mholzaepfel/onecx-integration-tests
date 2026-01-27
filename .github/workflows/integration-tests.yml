@@ -1,6 +1,8 @@
 name: Integration Tests
 
 on:
+  push:
+    branches: ['feat/add-integration-tests-workflow']
   workflow_dispatch: {}
 
   schedule:
