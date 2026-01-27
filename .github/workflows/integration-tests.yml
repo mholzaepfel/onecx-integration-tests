@@ -1,0 +1,39 @@
+name: Integration Tests
+
+on:
+  workflow_dispatch: {}
+
+  schedule:
+    - cron: '0 2 * * *'
+
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CI: true
+      DEBUG: 'testcontainers*'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run integration tests (default config)
+        run: npm run integration-tests
+      - name: Container logs (on failure)
+        if: failure()
+        run: |
+          echo "=== last logs from all containers ==="
+          for c in $(docker ps -aq); do
+            echo "----- logs for $c -----"
+            docker logs --tail=200 "$c" || true
+          done

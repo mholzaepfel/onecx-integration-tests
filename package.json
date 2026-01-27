@@ -13,7 +13,8 @@
     "lint:fix": "nx lint --fix",
     "test": "nx test",
     "test:ci": "nx test --watch=false --browsers=ChromeHeadless --code-coverage",
-    "sonar": "npx sonarqube-scanner"
+    "sonar": "npx sonarqube-scanner",
+    "integration-tests": "npx ts-node src/lib/start.ts"
   },
   "private": true,
   "dependencies": {
