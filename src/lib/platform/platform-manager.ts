@@ -55,7 +55,7 @@ export class PlatformManager {
     this.healthChecker = new HealthChecker()
 
     // Configure heartbeat from platform config
-    this.healthChecker.configureHeartbeat(finalConfig.hearthbeat)
+    this.healthChecker.configureHeartbeat(finalConfig.heartbeat)
 
     this.imageResolver = new ImageResolver()
     this.dataImporter = new DataImporter(this.imageResolver)
