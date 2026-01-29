@@ -9,7 +9,7 @@ export interface PlatformConfig {
   /** Whether to enable logging or not */
   enableLogging?: boolean | string[]
   /**  */
-  hearthbeat?: HeartbeatConfig
+  heartbeat?: HeartbeatConfig
   /** Image overrides - allows testing against different images */
   platformOverrides?: {
     /** Core service images */
