@@ -37,6 +37,7 @@ jobs:
         run: |
           echo "=== last logs from all containers ==="
           for c in $(docker ps -aq); do
-            echo "----- logs for $c -----"
+            CONTAINER_INFO=$(docker inspect --format='{{.Name}} [{{.Config.Image}}]' "$c" | sed 's/^\///')
+            echo "----- logs for $CONTAINER_INFO (ID: $c) -----"
             docker logs --tail=200 "$c" || true
           done
