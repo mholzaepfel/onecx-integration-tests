@@ -1,10 +1,20 @@
 {
-  "$schema": "../src/lib/model/integration-tests.schema.json",
+  "$schema": "../src/lib/models/integration-tests.schema.json",
   "platformConfig": {
     "importData": true,
     "enableLogging": true,
-    "hearthbeat": {
-      "enabled": true
+    "heartbeat": { "enabled": true },
+    "container": {
+      "e2e": {
+        "image": "${E2E_IMAGE}",
+        "volumes": [
+          {
+            "hostPath": "${E2E_REPORTS_DIR:-./test-results}",
+            "containerPath": "/reports"
+          }
+        ],
+        "waitForExit": true
+      }
     }
   }
 }

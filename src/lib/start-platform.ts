@@ -3,76 +3,76 @@ import { Logger } from './utils/logger'
 
 const logger = new Logger('StartPlatform')
 
-/**
- * Custom error for timeout scenarios
- */
-class TimeoutError extends Error {
-  constructor(
-    message: string,
-    public readonly timeoutMs: number,
-    public readonly context?: string
-  ) {
-    super(message)
-    this.name = 'TimeoutError'
-  }
-}
+async function startPlatform(): Promise<void> {
+  // Config path from environment variable (optional - uses default discovery if not set)
+  const configPath = process.env.CONFIG_PATH
 
-async function runAllContainers() {
-  const manager = new PlatformManager()
-  let shuttingDown = false
-
-  const shutdown = async () => {
-    if (!shuttingDown) {
-      shuttingDown = true
-      logger.info('PLATFORM_STOP')
-      try {
-        await manager.stopAllContainers()
-        logger.success('PLATFORM_SHUTDOWN')
-      } catch (error) {
-        // Log network cleanup errors as warnings, not errors
-        if (error instanceof Error && error.message.includes('no such network')) {
-          logger.warn('NETWORK_DESTROY', 'Network already destroyed')
-        } else {
-          logger.error('PLATFORM_SHUTDOWN', undefined, error)
-        }
-      } finally {
-        process.exit(0)
-      }
-    }
+  logger.info('Starting platform...')
+  if (configPath) {
+    logger.info(`Config: ${configPath}`)
   }
 
-  process.on('SIGINT', shutdown)
-  process.on('SIGTERM', shutdown)
-  process.on('SIGHUP', shutdown)
+  const manager = new PlatformManager(configPath)
 
   try {
-    logger.info('PLATFORM_START')
-    const startTime = Date.now()
+    const config = manager.getValidatedConfig()
 
-    const startPromise = manager.startContainers()
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new TimeoutError('Container startup timed out after 3 minutes', 300000, 'Platform startup')),
-        300_000
-      )
-    )
-    await Promise.race([startPromise, timeoutPromise])
+    await manager.startContainers(config)
 
-    const duration = Date.now() - startTime
-    logger.logDuration('STARTUP_SUCCESS', duration, 'All containers')
+    // Export platform info (log + file + GitHub Actions)
+    const exporter = manager.getInfoExporter()
+    exporter?.exportAll()
 
-    // Note: Heartbeat monitoring is now handled automatically by the PlatformManager
-    // based on the health check configuration. To enable it, use a JSON configuration
-    // file with healthCheck.enabled = true or use the new PlatformLauncher.
-  } catch (error) {
-    if (error instanceof TimeoutError) {
-      logger.error('STARTUP_TIMEOUT', error.context, error)
-    } else {
-      logger.error('STARTUP_FAILED', undefined, error)
+    // Run E2E tests if configured in the JSON config
+    if (manager.hasE2eConfig()) {
+      logger.info('E2E container configured, waiting for all services to be healthy...')
+      await manager.checkAllHealthy()
+      logger.info('All services healthy, starting E2E tests...')
+      const e2eResult = await manager.runE2eTests()
+
+      if (e2eResult) {
+        logger.info('═'.repeat(70))
+        logger.info(`E2E Tests: ${e2eResult.success ? '✅ PASSED' : '❌ FAILED'}`)
+        logger.info(`Exit Code: ${e2eResult.exitCode}`)
+        logger.info(`Duration:  ${Math.round(e2eResult.duration / 1000)}s`)
+        logger.info('═'.repeat(70))
+
+        // Stop platform and exit with E2E exit code
+        logger.info('Shutting down platform...')
+        await manager.stopAllContainers()
+        process.exit(e2eResult.exitCode)
+      }
     }
-    await shutdown()
+
+    // No E2E config - wait for shutdown signal (interactive mode)
+    await waitForShutdown()
+    logger.info('Shutting down platform...')
+    await manager.stopAllContainers()
+    process.exit(0)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    logger.error('Platform startup failed', errorMessage)
+    await manager.stopAllContainers().catch(() => {})
     process.exit(1)
   }
 }
 
-runAllContainers()
+function waitForShutdown(): Promise<void> {
+  return new Promise((resolve) => {
+    const shutdown = (): void => {
+      logger.info('Shutdown signal received')
+      resolve()
+    }
+
+    process.on('SIGINT', shutdown)
+    process.on('SIGTERM', shutdown)
+
+    logger.info('Platform running. Press Ctrl+C or send SIGTERM to stop.')
+  })
+}
+
+startPlatform().catch((error: unknown) => {
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  logger.error('Unexpected error', errorMessage)
+  process.exit(1)
+})

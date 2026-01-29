@@ -35,7 +35,7 @@
           ],
           "default": true
         },
-        "hearthbeat": {
+        "heartbeat": {
           "$ref": "#/definitions/heartbeatConfig"
         },
         "platformOverrides": {
@@ -111,6 +111,10 @@
           "items": {
             "$ref": "#/definitions/uiContainer"
           }
+        },
+        "e2e": {
+          "$ref": "#/definitions/e2eContainer",
+          "description": "E2E test container (e.g., Playwright)"
         }
       }
     },
@@ -346,6 +350,50 @@
           "required": ["uiDetails"]
         }
       ]
+    },
+    "e2eContainer": {
+      "type": "object",
+      "description": "E2E test container configuration (e.g., Playwright)",
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/dockerImage"
+        },
+        "networkAlias": {
+          "$ref": "#/definitions/networkAlias"
+        },
+        "environments": {
+          "$ref": "#/definitions/environmentVariables"
+        },
+        "command": {
+          "type": "array",
+          "description": "Override default command",
+          "items": {
+            "type": "string"
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "description": "Volume mounts for test reports",
+          "items": {
+            "type": "object",
+            "properties": {
+              "hostPath": {
+                "type": "string"
+              },
+              "containerPath": {
+                "type": "string"
+              }
+            },
+            "required": ["hostPath", "containerPath"]
+          }
+        },
+        "waitForExit": {
+          "type": "boolean",
+          "description": "Wait for container to exit and get exit code",
+          "default": true
+        }
+      },
+      "required": ["image"]
     }
   }
 }

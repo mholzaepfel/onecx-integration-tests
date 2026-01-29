@@ -163,6 +163,12 @@ export class DataImporter {
 
     // Iterate through all started containers and extract service info
     for (const [containerName, container] of startedContainers) {
+      // Skip E2E containers - they are test runners, not services
+      if (containerName.includes('-e2e') || !('getPort' in container)) {
+        logger.info('SERVICE_SKIPPED', `${containerName} - E2E container (test runner, not a service)`)
+        continue
+      }
+
       const serviceName = this.getServiceNameFromContainer(containerName)
 
       // Only add containers that have a valid service mapping

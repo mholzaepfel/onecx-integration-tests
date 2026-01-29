@@ -2,6 +2,7 @@ import { Network, StartedNetwork } from 'testcontainers'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import { CONTAINER } from '../models/container.enum'
 import { PlatformConfig } from '../models/platform-config.interface'
+import { E2eResult } from '../models/e2e.interface'
 import { DEFAULT_PLATFORM_CONFIG } from '../config/default-platform-config'
 import { ImageResolver } from './image-resolver'
 import { HealthChecker } from './health-checker'
@@ -14,6 +15,8 @@ import { Logger, LogMessages } from '../utils/logger'
 import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
+import { PlatformInfoExporter, PlatformInfo } from './platform-info-exporter'
+import { loggingEnabled } from '../utils/logging-enable'
 
 const logger = new Logger('PlatformManager')
 
@@ -34,6 +37,7 @@ export class PlatformManager {
   private healthChecker?: HealthChecker
   private jsonValidator: PlatformConfigJsonValidator
   private validatedConfig?: PlatformConfig
+  private platformInfoExporter?: PlatformInfoExporter
 
   constructor(configFilePath?: string) {
     this.jsonValidator = new PlatformConfigJsonValidator()
@@ -44,7 +48,7 @@ export class PlatformManager {
    * Orchestrates the startup of the default services and the creation of user-defined containers.
    * @param config Optional config override. If not provided, uses validated config from constructor or default config
    */
-  async startContainers(config?: PlatformConfig) {
+  async startContainers(config?: PlatformConfig): Promise<void> {
     // Use validated config from constructor if available, otherwise use provided config or default
     const finalConfig = config || this.validatedConfig || DEFAULT_PLATFORM_CONFIG
 
@@ -55,7 +59,7 @@ export class PlatformManager {
     this.healthChecker = new HealthChecker()
 
     // Configure heartbeat from platform config
-    this.healthChecker.configureHeartbeat(finalConfig.hearthbeat)
+    this.healthChecker.configureHeartbeat(finalConfig.heartbeat)
 
     this.imageResolver = new ImageResolver()
     this.dataImporter = new DataImporter(this.imageResolver)
@@ -107,6 +111,11 @@ export class PlatformManager {
 
     // Start heartbeat monitoring if configured
     this.healthChecker.startHeartbeat(this.containerRegistry.getAllContainers())
+
+    // Initialize exporter after all containers are started
+    if (this.network) {
+      this.platformInfoExporter = new PlatformInfoExporter(this.containerRegistry, this.network)
+    }
   }
 
   /**
@@ -312,5 +321,53 @@ export class PlatformManager {
       logger.error(LogMessages.CONTAINER_FAILED, containerKey, error)
       throw error
     }
+  }
+
+  /**
+   * Get platform info exporter for URL access
+   */
+  getInfoExporter(): PlatformInfoExporter | undefined {
+    return this.platformInfoExporter
+  }
+
+  /**
+   * Get platform info (convenience method)
+   */
+  getPlatformInfo(): PlatformInfo | undefined {
+    return this.platformInfoExporter?.getPlatformInfo()
+  }
+
+  /**
+   * Run E2E tests if configured
+   * @returns E2E result with exit code, or undefined if no E2E config
+   */
+  async runE2eTests(): Promise<E2eResult | undefined> {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+
+    // Check if E2E container is configured
+    if (!config.container?.e2e) {
+      logger.info(LogMessages.CONTAINER_STARTED, 'No E2E container configured, skipping E2E tests')
+      return undefined
+    }
+
+    // Ensure UserDefinedContainerStarter is initialized
+    if (!this.UserDefinedContainerStarter) {
+      throw new Error('UserDefinedContainerStarter not initialized. Call startContainers first.')
+    }
+
+    // Determine if logging is enabled for E2E
+    const e2eConfig = config.container.e2e
+    const enableLogging = loggingEnabled(config, [e2eConfig.networkAlias || 'e2e'])
+
+    // Run E2E tests - container discovers platform services autonomously
+    return await this.UserDefinedContainerStarter.startE2eContainer(e2eConfig, enableLogging)
+  }
+
+  /**
+   * Check if E2E tests are configured
+   */
+  hasE2eConfig(): boolean {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+    return !!config.container?.e2e
   }
 }
