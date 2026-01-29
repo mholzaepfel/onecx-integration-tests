@@ -14,6 +14,7 @@ on:
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     permissions:
       contents: read
     env:
