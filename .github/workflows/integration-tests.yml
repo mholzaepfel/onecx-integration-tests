@@ -33,7 +33,7 @@ jobs:
       - name: Run integration tests (default config)
         run: npm run integration-tests
       - name: Container logs (on failure)
-        if: failure()
+        if: failure() || cancelled()
         run: |
           echo "=== last logs from all containers ==="
           for c in $(docker ps -aq); do
