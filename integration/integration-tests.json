@@ -6,14 +6,9 @@
     "heartbeat": { "enabled": true },
     "container": {
       "e2e": {
-        "image": "${E2E_IMAGE}",
-        "volumes": [
-          {
-            "hostPath": "${E2E_REPORTS_DIR:-./test-results}",
-            "containerPath": "/reports"
-          }
-        ],
-        "waitForExit": true
+        "image": "workspace-e2e-tests:local",
+        "networkAlias": "workspace-e2e-tests",
+        "baseUrl": "http://onecx-shell-ui:8080/"
       }
     }
   }

@@ -361,6 +361,10 @@
         "networkAlias": {
           "$ref": "#/definitions/networkAlias"
         },
+        "baseUrl": {
+          "type": "string",
+          "description": "Base URL for E2E tests (e.g., http://onecx-shell:8080/admin/)."
+        },
         "environments": {
           "$ref": "#/definitions/environmentVariables"
         },
@@ -370,30 +374,9 @@
           "items": {
             "type": "string"
           }
-        },
-        "volumes": {
-          "type": "array",
-          "description": "Volume mounts for test reports",
-          "items": {
-            "type": "object",
-            "properties": {
-              "hostPath": {
-                "type": "string"
-              },
-              "containerPath": {
-                "type": "string"
-              }
-            },
-            "required": ["hostPath", "containerPath"]
-          }
-        },
-        "waitForExit": {
-          "type": "boolean",
-          "description": "Wait for container to exit and get exit code",
-          "default": true
         }
       },
-      "required": ["image"]
+      "required": ["image", "networkAlias"]
     }
   }
 }

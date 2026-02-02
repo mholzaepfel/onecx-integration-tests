@@ -9,10 +9,7 @@ export class ImportManagerContainer extends GenericContainer {
   private importScript = 'import-runner.ts' // Default import script
   protected loggingEnabled = false
 
-  constructor(
-    image: string,
-    private readonly containerInfoPath: string
-  ) {
+  constructor(image: string, private readonly containerInfoPath: string) {
     super(image)
     this.withNetworkAliases(this.containerName)
   }
@@ -41,7 +38,7 @@ export class ImportManagerContainer extends GenericContainer {
     ])
       .withCopyDirectoriesToContainer([
         {
-          source: path.resolve('libs/integration-tests/src/imports'),
+          source: path.resolve('src/imports'),
           target: '/app',
         },
       ])

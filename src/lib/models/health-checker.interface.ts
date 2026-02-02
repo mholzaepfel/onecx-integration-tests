@@ -1,4 +1,7 @@
-export interface HealthCheckResult {
+/**
+ * Result of checking a container's health status
+ */
+export interface ContainerHealthStatus {
   name: string
   healthy: boolean
 }
