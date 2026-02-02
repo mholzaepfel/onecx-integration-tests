@@ -5,16 +5,13 @@ import { StartedOnecxKeycloakContainer } from '../core/onecx-keycloak'
 export class ShellUiContainer extends UiContainer {
   private client_user_id = 'onecx-shell-ui-client'
 
-  constructor(
-    image: string,
-    private keycloakContainer: StartedOnecxKeycloakContainer
-  ) {
+  constructor(image: string, private keycloakContainer: StartedOnecxKeycloakContainer) {
     super(image)
     this.withEnvironment({
       ONECX_PERMISSIONS_ENABLED: 'true',
       ONECX_PERMISSIONS_CACHE_ENABLED: 'false',
       ONECX_PERMISSIONS_PRODUCT_NAME: 'onecx-shell',
-      KEYCLOAK_URL: `http://${keycloakContainer.getNetworkAliases()[0]}`,
+      KEYCLOAK_URL: `http://${keycloakContainer.getNetworkAliases()[0]}:${keycloakContainer.getPort()}`,
       ONECX_VAR_REMAP: 'KEYCLOAK_REALM=KC_REALM;KEYCLOAK_CLIENT_ID=CLIENT_USER_ID',
       CLIENT_USER_ID: `${this.client_user_id}`,
     })
@@ -30,10 +27,7 @@ export class ShellUiContainer extends UiContainer {
 }
 
 export class StartedShellUiContainer extends StartedUiContainer {
-  constructor(
-    startedUiContainer: StartedUiContainer,
-    private clientUserId: string
-  ) {
+  constructor(startedUiContainer: StartedUiContainer, private clientUserId: string) {
     super(
       startedUiContainer.getStartedTestContainer(),
       startedUiContainer.getDetails(),

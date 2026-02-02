@@ -10,13 +10,13 @@ import { CoreContainerStarter } from './core-container-starter'
 import { UserDefinedContainerStarter } from './user-defined-container-starter'
 import { DataImporter } from './data-importer'
 import type { AllowedContainerTypes } from '../models/allowed-container.types'
-import { HealthCheckResult } from '../models/health-checker.interface'
+import { ContainerHealthStatus } from '../models/health-checker.interface'
 import { Logger, LogMessages } from '../utils/logger'
 import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
-import { PlatformInfoExporter, PlatformInfo } from './platform-info-exporter'
-import { loggingEnabled } from '../utils/logging-enable'
+import { PlatformInfoExporter } from './platform-info-exporter'
+import { PlatformInfo } from '../models/platform-info-exporter.interface'
 
 const logger = new Logger('PlatformManager')
 
@@ -142,7 +142,7 @@ export class PlatformManager {
   /**
    * Check the health of all running containers
    */
-  async checkAllHealthy(): Promise<HealthCheckResult[]> {
+  async checkAllHealthy(): Promise<ContainerHealthStatus[]> {
     if (!this.healthChecker) {
       throw new Error('HealthChecker not initialized. Call startContainers first.')
     }
@@ -154,7 +154,7 @@ export class PlatformManager {
    * @param containerName
    * @returns
    */
-  async checkHealthy(containerName: string): Promise<HealthCheckResult> {
+  async checkHealthy(containerName: string): Promise<ContainerHealthStatus> {
     if (!this.healthChecker) {
       throw new Error('HealthChecker not initialized. Call startContainers first.')
     }
@@ -338,36 +338,42 @@ export class PlatformManager {
   }
 
   /**
-   * Run E2E tests if configured
-   * @returns E2E result with exit code, or undefined if no E2E config
-   */
-  async runE2eTests(): Promise<E2eResult | undefined> {
-    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
-
-    // Check if E2E container is configured
-    if (!config.container?.e2e) {
-      logger.info(LogMessages.CONTAINER_STARTED, 'No E2E container configured, skipping E2E tests')
-      return undefined
-    }
-
-    // Ensure UserDefinedContainerStarter is initialized
-    if (!this.UserDefinedContainerStarter) {
-      throw new Error('UserDefinedContainerStarter not initialized. Call startContainers first.')
-    }
-
-    // Determine if logging is enabled for E2E
-    const e2eConfig = config.container.e2e
-    const enableLogging = loggingEnabled(config, [e2eConfig.networkAlias || 'e2e'])
-
-    // Run E2E tests - container discovers platform services autonomously
-    return await this.UserDefinedContainerStarter.startE2eContainer(e2eConfig, enableLogging)
-  }
-
-  /**
    * Check if E2E tests are configured
    */
   hasE2eConfig(): boolean {
     const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
     return !!config.container?.e2e
+  }
+
+  /**
+   * Run E2E tests if configured
+   * This should be called after all containers are healthy
+   * The E2E container will be started as the last container
+   * @returns E2E result with exit code, or undefined if no E2E configured
+   */
+  async runE2eTests(): Promise<E2eResult | undefined> {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+
+    if (!config.container?.e2e) {
+      return undefined
+    }
+
+    if (!this.UserDefinedContainerStarter) {
+      // Initialize UserDefinedContainerStarter if not already done
+      if (!this.network || !this.imageResolver) {
+        throw new Error('Network and ImageResolver must be initialized before running E2E tests')
+      }
+      const postgres = this.containerRegistry.getContainer(CONTAINER.POSTGRES) as StartedOnecxPostgresContainer
+      const keycloak = this.containerRegistry.getContainer(CONTAINER.KEYCLOAK) as StartedOnecxKeycloakContainer
+      this.UserDefinedContainerStarter = new UserDefinedContainerStarter(
+        this.network,
+        this.imageResolver,
+        this.containerRegistry,
+        postgres,
+        keycloak
+      )
+    }
+
+    return await this.UserDefinedContainerStarter.runE2eTests(config)
   }
 }

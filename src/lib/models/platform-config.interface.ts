@@ -9,7 +9,7 @@ export interface PlatformConfig {
   importData?: boolean
   /** Whether to enable logging or not */
   enableLogging?: boolean | string[]
-  /**  */
+  /** Define the heartbeat config */
   heartbeat?: HeartbeatConfig
   /** Image overrides - allows testing against different images */
   platformOverrides?: {

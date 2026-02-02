@@ -1,6 +1,6 @@
 import type { AllowedContainerTypes } from '../models/allowed-container.types'
 import { Logger, LogMessages } from '../utils/logger'
-import { HealthCheckResult, HeartbeatConfig } from '../models/health-checker.interface'
+import { ContainerHealthStatus, HeartbeatConfig } from '../models/health-checker.interface'
 
 const logger = new Logger('HealthChecker')
 
@@ -37,7 +37,7 @@ export class HealthChecker {
   /**
    * Check the health of all containers
    */
-  async checkAllHealthy(startedContainers: Map<string, AllowedContainerTypes>): Promise<HealthCheckResult[]> {
+  async checkAllHealthy(startedContainers: Map<string, AllowedContainerTypes>): Promise<ContainerHealthStatus[]> {
     const healthCheckPromises = Array.from(startedContainers.keys()).map(async (name) => {
       const result = await this.checkHealthy(startedContainers, name)
       return result
@@ -49,7 +49,10 @@ export class HealthChecker {
   /**
    * Check the health of one container using the strategy pattern
    */
-  async checkHealthy(startedContainers: Map<string, AllowedContainerTypes>, name: string): Promise<HealthCheckResult> {
+  async checkHealthy(
+    startedContainers: Map<string, AllowedContainerTypes>,
+    name: string
+  ): Promise<ContainerHealthStatus> {
     const container = startedContainers.get(name)
     if (!container) {
       throw new Error(`No started container found with name "${name}"`)
@@ -148,7 +151,7 @@ export class HealthChecker {
   /**
    * Process health check results and track failure counts
    */
-  private processHealthResults(healthStatus: HealthCheckResult[]): void {
+  private processHealthResults(healthStatus: ContainerHealthStatus[]): void {
     for (const container of healthStatus) {
       if (container.healthy) {
         // Reset failure count for healthy containers
@@ -175,11 +178,13 @@ export class HealthChecker {
   /**
    * Log summary of unhealthy containers
    */
-  private logHealthSummary(healthStatus: HealthCheckResult[]): void {
+  private logHealthSummary(healthStatus: ContainerHealthStatus[]): void {
     const unhealthyContainers = healthStatus.filter((c) => !c.healthy)
 
     if (unhealthyContainers.length > 0) {
-      const summary = `${unhealthyContainers.length} containers unhealthy: ${unhealthyContainers.map((c) => c.name).join(', ')}`
+      const summary = `${unhealthyContainers.length} containers unhealthy: ${unhealthyContainers
+        .map((c) => c.name)
+        .join(', ')}`
       logger.error(LogMessages.CONTAINER_UNHEALTHY, summary)
     }
   }

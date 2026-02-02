@@ -14,7 +14,7 @@ import { loggingEnabled } from '../utils/logging-enable'
 import { ImageResolver } from './image-resolver'
 import { Logger, LogMessages } from '../utils/logger'
 import { ContainerRegistry } from './container-registry'
-import { PlatformInfo } from './platform-info-exporter'
+import { PlatformInfoExporter } from './platform-info-exporter'
 
 const logger = new Logger('UserDefinedContainerStarter')
 
@@ -74,6 +74,23 @@ export class UserDefinedContainerStarter {
         logger.success(LogMessages.CONTAINER_STARTED, `UI container created: ${uiConfig.networkAlias}`)
       }
     }
+  }
+
+  /**
+   * Run E2E tests - called separately after all containers are healthy
+   * @param config Platform configuration containing E2E container definition
+   * @returns E2E execution result with exit code, or undefined if no E2E configured
+   */
+  async runE2eTests(config: PlatformConfig): Promise<E2eResult | undefined> {
+    if (!config.container?.e2e) {
+      return undefined
+    }
+
+    const e2eConfig = config.container.e2e
+    logger.info(LogMessages.CONTAINER_STARTED, `Starting E2E container: ${e2eConfig.networkAlias}`)
+    const e2eResult = await this.createE2eContainer(e2eConfig, loggingEnabled(config, [e2eConfig.networkAlias]))
+    logger.success(LogMessages.CONTAINER_STARTED, `E2E container finished: ${e2eConfig.networkAlias}`)
+    return e2eResult
   }
 
   /**
@@ -166,73 +183,33 @@ export class UserDefinedContainerStarter {
    * @param enableLogging Whether to enable container logging
    * @returns E2E execution result with exit code
    */
-  async startE2eContainer(e2eConfig: E2eContainerInterface, enableLogging: boolean): Promise<E2eResult> {
+  async createE2eContainer(e2eConfig: E2eContainerInterface, enableLogging: boolean): Promise<E2eResult> {
     const startTime = Date.now()
 
-    // Resolve image - supports environment variable substitution
-    const image = this.resolveEnvVariables(e2eConfig.image)
-    if (!image) {
-      throw new Error(
-        'E2E image not specified. Set E2E_IMAGE environment variable or configure in integration-tests.json'
-      )
-    }
+    // Resolve image (may need to pull from registry)
+    const resolvedImage = await this.imageResolver.getImage(e2eConfig.image)
 
-    logger.info(LogMessages.CONTAINER_STARTED, `Starting E2E container: ${image}`)
+    // Create E2E container with resolved image and config
+    const e2eContainer = new E2eContainer(resolvedImage).withNetworkAliases(e2eConfig.networkAlias)
 
-    // Create E2E container with optional network alias
-    // Container discovers platform services in the network autonomously
-    // No environment variables needed - container uses defaults from test-runner.ts
-    const e2eContainer = new E2eContainer(image, e2eConfig.networkAlias)
-      .enableLogging(enableLogging)
-      .withNetwork(this.network)
-
-    // Add volumes if configured
-    if (e2eConfig.volumes && e2eConfig.volumes.length > 0) {
-      e2eContainer.withVolumes(e2eConfig.volumes)
-    }
-
-    // Start container
-    const startedContainer = await e2eContainer.start()
-    this.containerRegistry.addContainer(startedContainer.getNetworkAlias(), startedContainer)
+    const startedContainer = await e2eContainer.enableLogging(enableLogging).withNetwork(this.network).start()
 
     // With Wait.forOneShotStartup(), the container has already exited when start() completes
     // We just need to get the exit code
-    const shouldWaitForExit = e2eConfig.waitForExit !== false
+    logger.info(LogMessages.CONTAINER_STARTED, 'E2E container finished, retrieving exit code...')
+    const exitCode = await startedContainer.getExitCode()
+    const duration = Date.now() - startTime
+    const success = exitCode === 0
 
-    if (shouldWaitForExit) {
-      logger.info(LogMessages.CONTAINER_STARTED, 'E2E container finished, retrieving exit code...')
-      const exitCode = await startedContainer.getExitCode()
-      const duration = Date.now() - startTime
-      const success = exitCode === 0
-
-      if (success) {
-        logger.success(
-          LogMessages.CONTAINER_STARTED,
-          `E2E tests completed successfully in ${Math.round(duration / 1000)}s`
-        )
-      } else {
-        logger.error(LogMessages.CONTAINER_FAILED, `E2E tests failed with exit code ${exitCode}`)
-      }
-
-      return { exitCode, success, duration }
+    if (success) {
+      logger.success(
+        LogMessages.CONTAINER_STARTED,
+        `E2E tests completed successfully in ${Math.round(duration / 1000)}s`
+      )
+    } else {
+      logger.error(LogMessages.CONTAINER_FAILED, `E2E tests failed with exit code ${exitCode}`)
     }
 
-    // Not waiting - return immediately
-    return {
-      exitCode: 0,
-      success: true,
-      duration: Date.now() - startTime,
-    }
-  }
-
-  /**
-   * Resolve environment variables in a string (e.g., ${E2E_IMAGE} -> actual value)
-   */
-  private resolveEnvVariables(value: string): string {
-    return value.replace(/\$\{([^}]+)\}/g, (match, envVar) => {
-      // Support default values: ${VAR:-default}
-      const [varName, defaultValue] = envVar.split(':-')
-      return process.env[varName] || defaultValue || ''
-    })
+    return { exitCode, success, duration }
   }
 }

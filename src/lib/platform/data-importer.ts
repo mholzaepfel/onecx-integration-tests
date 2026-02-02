@@ -214,7 +214,7 @@ export class DataImporter {
   }
 
   private writeContainerInfoFile(containerInfo: ContainerInfo): string {
-    const containerInfoPath = path.resolve('libs/integration-tests/src/imports/container-info.json')
+    const containerInfoPath = path.resolve('src/imports/container-info.json')
 
     // Ensure the directory exists
     const dir = path.dirname(containerInfoPath)
