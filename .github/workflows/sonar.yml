@@ -1,4 +1,4 @@
-name: Sonar Pull Request
+name: Sonar PR
 
 on:
   workflow_run:
