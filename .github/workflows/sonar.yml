@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   pr:
-    if: github.event.workflow_run.conclusion == 'success'
     uses: onecx/ci-angular/.github/workflows/angular-pr-sonar.yml@v1
     with:
       artifact: coverage-reports
