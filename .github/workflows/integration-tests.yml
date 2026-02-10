@@ -1,0 +1,37 @@
+name: Integration Tests
+
+on:
+  workflow_call: {}
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 2 * * *'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    env:
+      CI: true
+      DEBUG: 'testcontainers*'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+      - name: Run integration tests (default config)
+        run: npm run integration-tests
+      - name: Container logs (on failure)
+        if: failure()
+        run: |
+          echo "=== last logs from all containers ==="
+          for c in $(docker ps -aq); do
+            CONTAINER_INFO=$(docker inspect --format='{{.Name}} [{{.Config.Image}}]' "$c" | sed 's/^\///')
+            echo "----- logs for $CONTAINER_INFO (ID: $c) -----"
+            docker logs --tail=200 "$c" || true
+          done
