@@ -1,10 +1,9 @@
-name: Sonar PR
+name: Run Sonar
 
 on:
-  workflow_run:
-    workflows: ['On PR']
-    types:
-      - completed
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * SUN"
 
 permissions:
   contents: read
@@ -12,8 +11,6 @@ permissions:
   actions: read
 
 jobs:
-  pr:
-    uses: onecx/ci-angular/.github/workflows/angular-pr-sonar.yml@v1
-    with:
-      artifact: coverage-reports
+  sonar:
+    uses: onecx/ci-angular/.github/workflows/angular-sonar-main.yml@v1
     secrets: inherit
