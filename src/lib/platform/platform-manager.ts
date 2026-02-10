@@ -333,8 +333,8 @@ export class PlatformManager {
   /**
    * Get platform info (convenience method)
    */
-  getPlatformInfo(): PlatformInfo | undefined {
-    return this.platformInfoExporter?.getPlatformInfo()
+  async getPlatformInfo(): Promise<PlatformInfo | undefined> {
+    return await this.platformInfoExporter?.getPlatformInfo()
   }
 
   /**

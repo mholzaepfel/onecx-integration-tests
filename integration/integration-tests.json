@@ -3,12 +3,16 @@
   "platformConfig": {
     "importData": true,
     "enableLogging": true,
+    "timeouts": {
+      "startupMs": 300000,
+      "healthCheckMs": 120000,
+      "e2eMs": 600000
+    },
     "heartbeat": { "enabled": true },
     "container": {
       "e2e": {
-        "image": "workspace-e2e-tests:local",
-        "networkAlias": "workspace-e2e-tests",
-        "baseUrl": "http://onecx-shell-ui:8080/"
+        "image": "e2e-example:latest",
+        "networkAlias": "e2e-example"
       }
     }
   }

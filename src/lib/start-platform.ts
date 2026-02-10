@@ -3,11 +3,20 @@ import { Logger } from './utils/logger'
 
 const logger = new Logger('StartPlatform')
 
+/**
+ * Start the platform in interactive mode (for development/debugging)
+ *
+ * This script starts all configured containers and waits for a shutdown signal.
+ * For E2E test execution, use `npm run e2e` instead.
+ *
+ * Usage:
+ *   npm run platform
+ *   CONFIG_PATH=./my-config.json npm run platform
+ */
 async function startPlatform(): Promise<void> {
-  // Config path from environment variable (optional - uses default discovery if not set)
   const configPath = process.env.CONFIG_PATH
 
-  logger.info('Starting platform...')
+  logger.info('Starting platform in interactive mode...')
   if (configPath) {
     logger.info(`Config: ${configPath}`)
   }
@@ -15,37 +24,15 @@ async function startPlatform(): Promise<void> {
   const manager = new PlatformManager(configPath)
 
   try {
-    const config = manager.getValidatedConfig()
+    await manager.startContainers()
 
-    await manager.startContainers(config)
-
-    // Export platform info (log + file + GitHub Actions)
+    // Export platform info (log + file)
     const exporter = manager.getInfoExporter()
     exporter?.exportAll()
 
-    // Run E2E tests if configured in the JSON config
-    if (manager.hasE2eConfig()) {
-      logger.info('E2E container configured, waiting for all services to be healthy...')
-      await manager.checkAllHealthy()
-      logger.info('All services healthy, starting E2E tests...')
-      const e2eResult = await manager.runE2eTests()
-
-      if (e2eResult) {
-        logger.info('═'.repeat(70))
-        logger.info(`E2E Tests: ${e2eResult.success ? '✅ PASSED' : '❌ FAILED'}`)
-        logger.info(`Exit Code: ${e2eResult.exitCode}`)
-        logger.info(`Duration:  ${Math.round(e2eResult.duration / 1000)}s`)
-        logger.info('═'.repeat(70))
-
-        // Stop platform and exit with E2E exit code
-        logger.info('Shutting down platform...')
-        await manager.stopAllContainers()
-        process.exit(e2eResult.exitCode)
-      }
-    }
-
-    // No E2E config - wait for shutdown signal (interactive mode)
+    // Wait for shutdown signal (Ctrl+C or SIGTERM)
     await waitForShutdown()
+
     logger.info('Shutting down platform...')
     await manager.stopAllContainers()
     process.exit(0)
