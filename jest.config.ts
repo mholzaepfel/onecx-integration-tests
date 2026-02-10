@@ -1,5 +1,6 @@
 export default {
   displayName: 'integration-tests',
+  setupFiles: ['<rootDir>/src/test-setup.ts'],
   snapshotFormat: { escapeString: true, printBasicPrototype: true },
   testEnvironment: 'node',
   transform: {
@@ -21,4 +22,4 @@ export default {
       },
     ],
   ],
-};
+}
