@@ -313,4 +313,58 @@ export class PlatformManager {
       throw error
     }
   }
+
+  /**
+   * Get platform info exporter for URL access
+   */
+  getInfoExporter(): PlatformInfoExporter | undefined {
+    return this.platformInfoExporter
+  }
+
+  /**
+   * Get platform info (convenience method)
+   */
+  async getPlatformInfo(): Promise<PlatformInfo | undefined> {
+    return await this.platformInfoExporter?.getPlatformInfo()
+  }
+
+  /**
+   * Check if E2E tests are configured
+   */
+  hasE2eConfig(): boolean {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+    return !!config.container?.e2e
+  }
+
+  /**
+   * Run E2E tests if configured
+   * This should be called after all containers are healthy
+   * The E2E container will be started as the last container
+   * @returns E2E result with exit code, or undefined if no E2E configured
+   */
+  async runE2eTests(): Promise<E2eResult | undefined> {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+
+    if (!config.container?.e2e) {
+      return undefined
+    }
+
+    if (!this.UserDefinedContainerStarter) {
+      // Initialize UserDefinedContainerStarter if not already done
+      if (!this.network || !this.imageResolver) {
+        throw new Error('Network and ImageResolver must be initialized before running E2E tests')
+      }
+      const postgres = this.containerRegistry.getContainer(CONTAINER.POSTGRES) as StartedOnecxPostgresContainer
+      const keycloak = this.containerRegistry.getContainer(CONTAINER.KEYCLOAK) as StartedOnecxKeycloakContainer
+      this.UserDefinedContainerStarter = new UserDefinedContainerStarter(
+        this.network,
+        this.imageResolver,
+        this.containerRegistry,
+        postgres,
+        keycloak
+      )
+    }
+
+    return await this.UserDefinedContainerStarter.runE2eTests(config)
+  }
 }

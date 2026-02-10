@@ -172,7 +172,7 @@ export class OnecxKeycloakContainer extends GenericContainer {
       KC_DB_URL_HOST: this.databaseContainer.getNetworkAliases()[0],
       KC_DB_USERNAME: this.onecxEnvironment.keycloakDatabaseUsername,
       KC_DB_PASSWORD: this.onecxEnvironment.keycloakDatabasePassword,
-      KC_HOSTNAME: this.onecxEnvironment.keycloakHostname,
+      KC_HOSTNAME: `${this.onecxEnvironment.keycloakHostname}`,
       KC_HOSTNAME_STRICT: 'false',
       KC_HTTP_ENABLED: 'true',
       KC_HTTP_PORT: `${this.onecxEnvironment.port}`,
