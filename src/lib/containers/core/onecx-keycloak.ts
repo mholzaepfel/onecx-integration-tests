@@ -33,14 +33,11 @@ export class OnecxKeycloakContainer extends GenericContainer {
 
   private initDefaultRealms: string[] = []
 
-  private initDefaultRealm = 'libs/integration-tests/src/lib/config'
+  private initDefaultRealm = 'src/lib/config'
 
   protected loggingEnabled = false
 
-  constructor(
-    image: string,
-    private readonly databaseContainer: StartedOnecxPostgresContainer
-  ) {
+  constructor(image: string, private readonly databaseContainer: StartedOnecxPostgresContainer) {
     super(image)
     this.withCommand(['start-dev', '--import-realm']).withNetworkAliases('keycloak-app').withStartupTimeout(120_000)
   }
