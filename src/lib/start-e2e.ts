@@ -60,7 +60,10 @@ async function main(): Promise<void> {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     logger.error('E2E execution failed', errorMessage)
-    await manager.stopAllContainers().catch(() => {})
+    await manager.stopAllContainers().catch((stopError) => {
+      const stopMessage = stopError instanceof Error ? stopError.message : String(stopError)
+      logger.warn('Failed to stop containers after E2E failure', stopMessage)
+    })
     process.exit(1)
   }
 }

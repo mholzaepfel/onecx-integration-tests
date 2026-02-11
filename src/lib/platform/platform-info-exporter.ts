@@ -8,6 +8,7 @@ import { getE2eOutputPath } from '../config/e2e-constants'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
 import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
+import { getContainerId, getInternalPort, isE2eContainer, normalizeHost } from '../utils/container-utils'
 
 const logger = new Logger('PlatformInfoExporter')
 
@@ -139,7 +140,7 @@ export class PlatformInfoExporter {
     }
 
     try {
-      const containerId = (container as any).getId?.()
+      const containerId = getContainerId(container)
       if (!containerId) {
         logger.warn(`Could not get container ID for ${containerName}`)
         return undefined
@@ -200,7 +201,7 @@ export class PlatformInfoExporter {
 
   private async buildContainerInfo(containerName: string, container: AllowedContainerTypes): Promise<ContainerInfo> {
     // Get internal port from container
-    const internalPort = this.getInternalPort(container)
+    const internalPort = getInternalPort(container)
 
     try {
       const mappedPort = container.getMappedPort(internalPort)
@@ -208,7 +209,7 @@ export class PlatformInfoExporter {
 
       // Use localhost for external URLs when host is Docker bridge IP
       // Docker bridge IPs (172.17.x.x) are often not reachable from the host
-      const externalHost = this.normalizeHost(host)
+      const externalHost = normalizeHost(host)
 
       // Get environment variables
       const envMap = await this.getContainerEnvironment(containerName)
@@ -235,29 +236,5 @@ export class PlatformInfoExporter {
         running: false,
       }
     }
-  }
-
-  /**
-   * Normalize host - convert Docker bridge IPs to localhost for better accessibility
-   */
-  private normalizeHost(host: string): string {
-    // Docker bridge network IPs (172.17.x.x) are not reachable from host on some systems
-    if (host.startsWith('172.17.') || host.startsWith('172.18.')) {
-      return 'localhost'
-    }
-    return host
-  }
-
-  /**
-   * Get internal port from container - tries getPort() method first, then falls back to defaults
-   */
-  private getInternalPort(container: AllowedContainerTypes): number {
-    // Try to get port from container if it has a getPort method
-    if ('getPort' in container && typeof (container as { getPort?: () => number }).getPort === 'function') {
-      return (container as { getPort: () => number }).getPort()
-    }
-
-    // Default ports based on container type (should rarely be needed)
-    return 8080
   }
 }

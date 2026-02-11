@@ -42,7 +42,10 @@ async function runAllContainers() {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     logger.error('Platform startup failed', errorMessage)
-    await manager.stopAllContainers().catch(() => {})
+    await manager.stopAllContainers().catch((stopError) => {
+      const stopMessage = stopError instanceof Error ? stopError.message : String(stopError)
+      logger.warn('Failed to stop containers after platform failure', stopMessage)
+    })
     process.exit(1)
   }
 }
