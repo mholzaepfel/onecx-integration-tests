@@ -1,5 +1,0 @@
-# Playwright tests
-playwright-report/
-.auth/
-test-results/
-platform-info.json
