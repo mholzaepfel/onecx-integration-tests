@@ -11,6 +11,7 @@ import { ContainerInfo } from '../../imports/import-manager'
 import { PlatformConfig } from '../models/platform-config.interface'
 import { loggingEnabled } from '../utils/logging-enable'
 import { Logger, LogMessages } from '../utils/logger'
+import { isE2eContainer, isKeycloakContainer, isShellUiContainer } from '../utils/container-utils'
 
 const logger = new Logger('DataImporter')
 
@@ -120,7 +121,7 @@ export class DataImporter {
     startedContainers: Map<string, AllowedContainerTypes>
   ): StartedOnecxKeycloakContainer {
     const keycloakContainer = startedContainers.get(CONTAINER.KEYCLOAK)
-    if (!keycloakContainer || !this.isKeycloakContainer(keycloakContainer)) {
+    if (!keycloakContainer || !isKeycloakContainer(keycloakContainer)) {
       throw new Error('Keycloak container not found or invalid type in started containers')
     }
     return keycloakContainer
@@ -138,7 +139,7 @@ export class DataImporter {
 
   private extractShellUiContainer(startedContainers: Map<string, AllowedContainerTypes>): StartedShellUiContainer {
     const shellUiContainer = startedContainers.get(CONTAINER.SHELL_UI)
-    if (!shellUiContainer || !this.isShellUiContainer(shellUiContainer)) {
+    if (!shellUiContainer || !isShellUiContainer(shellUiContainer)) {
       throw new Error('Shell UI container not found or invalid type in started containers')
     }
     return shellUiContainer
@@ -164,7 +165,7 @@ export class DataImporter {
     // Iterate through all started containers and extract service info
     for (const [containerName, container] of startedContainers) {
       // Skip E2E containers - they are test runners, not services
-      if (containerName.includes('-e2e') || !('getPort' in container)) {
+      if (isE2eContainer(container) || !('getPort' in container)) {
         logger.info('SERVICE_SKIPPED', `${containerName} - E2E container (test runner, not a service)`)
         continue
       }
@@ -236,20 +237,6 @@ export class DataImporter {
       fs.unlinkSync(containerInfoPath)
       logger.info(LogMessages.DATA_IMPORT_CLEANUP)
     }
-  }
-
-  /**
-   * Type guard to check if container is a Keycloak container
-   */
-  private isKeycloakContainer(container: AllowedContainerTypes): container is StartedOnecxKeycloakContainer {
-    return container instanceof StartedOnecxKeycloakContainer
-  }
-
-  /**
-   * Type guard to check if container is a ShellUi container
-   */
-  private isShellUiContainer(container: AllowedContainerTypes): container is StartedShellUiContainer {
-    return container instanceof StartedShellUiContainer
   }
 
   /**

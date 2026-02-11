@@ -14,7 +14,7 @@
     "test": "nx test",
     "test:ci": "nx test --watch=false --browsers=ChromeHeadless --code-coverage",
     "sonar": "npx sonarqube-scanner",
-    "integration-tests": "npx ts-node src/lib/start.ts"
+    "e2e": "npx ts-node src/lib/start-e2e.ts"
   },
   "private": true,
   "dependencies": {

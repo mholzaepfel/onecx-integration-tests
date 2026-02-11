@@ -17,11 +17,9 @@ docker build -t e2e-example:latest ./e2e-example
 
 ## Environment Variables
 
-| Variable            | Description              | Default                 |
-| ------------------- | ------------------------ | ----------------------- |
-| `BASE_URL`          | Target URL for E2E tests | `http://localhost:8080` |
-| `KEYCLOAK_USER`     | Keycloak username        | `onecx`                 |
-| `KEYCLOAK_PASSWORD` | Keycloak password        | -                       |
+| Variable   | Description              | Default                 |
+| ---------- | ------------------------ | ----------------------- |
+| `BASE_URL` | Target URL for E2E tests | `http://localhost:8080` |
 
 ## Output
 
@@ -39,9 +37,7 @@ The container writes the following files to `/reports` inside the container, whi
       "e2e": {
         "image": "e2e-example:latest",
         "networkAlias": "e2e-example",
-        "baseUrl": "http://onecx-shell-ui:8080/onecx-shell/",
-        "keycloakUser": "onecx",
-        "keycloakPassword": "onecx"
+        "baseUrl": "http://onecx-shell-ui:8080/onecx-shell/"
       }
     }
   }

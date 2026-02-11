@@ -18,19 +18,22 @@ export interface E2eUrls {
 export interface ExternalUrls {
   shellUi: string
   keycloak: string
-  shellBff: string
 }
 
 export interface ContainerInfo {
   name: string
-  host: string
-  port: number
-  internalPort: number
-  internalUrl: string
-  externalUrl: string
+  /** Optional categorization to distinguish service/e2e/custom containers */
+  type?: 'core' | 'service' | 'bff' | 'ui' | 'custom' | 'e2e'
+  host?: string
+  port?: number
+  internalPort?: number
+  internalUrl?: string
+  externalUrl?: string
   running: boolean
   /** IP address in Docker network (for extra_hosts) */
   networkIp?: string
   /** Environment variables set in the container */
   environment?: Record<string, string>
+  /** Additional note when container is skipped or has no exposed ports */
+  note?: string
 }

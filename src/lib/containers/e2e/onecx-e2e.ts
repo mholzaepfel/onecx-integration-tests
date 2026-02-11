@@ -7,8 +7,6 @@ import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
 import { Logger } from '../../utils/logger'
 
-const logger = new Logger('E2eContainer')
-
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
  * The container is expected to exit with code 0 (success) or 1 (failure).
@@ -38,13 +36,9 @@ export class E2eContainer extends GenericContainer {
   }
 
   override async start(): Promise<StartedE2eContainer> {
-    // Add network alias
-    this.withNetworkAliases(this.networkAliases[0])
-
     // Pass BASE_URL environment variable if configured
     if (this.baseUrl) {
       this.withEnvironment({ BASE_URL: this.baseUrl })
-      logger.info(`E2E BASE_URL: ${this.baseUrl}`)
     }
 
     // Mount fixed output directory for E2E results
@@ -56,7 +50,6 @@ export class E2eContainer extends GenericContainer {
         mode: 'rw' as const,
       },
     ])
-    logger.info(`E2E output directory: ${outputPath} -> ${E2E_CONTAINER_OUTPUT_PATH}`)
 
     // Use one-shot wait strategy for containers that exit on their own
     // This waits for the container to stop with exit code 0
@@ -109,7 +102,6 @@ export class StartedE2eContainer extends AbstractStartedContainer implements Hea
       const inspectData = await dockerContainer.inspect()
       return inspectData.State.ExitCode
     } catch (error) {
-      logger.error(`Failed to get exit code: ${error}`)
       return 1 // Return error code if inspection fails
     }
   }

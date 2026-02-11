@@ -270,60 +270,6 @@ export class PlatformManager {
   }
 
   /**
-   * Create user-defined containers using the UserDefinedContainerStarter
-   */
-  private async createContainers(config: PlatformConfig): Promise<void> {
-    if (!this.UserDefinedContainerStarter) {
-      throw new Error('UserDefinedContainerStarter not initialized. Core services must be started first.')
-    }
-
-    try {
-      await this.UserDefinedContainerStarter.createAndStartContainers(config)
-      logger.info(LogMessages.CONTAINER_STARTED, 'User-defined containers created successfully')
-    } catch (error) {
-      logger.error(LogMessages.CONTAINER_FAILED, undefined, error)
-      throw error
-    }
-  }
-
-  /**
-   * Initialize and validate the platform configuration
-   */
-  private initializeConfiguration(configFilePath?: string): void {
-    // Validate configuration file if it exists
-    const validationResult = this.jsonValidator.validateConfigFile(configFilePath)
-
-    if (validationResult.isValid && validationResult.config) {
-      this.validatedConfig = validationResult.config
-      logger.success(LogMessages.CONFIG_FOUND, 'Configuration loaded and validated successfully')
-    } else if (validationResult.errors && validationResult.errors.length > 0) {
-      logger.warn(
-        LogMessages.CONFIG_VALIDATION_WARN,
-        `Configuration validation failed: ${validationResult.errors.join(', ')}`
-      )
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'Using default configuration')
-    } else {
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found, using default configuration')
-    }
-  }
-
-  /**
-   * Stop a container
-   * @param key
-   */
-  private async stopContainer(key: string | CONTAINER) {
-    const container = this.getContainer(key)
-    const containerKey = typeof key === 'string' ? key : String(key)
-    try {
-      await container?.stop()
-      logger.success(LogMessages.CONTAINER_STOPPED, containerKey)
-    } catch (error) {
-      logger.error(LogMessages.CONTAINER_FAILED, containerKey, error)
-      throw error
-    }
-  }
-
-  /**
    * Get platform info exporter for URL access
    */
   getInfoExporter(): PlatformInfoExporter | undefined {
@@ -375,5 +321,58 @@ export class PlatformManager {
     }
 
     return await this.UserDefinedContainerStarter.runE2eTests(config)
+  }
+  /**
+   * Create user-defined containers using the UserDefinedContainerStarter
+   */
+  private async createContainers(config: PlatformConfig): Promise<void> {
+    if (!this.UserDefinedContainerStarter) {
+      throw new Error('UserDefinedContainerStarter not initialized. Core services must be started first.')
+    }
+
+    try {
+      await this.UserDefinedContainerStarter.createAndStartContainers(config)
+      logger.info(LogMessages.CONTAINER_STARTED, 'User-defined containers created successfully')
+    } catch (error) {
+      logger.error(LogMessages.CONTAINER_FAILED, undefined, error)
+      throw error
+    }
+  }
+
+  /**
+   * Initialize and validate the platform configuration
+   */
+  private initializeConfiguration(configFilePath?: string): void {
+    // Validate configuration file if it exists
+    const validationResult = this.jsonValidator.validateConfigFile(configFilePath)
+
+    if (validationResult.isValid && validationResult.config) {
+      this.validatedConfig = validationResult.config
+      logger.success(LogMessages.CONFIG_FOUND, 'Configuration loaded and validated successfully')
+    } else if (validationResult.errors && validationResult.errors.length > 0) {
+      logger.warn(
+        LogMessages.CONFIG_VALIDATION_WARN,
+        `Configuration validation failed: ${validationResult.errors.join(', ')}`
+      )
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'Using default configuration')
+    } else {
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found, using default configuration')
+    }
+  }
+
+  /**
+   * Stop a container
+   * @param key
+   */
+  private async stopContainer(key: string | CONTAINER) {
+    const container = this.getContainer(key)
+    const containerKey = typeof key === 'string' ? key : String(key)
+    try {
+      await container?.stop()
+      logger.success(LogMessages.CONTAINER_STOPPED, containerKey)
+    } catch (error) {
+      logger.error(LogMessages.CONTAINER_FAILED, containerKey, error)
+      throw error
+    }
   }
 }

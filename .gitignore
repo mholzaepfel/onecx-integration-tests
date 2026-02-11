@@ -144,5 +144,4 @@ vite.config.ts.timestamp-*
 
 reports
 
-playwright-output
-
+e2e-results

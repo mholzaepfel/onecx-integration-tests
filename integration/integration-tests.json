@@ -5,6 +5,7 @@
     "enableLogging": true,
     "heartbeat": {
       "enabled": true
-    }
+    },
+    "container": { "e2e": { "image": "e2e-example:latest", "networkAlias": "e2e-example" } }
   }
 }

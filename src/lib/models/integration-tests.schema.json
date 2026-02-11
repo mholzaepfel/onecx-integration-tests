@@ -363,17 +363,7 @@
         },
         "baseUrl": {
           "type": "string",
-          "description": "Base URL for E2E tests (e.g., http://onecx-shell:8080/admin/)."
-        },
-        "environments": {
-          "$ref": "#/definitions/environmentVariables"
-        },
-        "command": {
-          "type": "array",
-          "description": "Override default command",
-          "items": {
-            "type": "string"
-          }
+          "description": "Base URL for E2E tests (e.g., http://onecx-shell:8080/<BASEHREF>/)."
         }
       },
       "required": ["image", "networkAlias"]
