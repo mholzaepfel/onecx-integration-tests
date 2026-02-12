@@ -5,6 +5,7 @@ import { AllowedContainerTypes } from '../models/allowed-container.types'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
 import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
+import { DEFAULT_ARTEFACTS_ROOT, RUNS_DIR } from '../config/artefacts'
 
 const logger = new Logger('PlatformInfoExporter')
 
@@ -88,7 +89,8 @@ export class PlatformInfoExporter {
    */
   writePlatformInfoFile(filePath?: string): void {
     const info = this.getPlatformInfo()
-    const outputPath = filePath ?? process.env.PLATFORM_INFO_FILE ?? './platform-info.json'
+    const outputPath =
+      filePath ?? process.env.PLATFORM_INFO_FILE ?? `${DEFAULT_ARTEFACTS_ROOT}${RUNS_DIR}/platform-info.json`
 
     fs.writeFileSync(outputPath, JSON.stringify(info, null, 2))
     logger.info(`Platform info written to: ${outputPath}`)

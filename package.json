@@ -13,8 +13,6 @@
     "lint:fix": "nx lint --fix",
     "test": "nx test",
     "test:ci": "nx test --watch=false --browsers=ChromeHeadless --code-coverage",
-    "platform": "npx ts-node src/lib/start-platform.ts",
-    "e2e": "npx ts-node src/lib/start-e2e.ts",
     "it:run": "npx ts-node src/it-runner/index.ts",
     "it:run:verbose": "npx ts-node src/it-runner/index.ts --verbose",
     "it:run:dry": "npx ts-node src/it-runner/index.ts --dry-run",

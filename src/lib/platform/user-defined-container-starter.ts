@@ -14,7 +14,6 @@ import { loggingEnabled } from '../utils/logging-enable'
 import { ImageResolver } from './image-resolver'
 import { Logger, LogMessages } from '../utils/logger'
 import { ContainerRegistry } from './container-registry'
-import { PlatformInfoExporter } from './platform-info-exporter'
 
 const logger = new Logger('UserDefinedContainerStarter')
 

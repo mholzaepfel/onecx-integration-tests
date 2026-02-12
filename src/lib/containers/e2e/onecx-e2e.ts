@@ -1,6 +1,5 @@
 import { GenericContainer, StartedTestContainer, AbstractStartedContainer, Wait } from 'testcontainers'
 import Dockerode from 'dockerode'
-import { E2eContainerInterface } from '../../models/e2e.interface'
 import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
