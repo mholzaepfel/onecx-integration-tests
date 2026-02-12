@@ -12,7 +12,7 @@ const logger = new Logger('E2eContainer')
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
  * The container is expected to exit with code 0 (success) or 1 (failure).
- * Results are written to the fixed output directory: e2e-results/
+ * Results are written under integration-tests/artefacts/<runId>/report-e2e
  */
 export class E2eContainer extends GenericContainer {
   protected loggingEnabled = false

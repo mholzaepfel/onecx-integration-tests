@@ -1,0 +1,88 @@
+# OneCX Playwright E2E Docker Image
+#
+# Dieses Dockerfile erstellt einen Container für E2E-Tests mit Playwright.
+# Der Container führt die Tests automatisch aus und fährt danach herunter.
+#
+# WICHTIG: Default-Werte stammen aus integration/integration-tests.json
+#          Diese Datei ist die Single Source of Truth!
+#
+# Build:
+#   docker build -f Dockerfile.workspace -t onecx-workspace-e2e:latest .
+#
+# Run (Testcontainer-Netzwerk):
+#   docker run --rm \
+#     -e BASE_URL=http://onecx-shell-ui:8080/onecx-shell/ \
+#     -e KEYCLOAK_USER=onecx \
+#     -e KEYCLOAK_PASSWORD=onecx \
+#     -v $(pwd)/artefacts/runs/local/e2e-results:/e2e-results \
+#     --network=<testcontainer-network> \
+#     onecx-workspace-e2e:latest
+#
+# Run (lokale Entwicklung mit --network=host):
+#   docker run --rm \
+#     -e BASE_URL=http://proxy.localhost/onecx-shell/admin/ \
+#     -e KEYCLOAK_USER=onecx \
+#     -e KEYCLOAK_PASSWORD=onecx \
+#     -v $(pwd)/artefacts/runs/local/e2e-results:/e2e-results \
+#     --network=host \
+#     onecx-workspace-e2e:latest
+
+FROM mcr.microsoft.com/playwright:v1.58.0-noble
+
+# Labels
+LABEL maintainer="OneCX Team"
+LABEL description="E2E Tests für OneCX Workspace Management"
+LABEL version="1.0.0"
+
+# Arbeitsverzeichnis
+WORKDIR /app
+
+# Umgebungsvariablen mit Standardwerten
+# WICHTIG: BASE_URL Default aus integration/integration-tests.json
+ENV NODE_ENV=production
+ENV BASE_URL=http://onecx-shell-ui:8080/onecx-shell/admin/workspace
+ENV KEYCLOAK_USER=onecx
+ENV KEYCLOAK_PASSWORD=onecx
+ENV OUTPUT_DIR=/e2e-results
+ENV artefacts_ROOT=/e2e-results
+ENV RUN_ID=local
+ENV CI=true
+
+# Package-Dateien kopieren (package-lock.json für npm ci)
+COPY package.json package-lock.json* ./
+
+# Abhängigkeiten installieren (--include=dev weil NODE_ENV=production)
+# npm ci wenn package-lock.json existiert, sonst npm install
+RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi
+
+# Browser sind bereits im Playwright Docker Image vorinstalliert
+# https://playwright.dev/docs/docker
+
+# Quellcode kopieren
+COPY tsconfig.json ./
+COPY playwright.config.ts ./
+COPY harnesses/ ./harnesses/
+COPY tests/ ./tests/
+
+# Output-Verzeichnis erstellen
+RUN mkdir -p /e2e-results/screenshots \
+    && mkdir -p /e2e-results/.auth \
+    && mkdir -p /e2e-results/test-artefacts \
+    && mkdir -p /e2e-results/playwright-report
+
+# Entrypoint-Skript kopieren
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Healthcheck - Container ist "healthy" solange Tests laufen
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD pgrep -f "playwright" > /dev/null || exit 1
+
+# Volume für Ergebnisse
+VOLUME ["/e2e-results"]
+
+# Entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# Default Command: Tests ausführen
+CMD ["npm", "test"]

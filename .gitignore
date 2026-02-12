@@ -142,7 +142,5 @@ vite.config.ts.timestamp-*
 
 .vscode/extensions.json
 
-reports
-
-playwright-output
+artefacts/*
 

@@ -7,11 +7,14 @@ import { defineConfig, devices } from '@playwright/test'
  * - BASE_URL: Ziel-URL der Anwendung (z.B. http://proxy.localhost/onecx-shell/admin/)
  * - KEYCLOAK_USER: Benutzername für Keycloak Login (default: admin)
  * - KEYCLOAK_PASSWORD: Passwort für Keycloak Login (default: admin)
- * - OUTPUT_DIR: Verzeichnis für Test-Ergebnisse (default: /e2e-results)
+ * - OUTPUT_DIR: Verzeichnis für Test-Ergebnisse (default: ./artefacts/runs/<runId>/e2e-results or /e2e-results in container)
  */
 
 const baseURL = process.env.BASE_URL || 'http://proxy.localhost/onecx-shell/admin/'
-const outputDir = process.env.OUTPUT_DIR || '/e2e-results'
+const artefactsRoot = process.env.artefacts_ROOT || './artefacts'
+const runId = process.env.RUN_ID || 'local'
+const defaultOutputDir = `${artefactsRoot}/runs/${runId}/e2e-results`
+const outputDir = process.env.OUTPUT_DIR || defaultOutputDir
 
 export default defineConfig({
   // Test-Verzeichnis
@@ -41,7 +44,7 @@ export default defineConfig({
   },
 
   // Output-Verzeichnis für Traces, Screenshots, Videos
-  outputDir: `${outputDir}/test-artifacts`,
+  outputDir: `${outputDir}/test-artefacts`,
 
   // Gemeinsame Einstellungen für alle Projekte
   use: {

@@ -18,9 +18,6 @@ export interface PlatformConfig {
   /** Platform timeouts (startup/health/E2E) */
   timeouts?: PlatformTimeouts
   /** Define the heartbeat config */
-=======
-  /**  */
->>>>>>> main
   heartbeat?: HeartbeatConfig
   /** Image overrides - allows testing against different images */
   platformOverrides?: {

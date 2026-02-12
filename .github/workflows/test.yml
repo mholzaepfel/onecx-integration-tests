@@ -32,7 +32,7 @@ jobs:
           name: github-action-pr
           path: github-action-pr.txt
 
-      - name: Upload artifacts
+      - name: Upload artefacts
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports

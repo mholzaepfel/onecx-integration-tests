@@ -4,41 +4,9 @@ import { CONTAINER } from '../models/container.enum'
 import { AllowedContainerTypes } from '../models/allowed-container.types'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
+import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
 
 const logger = new Logger('PlatformInfoExporter')
-
-export interface PlatformInfo {
-  network: NetworkInfo
-  e2e: E2eUrls
-  external: ExternalUrls
-  containers: Record<string, ContainerInfo>
-}
-
-export interface NetworkInfo {
-  name: string
-  id: string
-}
-
-export interface E2eUrls {
-  baseUrl: string
-  keycloakUrl: string
-}
-
-export interface ExternalUrls {
-  shellUi: string
-  keycloak: string
-  shellBff: string
-}
-
-export interface ContainerInfo {
-  name: string
-  host: string
-  port: number
-  internalPort: number
-  internalUrl: string
-  externalUrl: string
-  running: boolean
-}
 
 export class PlatformInfoExporter {
   constructor(private readonly containerRegistry: ContainerRegistry, private readonly network: StartedNetwork) {}

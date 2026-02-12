@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import * as fs from 'fs'
 import { WorkspaceSearchHarness } from '../harnesses'
 
 /**
@@ -10,6 +11,12 @@ import { WorkspaceSearchHarness } from '../harnesses'
  * - Workspace-Suche und -Liste
  * - Pagination
  */
+
+const artefactsRoot = process.env.artefacts_ROOT || './artefacts'
+const runId = process.env.RUN_ID || 'local'
+const outputDir = process.env.OUTPUT_DIR || `${artefactsRoot}/runs/${runId}/e2e-results`
+
+fs.mkdirSync(`${outputDir}/screenshots`, { recursive: true })
 
 test.describe('Workspace Management', () => {
   let workspaceHarness: WorkspaceSearchHarness
@@ -108,7 +115,7 @@ test.describe('Workspace Management', () => {
 
       // Screenshot erstellen
       await page.screenshot({
-        path: `${process.env.OUTPUT_DIR || '/e2e-results'}/screenshots/workspace-search-page.png`,
+        path: `${outputDir}/screenshots/workspace-search-page.png`,
         fullPage: true,
       })
     })
@@ -116,7 +123,7 @@ test.describe('Workspace Management', () => {
     test('sollte Screenshot des Headers erstellen', async ({ page }) => {
       const header = workspaceHarness.pageHeader
       await header.screenshot({
-        path: `${process.env.OUTPUT_DIR || '/e2e-results'}/screenshots/workspace-header.png`,
+        path: `${outputDir}/screenshots/workspace-header.png`,
       })
     })
   })
