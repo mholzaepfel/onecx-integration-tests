@@ -3,13 +3,8 @@
   "platformConfig": {
     "importData": true,
     "enableLogging": true,
-    "heartbeat": { "enabled": true },
-    "container": {
-      "e2e": {
-        "image": "workspace-e2e-tests:local",
-        "networkAlias": "workspace-e2e-tests",
-        "baseUrl": "http://onecx-shell-ui:8080/"
-      }
+    "heartbeat": {
+      "enabled": true
     }
   }
 }
