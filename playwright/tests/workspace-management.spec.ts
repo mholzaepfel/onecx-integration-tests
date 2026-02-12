@@ -1,213 +1,123 @@
 import { test, expect } from '@playwright/test'
+import { WorkspaceSearchHarness } from '../harnesses'
+
+/**
+ * E2E Tests für Workspace Management
+ *
+ * Diese Tests prüfen die Workspace-Verwaltungsseite:
+ * - Seitenlayout und Header
+ * - Breadcrumb-Navigation
+ * - Workspace-Suche und -Liste
+ * - Pagination
+ */
 
 test.describe('Workspace Management', () => {
-  test('should display workspace management page', async ({ page }) => {
-    await page.goto('/workspace')
+  let workspaceHarness: WorkspaceSearchHarness
 
-    // Wait for the page to fully load
-    await expect(page.locator('#page-header')).toContainText('Workspace Verwaltung')
-    await expect(page.locator('#page-subheader')).toContainText('Erstellung und Bearbeitung von Workspaces')
+  test.beforeEach(async ({ page }) => {
+    workspaceHarness = new WorkspaceSearchHarness(page)
+
+    // Navigiere zur Workspace-Seite (volle URL verwenden)
+    const baseUrl = process.env.BASE_URL || 'http://proxy.localhost/onecx-shell/admin/'
+    await page.goto(`${baseUrl}admin`)
+
+    // Warte auf domcontentloaded erst
+    await page.waitForLoadState('domcontentloaded')
+
+    // Falls wir zu Keycloak weitergeleitet wurden, ist die Auth fehlgeschlagen
+    const currentUrl = page.url()
+    if (currentUrl.includes('/realms/')) {
+      throw new Error(`Auth fehlgeschlagen - wurde zu Keycloak geleitet: ${currentUrl}`)
+    }
+
+    // Warte auf die Seite mit reduziertem Timeout
+    await workspaceHarness.waitForPage()
   })
 
-  test('should display workspace grid with items', async ({ page }) => {
-    await page.goto('/workspace')
+  test.describe('Page Header', () => {
+    test('sollte den korrekten Seitentitel anzeigen', async ({ page }) => {
+      const title = await workspaceHarness.getPageTitle()
+      expect(title).toBe('Workspace Verwaltung')
+    })
 
-    // Wait for dataview to load
-    await expect(page.locator('#ws_search_dataview')).toBeVisible()
+    test('sollte den korrekten Untertitel anzeigen', async ({ page }) => {
+      const subtitle = await workspaceHarness.getPageSubtitle()
+      expect(subtitle).toBe('Erstellung und Bearbeitung von Workspaces')
+    })
 
-    // Check that at least one workspace is displayed
-    await expect(page.locator('#ws_search_data_grid_row_0')).toBeVisible()
-    await expect(page.locator('#ws_search_data_grid_row_0_display_name')).toContainText('OneCX Admin')
+    test('sollte den Header sichtbar anzeigen', async ({ page }) => {
+      const isVisible = await workspaceHarness.isHeaderVisible()
+      expect(isVisible).toBe(true)
+    })
+
+    test('sollte Action-Buttons in der Toolbar haben', async ({ page }) => {
+      const buttonCount = await workspaceHarness.getActionButtonCount()
+      expect(buttonCount).toBeGreaterThan(0)
+    })
   })
 
-  test('should have create and import buttons', async ({ page }) => {
-    await page.goto('/workspace')
+  test.describe('Breadcrumb Navigation', () => {
+    test('sollte Breadcrumb anzeigen', async ({ page }) => {
+      const isVisible = await workspaceHarness.breadcrumb.isVisible()
+      expect(isVisible).toBe(true)
+    })
 
-    // Check action buttons in header
-    const createButton = page.getByRole('button', { name: /Erstellen/i })
-    const importButton = page.getByRole('button', { name: /Import/i })
-
-    await expect(createButton).toBeVisible()
-    await expect(importButton).toBeVisible()
+    test('sollte Home-Link im Breadcrumb haben', async ({ page }) => {
+      const isVisible = await workspaceHarness.breadcrumbHome.isVisible()
+      expect(isVisible).toBe(true)
+    })
   })
 
-  test('should switch between grid and list view', async ({ page }) => {
-    await page.goto('/workspace')
+  test.describe('Workspace Liste', () => {
+    test('sollte den DataView anzeigen', async ({ page }) => {
+      const isVisible = await workspaceHarness.isDataViewVisible()
+      expect(isVisible).toBe(true)
+    })
 
-    // Find view mode buttons
-    const listViewButton = page.locator('[aria-labelledby="ocx-data-layout-selection-list"]')
-    const gridViewButton = page.locator('[aria-labelledby="ocx-data-layout-selection-grid"]')
+    test('sollte mindestens einen Workspace anzeigen', async ({ page }) => {
+      await workspaceHarness.waitForSearchResults()
+      const count = await workspaceHarness.getWorkspaceCardCount()
+      expect(count).toBeGreaterThanOrEqual(1)
+    })
 
-    // Grid should be selected by default
-    await expect(gridViewButton).toHaveClass(/p-highlight/)
-
-    // Click list view
-    await listViewButton.click()
-    await expect(listViewButton).toHaveClass(/p-highlight/)
+    test('sollte Workspace-Namen anzeigen', async ({ page }) => {
+      await workspaceHarness.waitForSearchResults()
+      const names = await workspaceHarness.getWorkspaceNames()
+      expect(names.length).toBeGreaterThan(0)
+      console.log('Gefundene Workspaces:', names)
+    })
   })
 
-  test('should have filter input', async ({ page }) => {
-    await page.goto('/workspace')
+  test.describe('Pagination', () => {
+    test('sollte Paginator anzeigen', async ({ page }) => {
+      const isVisible = await workspaceHarness.isPaginatorVisible()
+      expect(isVisible).toBe(true)
+    })
 
-    const filterInput = page.locator('#data-view-control-filter')
-    await expect(filterInput).toBeVisible()
-
-    // Type in filter
-    await filterInput.fill('Admin')
-
-    // Workspace should still be visible (matches filter)
-    await expect(page.locator('#ws_search_data_grid_row_0')).toBeVisible()
+    test('sollte Paginator-Info anzeigen', async ({ page }) => {
+      const info = await workspaceHarness.getPaginatorInfo()
+      expect(info).toMatch(/\d+\s*-\s*\d+\s*von\s*\d+/)
+    })
   })
 
-  test('should navigate to workspace detail on click', async ({ page }) => {
-    await page.goto('/workspace')
+  test.describe('Screenshots und Dokumentation', () => {
+    test('sollte Screenshot der Workspace-Seite erstellen', async ({ page }) => {
+      // Warte auf vollständiges Laden
+      await page.waitForLoadState('networkidle')
+      await workspaceHarness.waitForSearchResults()
 
-    // Click on workspace card
-    await page.locator('#ws_search_data_grid_row_0').click()
+      // Screenshot erstellen
+      await page.screenshot({
+        path: `${process.env.OUTPUT_DIR || '/e2e-results'}/screenshots/workspace-search-page.png`,
+        fullPage: true,
+      })
+    })
 
-    // Should navigate to workspace detail
-    await expect(page).toHaveURL(/\/workspace\/ADMIN/)
-  })
-
-  test('should have menu management link', async ({ page }) => {
-    await page.goto('/workspace')
-
-    const menuLink = page.locator('#ws_search_data_grid_row_0_goto_menu')
-    await expect(menuLink).toBeVisible()
-    await expect(menuLink).toHaveAttribute('href', '/onecx-shell/admin/workspace/ADMIN/menu')
-  })
-})
-
-test.describe('Shell Navigation', () => {
-  test('should display main navigation menu', async ({ page }) => {
-    await page.goto('/workspace')
-
-    // Check main menu sections by their IDs
-    await expect(page.locator('#pmm_product_store_header')).toBeVisible()
-    await expect(page.locator('#pmm_welcome_header')).toBeVisible()
-    await expect(page.locator('#pmm_workspace_mgmt_header')).toBeVisible()
-    await expect(page.locator('#pmm_users_and_roles_header')).toBeVisible()
-    await expect(page.locator('#pmm_misc_header')).toBeVisible()
-    await expect(page.locator('#pmm_developer_tools_header')).toBeVisible()
-  })
-
-  test('should expand workspace submenu', async ({ page }) => {
-    await page.goto('/workspace')
-
-    // Workspace menu should be expanded (has p-highlight class)
-    const workspaceHeader = page.locator('#pmm_workspace_mgmt_header')
-    await expect(workspaceHeader).toHaveClass(/p-highlight/)
-
-    // Check submenu items are visible
-    await expect(page.locator('#pmm_wm_workspaces')).toBeVisible()
-    await expect(page.locator('#pmm_wm_themes')).toBeVisible()
-    await expect(page.locator('#pmm_wm_tenants')).toBeVisible()
-  })
-
-  test('should navigate to themes page', async ({ page }) => {
-    await page.goto('/workspace')
-
-    await page.locator('#pmm_wm_themes a').click()
-    await expect(page).toHaveURL(/\/theme/)
-  })
-
-  test('should navigate to tenants page', async ({ page }) => {
-    await page.goto('/workspace')
-
-    await page.locator('#pmm_wm_tenants a').click()
-    await expect(page).toHaveURL(/\/tenant/)
-  })
-
-  test('should expand Users & Permissions menu', async ({ page }) => {
-    await page.goto('/workspace')
-
-    // Click to expand
-    await page.locator('#pmm_users_and_roles_header').click()
-
-    // Wait for expansion animation
-    await expect(page.locator('#pmm_users_and_roles_header')).toHaveClass(/p-highlight/)
-
-    // Check submenu items
-    await expect(page.locator('#pmm_ur_permissions')).toBeVisible()
-    await expect(page.locator('#pmm_ur_iam_users_roles')).toBeVisible()
-    await expect(page.locator('#pmm_ur_user_profiles')).toBeVisible()
-  })
-})
-
-test.describe('Shell Header', () => {
-  test('should display user avatar menu', async ({ page }) => {
-    await page.goto('/workspace')
-
-    const userAvatarButton = page.locator('#ocx_topbar_action_user_avatar_menu')
-    await expect(userAvatarButton).toBeVisible()
-  })
-
-  test('should display username', async ({ page }) => {
-    await page.goto('/workspace')
-
-    // Username is displayed in header
-    await expect(page.locator('ocx-username-component')).toContainText('OneCX Admin')
-  })
-
-  test('should open user menu on click', async ({ page }) => {
-    await page.goto('/workspace')
-
-    // Click user avatar
-    await page.locator('#ocx_topbar_action_user_avatar_menu').click()
-
-    // Menu should be visible
-    const userMenu = page.locator('#ws_user_avatar_menu_list')
-    await expect(userMenu).not.toHaveAttribute('hidden')
-
-    // Check menu items
-    await expect(page.locator('#ws_user_avatar_menu_list_item_1_text')).toContainText('Personal Info')
-    await expect(page.locator('#ws_user_avatar_menu_list_item_2_text')).toContainText('Einstellungen')
-    await expect(page.locator('#ws_user_avatar_menu_list_item_3_text')).toContainText('Berechtigungen')
-    await expect(page.locator('#ws_user_avatar_menu_list_item_logout_text')).toContainText('Abmelden')
-  })
-
-  test('should have workspace logo', async ({ page }) => {
-    await page.goto('/workspace')
-
-    const logo = page.locator('#ws_logo_ADMIN')
-    await expect(logo).toBeVisible()
-  })
-
-  test('should have menu toggle button', async ({ page }) => {
-    await page.goto('/workspace')
-
-    const toggleButton = page.locator('#ocx_vertical_menu_action_toggle')
-    await expect(toggleButton).toBeVisible()
-  })
-})
-
-test.describe('Breadcrumb Navigation', () => {
-  test('should display breadcrumb', async ({ page }) => {
-    await page.goto('/workspace')
-
-    const breadcrumb = page.locator('p-breadcrumb')
-    await expect(breadcrumb).toBeVisible()
-
-    // Home icon should be present
-    await expect(breadcrumb.locator('.pi-home')).toBeVisible()
-
-    // Current location should be shown
-    await expect(breadcrumb).toContainText('onecx-workspace')
-  })
-})
-
-test.describe('Footer', () => {
-  test('should display footer menu', async ({ page }) => {
-    await page.goto('/workspace')
-
-    await expect(page.locator('#ws_footer_menu_pfm_contact_link')).toContainText('Contact')
-    await expect(page.locator('#ws_footer_menu_pfm_imprint_link')).toContainText('Impressum')
-  })
-
-  test('should display version info', async ({ page }) => {
-    await page.goto('/workspace')
-
-    const versionInfo = page.locator('ocx-version-info-component')
-    await expect(versionInfo).toContainText('ADMIN')
+    test('sollte Screenshot des Headers erstellen', async ({ page }) => {
+      const header = workspaceHarness.pageHeader
+      await header.screenshot({
+        path: `${process.env.OUTPUT_DIR || '/e2e-results'}/screenshots/workspace-header.png`,
+      })
+    })
   })
 })

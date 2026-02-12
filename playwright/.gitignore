@@ -1,5 +1,9 @@
-# Playwright tests
-playwright-report/
+node_modules/
+dist/
 .auth/
 test-results/
-platform-info.json
+playwright-report/
+test-artifacts/
+*.log
+.DS_Store
+e2e-results/

@@ -4,12 +4,19 @@ import { UiContainerInterface } from './ui.interface'
 import { HeartbeatConfig } from './health-checker.interface'
 import { E2eContainerInterface } from './e2e.interface'
 
+export interface PlatformTimeouts {
+  startupMs?: number
+  healthCheckMs?: number
+  e2eMs?: number
+}
+
 export interface PlatformConfig {
   /** Whether to run data import after starting services */
   importData?: boolean
   /** Whether to enable logging or not */
   enableLogging?: boolean | string[]
-<<<<<<< HEAD
+  /** Platform timeouts (startup/health/E2E) */
+  timeouts?: PlatformTimeouts
   /** Define the heartbeat config */
 =======
   /**  */
