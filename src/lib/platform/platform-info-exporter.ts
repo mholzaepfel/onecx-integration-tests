@@ -42,7 +42,6 @@ export class PlatformInfoExporter {
       external: {
         shellUi: containers[CONTAINER.SHELL_UI]?.externalUrl ?? '',
         keycloak: containers[CONTAINER.KEYCLOAK]?.externalUrl ?? '',
-        shellBff: containers[CONTAINER.SHELL_BFF]?.externalUrl ?? '',
       },
       containers,
     }
@@ -69,6 +68,11 @@ export class PlatformInfoExporter {
     const allContainers = this.containerRegistry.getAllContainers()
 
     for (const [name, container] of allContainers) {
+      if (isE2eContainer(container)) {
+        // E2E runner has no mapped ports; keep it out of service URL export
+        logger.info('CONTAINER_SKIPPED', `${name} - E2E runner (no service URLs needed)`)
+        continue
+      }
       infos[name] = await this.buildContainerInfo(name, container)
     }
 
@@ -92,7 +96,6 @@ export class PlatformInfoExporter {
     logger.info('For Browser/Debugging (from host):')
     logger.info(`  Shell UI:     ${info.external.shellUi}`)
     logger.info(`  Keycloak:     ${info.external.keycloak}`)
-    logger.info(`  Shell BFF:    ${info.external.shellBff}`)
     logger.info('═'.repeat(70))
   }
 
@@ -117,6 +120,7 @@ export class PlatformInfoExporter {
   /**
    * Export all (log + file)
    */
+
   async exportAll(filePath?: string): Promise<PlatformInfo> {
     const info = await this.getPlatformInfo()
 
@@ -217,6 +221,7 @@ export class PlatformInfoExporter {
 
       return {
         name: containerName,
+        type: 'service',
         host: externalHost,
         port: mappedPort,
         internalPort,
@@ -228,6 +233,7 @@ export class PlatformInfoExporter {
     } catch {
       return {
         name: containerName,
+        type: 'service',
         host: '',
         port: 0,
         internalPort,

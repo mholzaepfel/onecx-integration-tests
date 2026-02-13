@@ -21,5 +21,5 @@ export enum OnecxBff {
 }
 
 export enum OnecxUi {
-  SHELL_UI = `${DOCKER_REPO}/onecx-shell-ui:1.x`,
+  SHELL_UI = `${DOCKER_REPO}/onecx-shell-ui:main`,
 }

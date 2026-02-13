@@ -2,13 +2,14 @@ import { BffContainerInterface } from './bff.interface'
 import { SvcContainerInterface } from './svc.interface'
 import { UiContainerInterface } from './ui.interface'
 import { HeartbeatConfig } from './health-checker.interface'
+import { E2eContainerInterface } from './e2e.interface'
 
 export interface PlatformConfig {
   /** Whether to run data import after starting services */
   importData?: boolean
   /** Whether to enable logging or not */
   enableLogging?: boolean | string[]
-  /**  */
+  /** Define the heartbeat config */
   heartbeat?: HeartbeatConfig
   /** Image overrides - allows testing against different images */
   platformOverrides?: {
@@ -41,5 +42,6 @@ export interface PlatformConfig {
     service?: SvcContainerInterface[]
     bff?: BffContainerInterface[]
     ui?: UiContainerInterface[]
+    e2e?: E2eContainerInterface
   }
 }

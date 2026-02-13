@@ -84,268 +84,289 @@
         },
         "ui": {
           "$ref": "#/definitions/uiOverrides"
-        }
-      }
-    },
-    "containerConfig": {
-      "type": "object",
-      "description": "User-defined container configurations",
-      "properties": {
-        "service": {
-          "type": "array",
-          "description": "Array of service containers",
-          "items": {
-            "$ref": "#/definitions/svcContainer"
-          }
         },
-        "bff": {
-          "type": "array",
-          "description": "Array of BFF containers",
-          "items": {
-            "$ref": "#/definitions/bffContainer"
-          }
-        },
-        "ui": {
-          "type": "array",
-          "description": "Array of UI containers",
-          "items": {
-            "$ref": "#/definitions/uiContainer"
-          }
-        }
-      }
-    },
-    "imageOverride": {
-      "type": "object",
-      "properties": {
-        "image": {
-          "$ref": "#/definitions/dockerImage"
-        }
-      }
-    },
-    "coreOverrides": {
-      "type": "object",
-      "description": "Core service image overrides",
-      "properties": {
-        "postgres": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "keycloak": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "importmanager": {
-          "$ref": "#/definitions/imageOverride"
-        }
-      }
-    },
-    "servicesOverrides": {
-      "type": "object",
-      "description": "Backend service image overrides",
-      "properties": {
-        "iamKc": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "workspace": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "userProfile": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "theme": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "tenant": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "productStore": {
-          "$ref": "#/definitions/imageOverride"
-        },
-        "permission": {
-          "$ref": "#/definitions/imageOverride"
+        "e2e": {
+          "$ref": "#/definitions/e2eContainer",
+          "description": "E2E test container (e.g., Playwright)"
         }
       },
-      "additionalProperties": {
-        "$ref": "#/definitions/imageOverride"
-      }
-    },
-    "bffOverrides": {
-      "type": "object",
-      "description": "BFF service image overrides",
-      "properties": {
-        "shell": {
-          "$ref": "#/definitions/imageOverride"
-        }
-      },
-      "additionalProperties": {
-        "$ref": "#/definitions/imageOverride"
-      }
-    },
-    "uiOverrides": {
-      "type": "object",
-      "description": "UI service image overrides",
-      "properties": {
-        "shell": {
-          "$ref": "#/definitions/imageOverride"
-        }
-      },
-      "additionalProperties": {
-        "$ref": "#/definitions/imageOverride"
-      }
-    },
-    "dockerImage": {
-      "type": "string",
-      "description": "Docker image"
-    },
-    "environmentVariables": {
-      "type": "object",
-      "description": "Environment variables",
-      "additionalProperties": {
-        "type": "string"
-      }
-    },
-    "networkAlias": {
-      "type": "string",
-      "description": "Network alias for the container"
-    },
-    "baseContainer": {
-      "type": "object",
-      "description": "Base container configuration with common properties",
-      "properties": {
-        "image": {
-          "$ref": "#/definitions/dockerImage"
-        },
-        "environments": {
-          "$ref": "#/definitions/environmentVariables"
-        },
-        "networkAlias": {
-          "$ref": "#/definitions/networkAlias"
-        },
-        "healthCheck": {
-          "$ref": "#/definitions/healthCheck"
-        }
-      },
-      "required": ["image", "networkAlias"]
-    },
-    "healthCheck": {
-      "type": "object",
-      "description": "Container health check configuration",
-      "properties": {
-        "test": {
-          "type": "array",
-          "description": "Health check command",
-          "items": {
-            "type": "string"
-          }
-        },
-        "interval": {
-          "type": "number",
-          "description": "Check interval in milliseconds"
-        },
-        "timeout": {
-          "type": "number",
-          "description": "Timeout in milliseconds"
-        },
-        "retries": {
-          "type": "number",
-          "description": "Number of retries"
-        }
-      },
-      "required": ["test"]
-    },
-    "svcDetails": {
-      "type": "object",
-      "description": "Service container specific details",
-      "properties": {
-        "databaseUsername": {
-          "type": "string",
-          "description": "Database username"
-        },
-        "databasePassword": {
-          "type": "string",
-          "description": "Database password"
-        }
-      },
-      "required": ["databaseUsername", "databasePassword"]
-    },
-    "bffDetails": {
-      "type": "object",
-      "description": "BFF container specific details",
-      "properties": {
-        "permissionsProductName": {
-          "type": "string",
-          "description": "Product name for permissions"
-        }
-      },
-      "required": ["permissionsProductName"]
-    },
-    "uiDetails": {
-      "type": "object",
-      "description": "UI container specific details",
-      "properties": {
-        "appBaseHref": {
-          "type": "string",
-          "description": "Application base href"
-        },
-        "appId": {
-          "type": "string",
-          "description": "Application ID"
-        },
-        "productName": {
-          "type": "string",
-          "description": "Product name"
-        }
-      },
-      "required": ["appBaseHref", "appId", "productName"]
-    },
-    "svcContainer": {
-      "description": "Service container configuration",
-      "allOf": [
-        {
-          "$ref": "#/definitions/baseContainer"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "svcDetails": {
-              "$ref": "#/definitions/svcDetails"
+      "containerConfig": {
+        "type": "object",
+        "description": "User-defined container configurations",
+        "properties": {
+          "service": {
+            "type": "array",
+            "description": "Array of service containers",
+            "items": {
+              "$ref": "#/definitions/svcContainer"
             }
           },
-          "required": ["svcDetails"]
-        }
-      ]
-    },
-    "bffContainer": {
-      "description": "BFF container configuration",
-      "allOf": [
-        {
-          "$ref": "#/definitions/baseContainer"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "bffDetails": {
-              "$ref": "#/definitions/bffDetails"
+          "bff": {
+            "type": "array",
+            "description": "Array of BFF containers",
+            "items": {
+              "$ref": "#/definitions/bffContainer"
             }
           },
-          "required": ["bffDetails"]
+          "ui": {
+            "type": "array",
+            "description": "Array of UI containers",
+            "items": {
+              "$ref": "#/definitions/uiContainer"
+            }
+          }
         }
-      ]
-    },
-    "uiContainer": {
-      "description": "UI container configuration",
-      "allOf": [
-        {
-          "$ref": "#/definitions/baseContainer"
+      },
+      "imageOverride": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "$ref": "#/definitions/dockerImage"
+          }
+        }
+      },
+      "coreOverrides": {
+        "type": "object",
+        "description": "Core service image overrides",
+        "properties": {
+          "postgres": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "keycloak": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "importmanager": {
+            "$ref": "#/definitions/imageOverride"
+          }
+        }
+      },
+      "servicesOverrides": {
+        "type": "object",
+        "description": "Backend service image overrides",
+        "properties": {
+          "iamKc": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "workspace": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "userProfile": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "theme": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "tenant": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "productStore": {
+            "$ref": "#/definitions/imageOverride"
+          },
+          "permission": {
+            "$ref": "#/definitions/imageOverride"
+          }
         },
-        {
-          "type": "object",
-          "properties": {
-            "uiDetails": {
-              "$ref": "#/definitions/uiDetails"
+        "additionalProperties": {
+          "$ref": "#/definitions/imageOverride"
+        }
+      },
+      "bffOverrides": {
+        "type": "object",
+        "description": "BFF service image overrides",
+        "properties": {
+          "shell": {
+            "$ref": "#/definitions/imageOverride"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/definitions/imageOverride"
+        }
+      },
+      "uiOverrides": {
+        "type": "object",
+        "description": "UI service image overrides",
+        "properties": {
+          "shell": {
+            "$ref": "#/definitions/imageOverride"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/definitions/imageOverride"
+        }
+      },
+      "dockerImage": {
+        "type": "string",
+        "description": "Docker image"
+      },
+      "environmentVariables": {
+        "type": "object",
+        "description": "Environment variables",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "networkAlias": {
+        "type": "string",
+        "description": "Network alias for the container"
+      },
+      "baseContainer": {
+        "type": "object",
+        "description": "Base container configuration with common properties",
+        "properties": {
+          "image": {
+            "$ref": "#/definitions/dockerImage"
+          },
+          "environments": {
+            "$ref": "#/definitions/environmentVariables"
+          },
+          "networkAlias": {
+            "$ref": "#/definitions/networkAlias"
+          },
+          "healthCheck": {
+            "$ref": "#/definitions/healthCheck"
+          }
+        },
+        "required": ["image", "networkAlias"]
+      },
+      "healthCheck": {
+        "type": "object",
+        "description": "Container health check configuration",
+        "properties": {
+          "test": {
+            "type": "array",
+            "description": "Health check command",
+            "items": {
+              "type": "string"
             }
           },
-          "required": ["uiDetails"]
-        }
-      ]
+          "interval": {
+            "type": "number",
+            "description": "Check interval in milliseconds"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout in milliseconds"
+          },
+          "retries": {
+            "type": "number",
+            "description": "Number of retries"
+          }
+        },
+        "required": ["test"]
+      },
+      "svcDetails": {
+        "type": "object",
+        "description": "Service container specific details",
+        "properties": {
+          "databaseUsername": {
+            "type": "string",
+            "description": "Database username"
+          },
+          "databasePassword": {
+            "type": "string",
+            "description": "Database password"
+          }
+        },
+        "required": ["databaseUsername", "databasePassword"]
+      },
+      "bffDetails": {
+        "type": "object",
+        "description": "BFF container specific details",
+        "properties": {
+          "permissionsProductName": {
+            "type": "string",
+            "description": "Product name for permissions"
+          }
+        },
+        "required": ["permissionsProductName"]
+      },
+      "uiDetails": {
+        "type": "object",
+        "description": "UI container specific details",
+        "properties": {
+          "appBaseHref": {
+            "type": "string",
+            "description": "Application base href"
+          },
+          "appId": {
+            "type": "string",
+            "description": "Application ID"
+          },
+          "productName": {
+            "type": "string",
+            "description": "Product name"
+          }
+        },
+        "required": ["appBaseHref", "appId", "productName"]
+      },
+      "svcContainer": {
+        "description": "Service container configuration",
+        "allOf": [
+          {
+            "$ref": "#/definitions/baseContainer"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "svcDetails": {
+                "$ref": "#/definitions/svcDetails"
+              }
+            },
+            "required": ["svcDetails"]
+          }
+        ]
+      },
+      "bffContainer": {
+        "description": "BFF container configuration",
+        "allOf": [
+          {
+            "$ref": "#/definitions/baseContainer"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bffDetails": {
+                "$ref": "#/definitions/bffDetails"
+              }
+            },
+            "required": ["bffDetails"]
+          }
+        ]
+      },
+      "uiContainer": {
+        "description": "UI container configuration",
+        "allOf": [
+          {
+            "$ref": "#/definitions/baseContainer"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "uiDetails": {
+                "$ref": "#/definitions/uiDetails"
+              }
+            },
+            "required": ["uiDetails"]
+          }
+        ]
+      },
+      "e2eContainer": {
+        "type": "object",
+        "description": "E2E test container configuration (e.g., Playwright)",
+        "properties": {
+          "image": {
+            "$ref": "#/definitions/dockerImage"
+          },
+          "networkAlias": {
+            "$ref": "#/definitions/networkAlias"
+          },
+          "baseUrl": {
+            "type": "string",
+            "description": "Base URL for E2E tests (e.g., http://onecx-shell:8080/<BASEHREF>/)."
+          }
+        },
+        "required": ["image", "networkAlias"]
+      }
     }
   }
 }

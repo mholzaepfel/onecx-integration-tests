@@ -9,11 +9,14 @@ import { CoreContainerStarter } from './core-container-starter'
 import { UserDefinedContainerStarter } from './user-defined-container-starter'
 import { DataImporter } from './data-importer'
 import type { AllowedContainerTypes } from '../models/allowed-container.types'
-import { HealthCheckResult } from '../models/health-checker.interface'
+import { ContainerHealthStatus } from '../models/health-checker.interface'
 import { Logger, LogMessages } from '../utils/logger'
 import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
+import { PlatformInfoExporter } from './platform-info-exporter'
+import { PlatformInfo } from '../models/platform-info-exporter.interface'
+import { E2eResult } from '../models/e2e.interface'
 
 const logger = new Logger('PlatformManager')
 
@@ -34,6 +37,7 @@ export class PlatformManager {
   private healthChecker?: HealthChecker
   private jsonValidator: PlatformConfigJsonValidator
   private validatedConfig?: PlatformConfig
+  private platformInfoExporter?: PlatformInfoExporter
 
   constructor(configFilePath?: string) {
     this.jsonValidator = new PlatformConfigJsonValidator()
@@ -44,7 +48,7 @@ export class PlatformManager {
    * Orchestrates the startup of the default services and the creation of user-defined containers.
    * @param config Optional config override. If not provided, uses validated config from constructor or default config
    */
-  async startContainers(config?: PlatformConfig) {
+  async startContainers(config?: PlatformConfig): Promise<void> {
     // Use validated config from constructor if available, otherwise use provided config or default
     const finalConfig = config || this.validatedConfig || DEFAULT_PLATFORM_CONFIG
 
@@ -107,6 +111,10 @@ export class PlatformManager {
 
     // Start heartbeat monitoring if configured
     this.healthChecker.startHeartbeat(this.containerRegistry.getAllContainers())
+    // Initialize exporter after all containers are started
+    if (this.network) {
+      this.platformInfoExporter = new PlatformInfoExporter(this.containerRegistry, this.network)
+    }
   }
 
   /**
@@ -133,7 +141,7 @@ export class PlatformManager {
   /**
    * Check the health of all running containers
    */
-  async checkAllHealthy(): Promise<HealthCheckResult[]> {
+  async checkAllHealthy(): Promise<ContainerHealthStatus[]> {
     if (!this.healthChecker) {
       throw new Error('HealthChecker not initialized. Call startContainers first.')
     }
@@ -145,7 +153,7 @@ export class PlatformManager {
    * @param containerName
    * @returns
    */
-  async checkHealthy(containerName: string): Promise<HealthCheckResult> {
+  async checkHealthy(containerName: string): Promise<ContainerHealthStatus> {
     if (!this.healthChecker) {
       throw new Error('HealthChecker not initialized. Call startContainers first.')
     }
@@ -261,60 +269,6 @@ export class PlatformManager {
   }
 
   /**
-   * Create user-defined containers using the UserDefinedContainerStarter
-   */
-  private async createContainers(config: PlatformConfig): Promise<void> {
-    if (!this.UserDefinedContainerStarter) {
-      throw new Error('UserDefinedContainerStarter not initialized. Core services must be started first.')
-    }
-
-    try {
-      await this.UserDefinedContainerStarter.createAndStartContainers(config)
-      logger.info(LogMessages.CONTAINER_STARTED, 'User-defined containers created successfully')
-    } catch (error) {
-      logger.error(LogMessages.CONTAINER_FAILED, undefined, error)
-      throw error
-    }
-  }
-
-  /**
-   * Initialize and validate the platform configuration
-   */
-  private initializeConfiguration(configFilePath?: string): void {
-    // Validate configuration file if it exists
-    const validationResult = this.jsonValidator.validateConfigFile(configFilePath)
-
-    if (validationResult.isValid && validationResult.config) {
-      this.validatedConfig = validationResult.config
-      logger.success(LogMessages.CONFIG_FOUND, 'Configuration loaded and validated successfully')
-    } else if (validationResult.errors && validationResult.errors.length > 0) {
-      logger.warn(
-        LogMessages.CONFIG_VALIDATION_WARN,
-        `Configuration validation failed: ${validationResult.errors.join(', ')}`
-      )
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'Using default configuration')
-    } else {
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found, using default configuration')
-    }
-  }
-
-  /**
-   * Stop a container
-   * @param key
-   */
-  private async stopContainer(key: string | CONTAINER) {
-    const container = this.getContainer(key)
-    const containerKey = typeof key === 'string' ? key : String(key)
-    try {
-      await container?.stop()
-      logger.success(LogMessages.CONTAINER_STOPPED, containerKey)
-    } catch (error) {
-      logger.error(LogMessages.CONTAINER_FAILED, containerKey, error)
-      throw error
-    }
-  }
-
-  /**
    * Get platform info exporter for URL access
    */
   getInfoExporter(): PlatformInfoExporter | undefined {
@@ -366,5 +320,59 @@ export class PlatformManager {
     }
 
     return await this.UserDefinedContainerStarter.runE2eTests(config)
+  }
+
+  /**
+   * Create user-defined containers using the UserDefinedContainerStarter
+   */
+  private async createContainers(config: PlatformConfig): Promise<void> {
+    if (!this.UserDefinedContainerStarter) {
+      throw new Error('UserDefinedContainerStarter not initialized. Core services must be started first.')
+    }
+
+    try {
+      await this.UserDefinedContainerStarter.createAndStartContainers(config)
+      logger.info(LogMessages.CONTAINER_STARTED, 'User-defined containers created successfully')
+    } catch (error) {
+      logger.error(LogMessages.CONTAINER_FAILED, undefined, error)
+      throw error
+    }
+  }
+
+  /**
+   * Initialize and validate the platform configuration
+   */
+  private initializeConfiguration(configFilePath?: string): void {
+    // Validate configuration file if it exists
+    const validationResult = this.jsonValidator.validateConfigFile(configFilePath)
+
+    if (validationResult.isValid && validationResult.config) {
+      this.validatedConfig = validationResult.config
+      logger.success(LogMessages.CONFIG_FOUND, 'Configuration loaded and validated successfully')
+    } else if (validationResult.errors && validationResult.errors.length > 0) {
+      logger.warn(
+        LogMessages.CONFIG_VALIDATION_WARN,
+        `Configuration validation failed: ${validationResult.errors.join(', ')}`
+      )
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'Using default configuration')
+    } else {
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found, using default configuration')
+    }
+  }
+
+  /**
+   * Stop a container
+   * @param key
+   */
+  private async stopContainer(key: string | CONTAINER) {
+    const container = this.getContainer(key)
+    const containerKey = typeof key === 'string' ? key : String(key)
+    try {
+      await container?.stop()
+      logger.success(LogMessages.CONTAINER_STOPPED, containerKey)
+    } catch (error) {
+      logger.error(LogMessages.CONTAINER_FAILED, containerKey, error)
+      throw error
+    }
   }
 }

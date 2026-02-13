@@ -6,6 +6,7 @@ import { HealthCheckableContainer } from '../../models/health-checkable-containe
 import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
 import { buildHealthCheckUrl } from '../../utils/health-check.utils'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
+import { getCommonEnvironmentVariables } from 'src/lib/utils/common-env.utils'
 
 export class BffContainer extends GenericContainer {
   private details: BffDetails = {
@@ -16,10 +17,7 @@ export class BffContainer extends GenericContainer {
 
   protected loggingEnabled = false
 
-  constructor(
-    image: string,
-    private readonly keycloakContainer: StartedOnecxKeycloakContainer
-  ) {
+  constructor(image: string, private readonly keycloakContainer: StartedOnecxKeycloakContainer) {
     super(image)
   }
 
@@ -66,14 +64,7 @@ export class BffContainer extends GenericContainer {
     this.withEnvironment({
       ...this.environment,
       ONECX_PERMISSIONS_PRODUCT_NAME: this.details.permissionsProductName,
-      KC_REALM: `${this.keycloakContainer.getRealm()}`,
-      QUARKUS_OIDC_AUTH_SERVER_URL: `http://${this.keycloakContainer.getNetworkAliases()[0]}:${this.keycloakContainer.getPort()}/realms/${this.keycloakContainer.getRealm()}`,
-      QUARKUS_OIDC_TOKEN_ISSUER: `http://${this.keycloakContainer.getNetworkAliases()[0]}/realms/${this.keycloakContainer.getRealm()}`,
-      TKIT_SECURITY_AUTH_ENABLED: 'false',
-      TKIT_RS_CONTEXT_TENANT_ID_MOCK_ENABLED: 'false',
-      TKIT_LOG_JSON_ENABLED: 'false',
-      TKIT_OIDC_HEALTH_ENABLED: 'false',
-    })
+    }).withEnvironment(getCommonEnvironmentVariables(this.keycloakContainer))
 
     if (this.loggingEnabled) {
       this.withLogConsumer((stream) => {
@@ -84,8 +75,7 @@ export class BffContainer extends GenericContainer {
     }
 
     this.withExposedPorts(this.port)
-
-      .withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))
+    .withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))
     return new StartedBffContainer(
       await super.start(),
       this.details,
