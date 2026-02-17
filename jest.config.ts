@@ -1,6 +1,5 @@
 export default {
   displayName: 'integration-tests',
-  setupFiles: ['<rootDir>/src/test-setup.ts'],
   snapshotFormat: { escapeString: true, printBasicPrototype: true },
   testEnvironment: 'node',
   transform: {
@@ -9,17 +8,4 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   testMatch: ['<rootDir>/src/lib/**/*.spec.ts'],
   coverageDirectory: `<rootDir>/reports/coverage`,
-  collectCoverage: true,
-  coverageReporters: ['json', 'lcov', 'text', 'text-summary', 'html'],
-  reporters: [
-    'default',
-    [
-      'jest-sonar',
-      {
-        outputDirectory: 'reports',
-        outputName: 'sonarqube_report.xml',
-        reportedFilePath: 'absolute',
-      },
-    ],
-  ],
 }

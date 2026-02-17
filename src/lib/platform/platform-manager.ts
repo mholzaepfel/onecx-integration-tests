@@ -8,7 +8,7 @@ import { HealthChecker } from './health-checker'
 import { CoreContainerStarter } from './core-container-starter'
 import { UserDefinedContainerStarter } from './user-defined-container-starter'
 import { DataImporter } from './data-importer'
-import type { AllowedContainerTypes } from '../models/allowed-container.types'
+import type { AllowedContainerTypes } from '../models/allowed-container.type'
 import { ContainerHealthStatus } from '../models/health-checker.interface'
 import { Logger, LogMessages } from '../utils/logger'
 import { PlatformConfigJsonValidator } from './json-validator'
@@ -102,7 +102,7 @@ export class PlatformManager {
     }
 
     // Import data if configured
-    if (finalConfig.importData && this.network && this.dataImporter) {
+    if (finalConfig.importData && this.dataImporter) {
       this.dataImporter.createContainerInfo(this.containerRegistry.getAllContainers())
       await this.dataImporter.importDefaultData(this.network, this.containerRegistry.getAllContainers(), finalConfig)
     }
@@ -111,10 +111,9 @@ export class PlatformManager {
 
     // Start heartbeat monitoring if configured
     this.healthChecker.startHeartbeat(this.containerRegistry.getAllContainers())
+
     // Initialize exporter after all containers are started
-    if (this.network) {
-      this.platformInfoExporter = new PlatformInfoExporter(this.containerRegistry, this.network)
-    }
+    this.platformInfoExporter = new PlatformInfoExporter(this.containerRegistry, this.network)
   }
 
   /**

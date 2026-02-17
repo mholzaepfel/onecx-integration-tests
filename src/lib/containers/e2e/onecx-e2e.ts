@@ -53,9 +53,6 @@ export class E2eContainer extends GenericContainer {
     // This waits for the container to stop with exit code 0
     this.withWaitStrategy(Wait.forOneShotStartup())
 
-    // Set a reasonable startup timeout (10 minutes for E2E tests)
-    this.withStartupTimeout(10 * 60 * 1000)
-
     // Enable logging if configured
     if (this.loggingEnabled) {
       this.withLogConsumer((stream) => {

@@ -15,7 +15,7 @@ export interface ValidationResult {
 export class PlatformConfigJsonValidator {
   private ajv: InstanceType<typeof Ajv>
   private readonly CONFIG_FILE_PATTERN = /integration-tests\.json$/
-  private readonly SEARCH_ROOT = path.join(__dirname, '../../../')
+  private readonly SEARCH_ROOT = process.cwd() // Use current working directory as project root
   private readonly SCHEMA = 'integration-tests.schema.json'
 
   constructor() {

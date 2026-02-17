@@ -6,7 +6,7 @@ import { HealthCheckableContainer } from '../../models/health-checkable-containe
 import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
 import { buildHealthCheckUrl } from '../../utils/health-check.utils'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
-import { getCommonEnvironmentVariables } from 'src/lib/utils/common-env.utils'
+import { getCommonEnvironmentVariables } from '../../utils/common-env.utils'
 
 export class BffContainer extends GenericContainer {
   private details: BffDetails = {
@@ -74,8 +74,7 @@ export class BffContainer extends GenericContainer {
       })
     }
 
-    this.withExposedPorts(this.port)
-    .withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))
+    this.withExposedPorts(this.port).withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))
     return new StartedBffContainer(
       await super.start(),
       this.details,

@@ -1,14 +1,13 @@
 import { StartedNetwork } from 'testcontainers'
-import Dockerode from 'dockerode'
 import * as path from 'path'
 import { ContainerRegistry } from './container-registry'
 import { CONTAINER } from '../models/container.enum'
-import { AllowedContainerTypes } from '../models/allowed-container.types'
+import { PortAwareContainer } from '../models/allowed-container.type'
 import { getE2eOutputPath } from '../config/e2e-constants'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
 import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
-import { getContainerId, getInternalPort, isE2eContainer, normalizeHost } from '../utils/container-utils'
+import { getInternalPort, isPortAwareContainer, isE2eContainer } from '../utils/container-utils'
 
 const logger = new Logger('PlatformInfoExporter')
 
@@ -55,7 +54,26 @@ export class PlatformInfoExporter {
     if (!container) {
       return undefined
     }
-    return await this.buildContainerInfo(containerName, container)
+
+    if (isE2eContainer(container)) {
+      return {
+        name: containerName,
+        type: 'e2e',
+        running: true,
+        note: 'E2E runner has no service port mapping',
+      }
+    }
+
+    if (isPortAwareContainer(container)) {
+      return await this.buildContainerInfo(containerName, container)
+    }
+
+    return {
+      name: containerName,
+      type: 'custom',
+      running: true,
+      note: 'Container does not expose getPort()',
+    }
   }
 
   /**
@@ -69,11 +87,16 @@ export class PlatformInfoExporter {
 
     for (const [name, container] of allContainers) {
       if (isE2eContainer(container)) {
-        // E2E runner has no mapped ports; keep it out of service URL export
-        logger.info('CONTAINER_SKIPPED', `${name} - E2E runner (no service URLs needed)`)
+        logger.info('CONTAINER_SKIPPED', `${name} - E2E runner has no service port mapping`)
         continue
       }
-      infos[name] = await this.buildContainerInfo(name, container)
+
+      if (isPortAwareContainer(container)) {
+        infos[name] = await this.buildContainerInfo(name, container)
+        continue
+      }
+
+      logger.info('CONTAINER_SKIPPED', `${name} - Container does not expose getPort()`)
     }
 
     return infos
@@ -121,89 +144,12 @@ export class PlatformInfoExporter {
    * Export all (log + file)
    */
 
-  async exportAll(filePath?: string): Promise<PlatformInfo> {
-    const info = await this.getPlatformInfo()
-
+  async exportAll(filePath?: string): Promise<void> {
     await this.logPlatformInfo()
     await this.writePlatformInfoFile(filePath)
-
-    return info
   }
 
-  /**
-   * Get all environment variables from a specific container
-   * Useful for debugging environment variable configuration
-   * @param containerName Name of the container (e.g., 'onecx-shell-ui')
-   * @returns Map of environment variable name to value, or undefined if container not found
-   */
-  async getContainerEnvironment(containerName: string): Promise<Map<string, string> | undefined> {
-    const container = this.containerRegistry.getContainer(containerName)
-    if (!container) {
-      logger.warn(`Container ${containerName} not found in registry`)
-      return undefined
-    }
-
-    try {
-      const containerId = getContainerId(container)
-      if (!containerId) {
-        logger.warn(`Could not get container ID for ${containerName}`)
-        return undefined
-      }
-
-      const dockerode = new Dockerode()
-      const dockerContainer = dockerode.getContainer(containerId)
-      const inspectData = await dockerContainer.inspect()
-
-      const envMap = new Map<string, string>()
-      const envArray = inspectData.Config?.Env || []
-
-      // Parse environment variables from "KEY=VALUE" format
-      for (const envVar of envArray) {
-        const [key, ...valueParts] = envVar.split('=')
-        const value = valueParts.join('=') // Handle values with '=' in them
-        if (key) {
-          envMap.set(key, value)
-        }
-      }
-
-      return envMap
-    } catch (err) {
-      logger.error(`Failed to get environment for container ${containerName}: ${err}`)
-      return undefined
-    }
-  }
-
-  /**
-   * Log all environment variables for a specific container
-   * @param containerName Name of the container (e.g., 'onecx-shell-ui')
-   */
-  async logContainerEnvironment(containerName: string): Promise<void> {
-    logger.info('─'.repeat(70))
-    logger.info(`Environment Variables for: ${containerName}`)
-    logger.info('─'.repeat(70))
-
-    const envMap = await this.getContainerEnvironment(containerName)
-    if (!envMap) {
-      logger.warn(`Could not retrieve environment for ${containerName}`)
-      return
-    }
-
-    if (envMap.size === 0) {
-      logger.info('No environment variables found')
-    } else {
-      // Sort alphabetically for easier reading
-      const sortedKeys = Array.from(envMap.keys()).sort()
-      for (const key of sortedKeys) {
-        const value = envMap.get(key)
-        logger.info(`  ${key}=${value}`)
-      }
-      logger.info('')
-      logger.info(`Total: ${envMap.size} environment variables`)
-    }
-    logger.info('─'.repeat(70))
-  }
-
-  private async buildContainerInfo(containerName: string, container: AllowedContainerTypes): Promise<ContainerInfo> {
+  private async buildContainerInfo(containerName: string, container: PortAwareContainer): Promise<ContainerInfo> {
     // Get internal port from container
     const internalPort = getInternalPort(container)
 
@@ -211,24 +157,15 @@ export class PlatformInfoExporter {
       const mappedPort = container.getMappedPort(internalPort)
       const host = container.getHost()
 
-      // Use localhost for external URLs when host is Docker bridge IP
-      // Docker bridge IPs (172.17.x.x) are often not reachable from the host
-      const externalHost = normalizeHost(host)
-
-      // Get environment variables
-      const envMap = await this.getContainerEnvironment(containerName)
-      const environment = envMap ? Object.fromEntries(envMap) : undefined
-
       return {
         name: containerName,
         type: 'service',
-        host: externalHost,
+        host: host,
         port: mappedPort,
         internalPort,
         internalUrl: `http://${containerName}:${internalPort}`,
-        externalUrl: `http://${externalHost}:${mappedPort}`,
+        externalUrl: `http://${host}:${mappedPort}`,
         running: true,
-        environment,
       }
     } catch {
       return {

@@ -14,3 +14,5 @@ export type AllowedContainerTypes =
   | StartedUiContainer
   | StartedShellUiContainer
   | StartedE2eContainer
+
+export type PortAwareContainer = Exclude<AllowedContainerTypes, StartedE2eContainer>

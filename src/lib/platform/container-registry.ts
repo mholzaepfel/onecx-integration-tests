@@ -1,5 +1,5 @@
 import { CONTAINER } from '../models/container.enum'
-import type { AllowedContainerTypes } from '../models/allowed-container.types'
+import type { AllowedContainerTypes } from '../models/allowed-container.type'
 import { Logger, LogMessages } from '../utils/logger'
 
 const logger = new Logger('ContainerRegistry')

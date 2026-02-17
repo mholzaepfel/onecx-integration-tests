@@ -3,11 +3,6 @@
   "platformConfig": {
     "importData": true,
     "enableLogging": true,
-    "timeouts": {
-      "startupMs": 300000,
-      "healthCheckMs": 120000,
-      "e2eMs": 600000
-    },
     "heartbeat": { "enabled": true },
     "container": {
       "e2e": {
