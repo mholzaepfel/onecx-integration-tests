@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import { loggingEnabled } from './logging-enable'
 import { PlatformConfig } from '../models/platform-config.interface'
 
@@ -67,6 +69,11 @@ export const LogMessages = {
 } as const
 
 export type LogMessageKey = keyof typeof LogMessages
+export type LoggerLevel = 'info' | 'warn' | 'error' | 'success'
+export interface LoggerOptions {
+  filePath?: string
+  enableConsole?: boolean
+}
 
 /**
  * Structured logger with timestamp, class and context information
@@ -75,9 +82,23 @@ export class Logger {
   private static loggingEnabled = true
   private static platformConfig: PlatformConfig | undefined = undefined
   private className: string
+  private writer?: fs.WriteStream
+  private enableConsole: boolean
 
-  constructor(className: string) {
+  constructor(className: string, options?: string | LoggerOptions) {
     this.className = className
+    this.enableConsole = true
+
+    const resolvedOptions: LoggerOptions = typeof options === 'string' ? { filePath: options } : options ?? {}
+    if (typeof resolvedOptions.enableConsole === 'boolean') {
+      this.enableConsole = resolvedOptions.enableConsole
+    }
+
+    const logFilePath = resolvedOptions.filePath
+    if (logFilePath) {
+      fs.mkdirSync(path.dirname(logFilePath), { recursive: true })
+      this.writer = fs.createWriteStream(logFilePath, { flags: 'a' })
+    }
   }
 
   /**
@@ -123,52 +144,99 @@ export class Logger {
     return `${this.className}: ${timestamp} [${level}] ${this.className} ${message}${contextPart}`
   }
 
+  private writeToFile(line: string): void {
+    if (this.writer) {
+      this.writer.write(`${line}\n`)
+    }
+  }
+
+  private appendContext(context: string | undefined, suffix: string): string {
+    return context ? `${context} - ${suffix}` : suffix
+  }
+
+  private emit(level: LoggerLevel, message: string, context?: string, error?: unknown): void {
+    if (!this.loggingEnabled()) return
+
+    const formattedMessage = this.formatMessage(level.toUpperCase(), message, context)
+
+    if (this.enableConsole) {
+      switch (level) {
+        case 'success':
+          console.log(`\x1b[32m${formattedMessage}\x1b[0m`)
+          break
+        case 'warn':
+          console.warn(`\x1b[33m${formattedMessage}\x1b[0m`)
+          break
+        case 'error':
+          if (error) {
+            console.error(`\x1b[31m${formattedMessage}\x1b[0m`, error)
+          } else {
+            console.error(`\x1b[31m${formattedMessage}\x1b[0m`)
+          }
+          break
+        case 'info':
+        default:
+          console.log(formattedMessage)
+          break
+      }
+    }
+
+    if (level === 'error' && error) {
+      this.writeToFile(`${formattedMessage} ${String(error)}`)
+      return
+    }
+
+    this.writeToFile(formattedMessage)
+  }
+
+  log(level: LoggerLevel, message: string, context?: string, error?: unknown): void {
+    this.emit(level, message, context, error)
+  }
+
+  close(): Promise<void> {
+    if (!this.writer) return Promise.resolve()
+    return new Promise((resolve) => {
+      this.writer?.end(resolve)
+      this.writer = undefined
+    })
+  }
+
   /**
    * Log info message - accepts LogMessages values only
    */
   info(message: string, context?: string): void {
-    if (!this.loggingEnabled()) return
-    console.log(this.formatMessage('INFO', message, context))
+    this.emit('info', message, context)
   }
 
   /**
    * Log success message - accepts LogMessages values only
    */
   success(message: string, context?: string): void {
-    if (!this.loggingEnabled()) return
-    console.log(`\x1b[32m${this.formatMessage('SUCCESS', message, context)}\x1b[0m`)
+    this.emit('success', message, context)
   }
 
   /**
    * Log error message - accepts LogMessages values only
    */
   error(message: string, context?: string, error?: unknown): void {
-    if (!this.loggingEnabled()) return
-    const formattedMessage = this.formatMessage('ERROR', message, context)
-    if (error) {
-      console.error(`\x1b[31m${formattedMessage}\x1b[0m`, error)
-    } else {
-      console.error(`\x1b[31m${formattedMessage}\x1b[0m`)
-    }
+    this.emit('error', message, context, error)
   }
 
   /**
    * Log warning message - accepts LogMessages values only
    */
   warn(message: string, context?: string): void {
-    if (!this.loggingEnabled()) return
-    console.warn(`\x1b[33m${this.formatMessage('WARN', message, context)}\x1b[0m`)
+    this.emit('warn', message, context)
   }
 
   /**
    * Log based on HTTP status code
    */
   status(message: string, statusCode: number, context?: string): void {
-    if (!this.loggingEnabled()) return
     if ([200, 201].includes(statusCode)) {
-      this.success(message, `${context} - Status: ${statusCode}`)
+      this.log('success', message, this.appendContext(context, `Status: ${statusCode}`))
     } else {
-      this.error(message, `${context} - Status: ${statusCode}`)
+      this.log('error', message, this.appendContext(context, `Status: ${statusCode}`))
     }
   }
 
@@ -176,8 +244,7 @@ export class Logger {
    * Log duration of an operation
    */
   logDuration(message: string, durationMs: number, context?: string): void {
-    if (!this.loggingEnabled()) return
     const durationSec = (durationMs / 1000).toFixed(1)
-    this.success(message, `${context} - Duration: ${durationSec}s`)
+    this.log('success', message, this.appendContext(context, `Duration: ${durationSec}s`))
   }
 }

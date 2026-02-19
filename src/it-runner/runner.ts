@@ -2,7 +2,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { ArtefactsManager } from './artefacts/artefacts-manager'
 import { CliOptions } from './types/cli-options.interface'
-import { RunnerLogger } from './logging/logger'
 import { EXIT_CODES } from './types/exit-codes'
 import { PlatformManagerAdapter } from './platform/platform-adapter'
 import { PlatformAdapter } from './types/platform-adapter.interface'
@@ -10,12 +9,12 @@ import { RunSummary } from './types/run-summary.interface'
 import { E2eExecutionResult } from './types/results.interface'
 import { ContainerWithLogs } from './types/container-logs.interface'
 import { PlatformConfig } from '../lib/models/platform-config.interface'
-import { LogLevel } from './types/logging.type'
+import { Logger, LoggerLevel } from '../lib/utils/logger'
 
 export class IntegrationTestsRunner {
   private options: CliOptions
   private artefacts: ArtefactsManager
-  private logger: RunnerLogger
+  private logger: Logger
   private platformAdapter: PlatformAdapter
   private startTime: number
   private runId: string
@@ -30,7 +29,7 @@ export class IntegrationTestsRunner {
     this.runId = this.generateRunId()
     this.artefacts = new ArtefactsManager(undefined, this.runId)
     const logPath = options.captureLogsToFile ? this.artefacts.getRunnerLogPath() : undefined
-    this.logger = new RunnerLogger(logPath)
+    this.logger = new Logger('IntegrationTestsRunner', logPath)
     const factory = adapterFactory ?? (() => new PlatformManagerAdapter())
     this.platformAdapter = factory()
     this.startTime = Date.now()
@@ -197,7 +196,7 @@ export class IntegrationTestsRunner {
     process.on('SIGTERM', () => handler('SIGTERM'))
   }
 
-  private log(level: LogLevel, message: string): void {
+  private log(level: LoggerLevel, message: string): void {
     this.logger.log(level, message)
   }
 
