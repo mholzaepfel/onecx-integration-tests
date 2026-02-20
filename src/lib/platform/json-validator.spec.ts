@@ -16,7 +16,7 @@ describe('PlatformConfigJsonValidator', () => {
   describe('validateConfigFile', () => {
     describe('success scenarios', () => {
       it('should read config file correctly when a valid full path is provided', () => {
-        const mockConfigPath = 'full/path/to/integration-tests.json'
+        const mockConfigPath = 'full/path/to/platform.json'
         const mockConfig = {
           platformConfig: {
             importData: true,
@@ -67,10 +67,10 @@ describe('PlatformConfigJsonValidator', () => {
       })
 
       it('should find config recursively', () => {
-        const mockRoot = validator.getDefaultConfigPath()
+        const mockRoot = process.cwd()
         const mockSubDir = 'folder1'
         const mockSubDirPath = path.join(mockRoot, mockSubDir)
-        const expectedFilePath = path.join(mockSubDirPath, 'integration-tests.json')
+        const expectedFilePath = path.join(mockSubDirPath, 'platform.json')
         const mockConfig = {
           platformConfig: {
             importData: true,
@@ -97,7 +97,7 @@ describe('PlatformConfigJsonValidator', () => {
             return [{ name: mockSubDir, isDirectory: () => true, isFile: () => false }]
           }
           if (p === mockSubDirPath) {
-            return [{ name: 'integration-tests.json', isDirectory: () => false, isFile: () => true }]
+            return [{ name: 'platform.json', isDirectory: () => false, isFile: () => true }]
           }
           return []
         })
@@ -122,7 +122,7 @@ describe('PlatformConfigJsonValidator', () => {
     describe('validation and error scenarios', () => {
       describe('schema validation failures', () => {
         it('should fail when required platformConfig is missing', () => {
-          const mockConfigPath = 'integration-tests.json'
+          const mockConfigPath = 'platform.json'
           const invalidConfig = {
             wrongRootKey: {
               importData: true,
@@ -155,7 +155,7 @@ describe('PlatformConfigJsonValidator', () => {
         })
 
         it('should fail when heartbeat.interval is invalid (less than minimum)', () => {
-          const mockConfigPath = 'integration-tests.json'
+          const mockConfigPath = 'platform.json'
           const invalidConfig = {
             platformConfig: {
               heartbeat: {
@@ -202,7 +202,7 @@ describe('PlatformConfigJsonValidator', () => {
 
       describe('system and parsing errors', () => {
         it('should return error for invalid JSON syntax', () => {
-          const mockPath = 'bad.integration-tests.json'
+          const mockPath = 'platform.json'
           ;(fs.existsSync as jest.Mock).mockReturnValue(true)
           ;(fs.readFileSync as jest.Mock).mockReturnValue('invalid { json')
           const result = validator.validateConfigFile(mockPath)

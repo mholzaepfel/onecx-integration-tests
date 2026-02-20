@@ -1,4 +1,4 @@
-import { AllowedContainerTypes } from '../models/allowed-container.types'
+import { AllowedContainerTypes } from '../models/types/allowed-container.type'
 import { HealthChecker } from './health-checker'
 
 describe('HealthChecker', () => {

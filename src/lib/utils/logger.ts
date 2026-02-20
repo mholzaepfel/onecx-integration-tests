@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { loggingEnabled } from './logging-enable'
-import { PlatformConfig } from '../models/platform-config.interface'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 
 /**
  * Centralized logging messages

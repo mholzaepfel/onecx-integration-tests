@@ -1,6 +1,6 @@
-import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
+import { StartedOnecxPostgresContainer } from '../../containers/core/onecx-postgres'
 import { Environment, HealthCheck } from 'testcontainers/build/types'
-import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
+import { StartedOnecxKeycloakContainer } from '../../containers/core/onecx-keycloak'
 
 export interface SvcDetails {
   databaseUsername: string

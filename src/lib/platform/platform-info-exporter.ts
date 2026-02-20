@@ -1,10 +1,10 @@
 import { StartedNetwork } from 'testcontainers'
 import { ContainerRegistry } from './container-registry'
-import { CONTAINER } from '../models/container.enum'
-import { AllowedContainerTypes } from '../models/allowed-container.types'
+import { CONTAINER } from '../models/enums/container.enum'
+import { AllowedContainerTypes } from '../models/types/allowed-container.type'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
-import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
+import { PlatformInfo, ContainerInfo } from '../models/interfaces/platform-info-exporter.interface'
 import { DEFAULT_ARTEFACTS_ROOT, RUNS_DIR } from '../config/artefacts'
 
 const logger = new Logger('PlatformInfoExporter')

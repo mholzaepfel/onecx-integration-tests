@@ -1,7 +1,7 @@
 import Ajv from 'ajv'
 import * as fs from 'fs'
 import * as path from 'path'
-import { PlatformConfig } from '../models/platform-config.interface'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 import { Logger, LogMessages } from '../utils/logger'
 
 const logger = new Logger('PlatformConfigJsonValidator')
@@ -14,8 +14,9 @@ export interface ValidationResult {
 
 export class PlatformConfigJsonValidator {
   private ajv: InstanceType<typeof Ajv>
-  private readonly CONFIG_FILE_PATTERN = /integration-tests\.json$/
+  private readonly CONFIG_FILE_PATTERN = /^platform\.json$/
   private readonly SEARCH_ROOT = process.cwd() // Use current working directory as project root
+  private readonly DEFAULT_CONFIG_RELATIVE_PATH = path.join('integration-tests', 'platform', 'platform.json')
   private readonly SCHEMA = 'integration-tests.schema.json'
 
   constructor() {
@@ -23,7 +24,7 @@ export class PlatformConfigJsonValidator {
   }
 
   /**
-   * Validates the integration-tests.json file against the schema
+   * Validates the platform.json file against the schema
    * @param configFilePath Optional path to config file. If not provided, searches in default location
    * @returns ValidationResult with config data if valid
    */
@@ -35,7 +36,7 @@ export class PlatformConfigJsonValidator {
         return {
           isValid: false,
           errors: [
-            `No valid config file found. File must be named 'integration-tests.json' or end with '.integration-tests.json' and be located anywhere in the libs/integration-tests directory.`,
+            `No valid config file found. Expected file name 'platform.json' at integration-tests/platform/platform.json.`,
           ],
         }
       }
@@ -47,7 +48,7 @@ export class PlatformConfigJsonValidator {
       const config = this.parseConfigFile(configContent, configPath)
 
       // Load schema
-      const schemaPath = path.join(__dirname, `../models/${this.SCHEMA}`)
+      const schemaPath = path.join(__dirname, `../models/schemas/${this.SCHEMA}`)
       const schemaContent = fs.readFileSync(schemaPath, 'utf8')
       const schema = JSON.parse(schemaContent)
 
@@ -85,13 +86,18 @@ export class PlatformConfigJsonValidator {
   private resolveConfigPath(configFilePath?: string): string | null {
     if (configFilePath) {
       // Check if provided path meets requirements
-      if (!this.CONFIG_FILE_PATTERN.test(configFilePath)) {
+      if (!this.CONFIG_FILE_PATTERN.test(path.basename(configFilePath))) {
         return null
       }
 
       if (fs.existsSync(configFilePath)) {
         return configFilePath
       }
+    }
+
+    const defaultConfigPath = path.join(this.SEARCH_ROOT, this.DEFAULT_CONFIG_RELATIVE_PATH)
+    if (fs.existsSync(defaultConfigPath)) {
+      return defaultConfigPath
     }
 
     // Search recursively in the libs/integration-tests directory
@@ -187,13 +193,13 @@ export class PlatformConfigJsonValidator {
    * Checks if a file path follows the naming convention
    */
   isValidConfigFileName(filePath: string): boolean {
-    return this.CONFIG_FILE_PATTERN.test(filePath)
+    return this.CONFIG_FILE_PATTERN.test(path.basename(filePath))
   }
 
   /**
    * Gets the search root directory path
    */
   getDefaultConfigPath(): string {
-    return this.SEARCH_ROOT
+    return path.join(this.SEARCH_ROOT, this.DEFAULT_CONFIG_RELATIVE_PATH)
   }
 }

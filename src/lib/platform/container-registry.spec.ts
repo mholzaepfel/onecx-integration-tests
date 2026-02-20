@@ -15,7 +15,7 @@ jest.mock('../utils/logger', () => ({
 
 import { StartedBffContainer } from '../containers/basic/onecx-bff'
 import { StartedUiContainer } from '../containers/basic/onecx-ui'
-import { AllowedContainerTypes } from '../models/allowed-container.types'
+import { AllowedContainerTypes } from '../models/types/allowed-container.type'
 import { ContainerRegistry } from './container-registry'
 
 describe('ContainerRegistry', () => {

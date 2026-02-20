@@ -1,5 +1,5 @@
 import { PlatformManager } from './platform-manager'
-import { PlatformConfig } from '../models/platform-config.interface'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 
 const mockValidator = {
   validateConfigFile: jest.fn(),

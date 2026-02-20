@@ -1,6 +1,6 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
 import { HealthCheck } from 'testcontainers/build/types'
-import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
+import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 
 interface OnecxPostgresDetails {

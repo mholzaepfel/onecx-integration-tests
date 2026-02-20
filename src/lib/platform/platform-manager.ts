@@ -1,22 +1,21 @@
 import { Network, StartedNetwork } from 'testcontainers'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
-import { CONTAINER } from '../models/container.enum'
-import { PlatformConfig } from '../models/platform-config.interface'
-import { E2eResult } from '../models/e2e.interface'
-import { DEFAULT_PLATFORM_CONFIG } from '../config/default-platform-config'
+import { CONTAINER } from '../models/enums/container.enum'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
+import { E2eResult } from '../models/interfaces/e2e.interface'
 import { ImageResolver } from './image-resolver'
 import { HealthChecker } from './health-checker'
 import { CoreContainerStarter } from './core-container-starter'
 import { UserDefinedContainerStarter } from './user-defined-container-starter'
 import { DataImporter } from './data-importer'
-import type { AllowedContainerTypes } from '../models/allowed-container.types'
-import { ContainerHealthStatus } from '../models/health-checker.interface'
+import type { AllowedContainerTypes } from '../models/types/allowed-container.type'
+import { ContainerHealthStatus } from '../models/interfaces/health-checker.interface'
 import { Logger, LogMessages } from '../utils/logger'
 import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
 import { PlatformInfoExporter } from './platform-info-exporter'
-import { PlatformInfo } from '../models/platform-info-exporter.interface'
+import { PlatformInfo } from '../models/interfaces/platform-info-exporter.interface'
 
 const logger = new Logger('PlatformManager')
 
@@ -46,11 +45,13 @@ export class PlatformManager {
 
   /**
    * Orchestrates the startup of the default services and the creation of user-defined containers.
-   * @param config Optional config override. If not provided, uses validated config from constructor or default config
+   * @param config Optional config override. If not provided, uses validated config from constructor
    */
   async startContainers(config?: PlatformConfig): Promise<void> {
-    // Use validated config from constructor if available, otherwise use provided config or default
-    const finalConfig = config || this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+    const finalConfig = config || this.validatedConfig
+    if (!finalConfig) {
+      throw new Error('No valid platform configuration found. Expected integration-tests/platform/platform.json')
+    }
 
     // Configure logger based on platform config
     logger.setPlatformConfig(finalConfig)
@@ -301,9 +302,9 @@ export class PlatformManager {
         LogMessages.CONFIG_VALIDATION_WARN,
         `Configuration validation failed: ${validationResult.errors.join(', ')}`
       )
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'Using default configuration')
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No valid platform configuration found')
     } else {
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found, using default configuration')
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found')
     }
   }
 
@@ -341,8 +342,7 @@ export class PlatformManager {
    * Check if E2E tests are configured
    */
   hasE2eConfig(): boolean {
-    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
-    return !!config.container?.e2e
+    return !!this.validatedConfig?.container?.e2e
   }
 
   /**
@@ -352,7 +352,10 @@ export class PlatformManager {
    * @returns E2E result with exit code, or undefined if no E2E configured
    */
   async runE2eTests(): Promise<E2eResult | undefined> {
-    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+    const config = this.validatedConfig
+    if (!config) {
+      throw new Error('No valid platform configuration found. Expected integration-tests/platform/platform.json')
+    }
 
     if (!config.container?.e2e) {
       return undefined
