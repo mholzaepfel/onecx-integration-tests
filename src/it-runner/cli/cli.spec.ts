@@ -1,24 +1,27 @@
 import { parseCliArgs } from './cli'
 
+/**
+ * Validates supported CLI flag parsing and error handling.
+ */
 describe('parseCliArgs', () => {
-  it('parses boolean, string, and number flags', () => {
+  it('parses boolean flags', () => {
     const options = parseCliArgs(['--capture-logs', '--dry-run'], {})
 
     expect(options.captureLogsToFile).toBe(true)
     expect(options.dryRun).toBe(true)
   })
 
-  it('supports inline values and aliases', () => {
-    const options = parseCliArgs(['-v', '--artefacts-dir=./out'], {})
+  it('supports verbose alias', () => {
+    const options = parseCliArgs(['-v'], {})
     expect(options.verbose).toBe(true)
   })
 
-  it('treats stringOrBoolean env as boolean when true/false', () => {
-    const options = parseCliArgs([], { IT_CONTAINER_LOGS: 'true' })
-    expect(options.containerLogs).toBe(true)
+  it('parses help flag', () => {
+    const options = parseCliArgs(['--help'], {})
+    expect(options.help).toBe(true)
   })
 
   it('throws on unknown flag', () => {
-    expect(() => parseCliArgs(['--unknown'], {})).toThrow('Unknown flag: --unknown')
+    expect(() => parseCliArgs(['--unknown'], {})).toThrow("unknown option '--unknown'")
   })
 })

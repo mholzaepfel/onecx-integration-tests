@@ -13,9 +13,7 @@
     "lint:fix": "nx lint --fix",
     "test": "nx test",
     "test:ci": "nx test --watch=false --browsers=ChromeHeadless --code-coverage",
-    "it:run": "npx ts-node src/it-runner/index.ts",
-    "it:run:verbose": "npx ts-node src/it-runner/index.ts --verbose",
-    "it:run:dry": "npx ts-node src/it-runner/index.ts --dry-run",
+    "it:run": "tsx src/it-runner/index.ts",
     "sonar": "npx sonarqube-scanner"
   },
   "private": true,
@@ -23,7 +21,9 @@
     "@nx/devkit": "^19.8.14",
     "@nx/plugin": "^19.8.14",
     "ajv": "^8.17.1",
-    "tslib": "^2.8.0"
+    "commander": "^13.1.0",
+    "tslib": "^2.8.0",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -46,7 +46,6 @@
     "sonarqube-scanner": "^4.3.2",
     "testcontainers": "^10.28.0",
     "ts-jest": "^29.1.0",
-    "ts-node": "10.9.1",
     "tslib": "^2.3.0",
     "typescript": "~5.5.4",
     "typescript-eslint": "^8.0.0"

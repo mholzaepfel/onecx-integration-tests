@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 import { parseCliArgs, printHelp } from './cli/cli'
 import { IntegrationTestsRunner } from './runner'
-import { EXIT_CODES } from './types/exit-codes'
 
+/**
+ * CLI entrypoint for the integration test runner.
+ *
+ * Parses user flags, prints help when requested, executes the runner,
+ * and exits with the resulting process exit code.
+ *
+ * @returns Resolves when the process exit flow has been initiated.
+ */
 export async function main(): Promise<void> {
   let options
   try {
@@ -10,13 +17,13 @@ export async function main(): Promise<void> {
   } catch (error) {
     console.error(`ERROR: ${error instanceof Error ? error.message : String(error)}`)
     printHelp()
-    process.exit(EXIT_CODES.CONFIG_INVALID)
+    process.exit(1)
     return
   }
 
   if (options.help) {
     printHelp()
-    process.exit(EXIT_CODES.SUCCESS)
+    process.exit(0)
     return
   }
 
@@ -27,5 +34,5 @@ export async function main(): Promise<void> {
 
 main().catch((error) => {
   console.error(`ERROR: Fatal error: ${error}`)
-  process.exit(EXIT_CODES.UNEXPECTED_ERROR)
+  process.exit(1)
 })

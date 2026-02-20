@@ -1,126 +1,98 @@
-import { FLAG_DEFINITIONS } from './flags'
-import { buildUsage } from './usage'
+import { Command } from 'commander'
 import { CliOptions } from '../types/cli-options.interface'
-import { OptionDefinition } from '../types/flag-definition.interface'
 
-function coerceEnvValue(def: OptionDefinition, raw: string): unknown {
-  switch (def.type) {
-    case 'boolean':
-      return raw === 'true'
-    case 'number':
-      return Number(raw)
-    case 'string':
-      return raw
-    case 'stringOrBoolean':
-      if (raw === 'true') return true
-      if (raw === 'false') return false
-      return raw
-    default:
-      return raw
-  }
+// Convert environment values like IT_VERBOSE/IT_CAPTURE_LOGS to booleans.
+function toBoolean(raw: string | undefined, defaultValue = false): boolean {
+  if (raw === undefined) return defaultValue
+  return raw === 'true'
 }
 
-function applyDefaults(definitions: OptionDefinition[]): Record<string, unknown> {
-  return definitions.reduce<Record<string, unknown>>((acc, def) => {
-    if (def.defaultValue !== undefined) acc[def.name] = def.defaultValue
-    return acc
-  }, {})
-}
-
-function applyEnv(
-  definitions: OptionDefinition[],
-  env: NodeJS.ProcessEnv,
-  seed: Record<string, unknown>
-): Record<string, unknown> {
-  return definitions.reduce<Record<string, unknown>>(
-    (acc, def) => {
-      const raw = def.envVar ? env[def.envVar] : undefined
-      if (raw === undefined) return acc
-      acc[def.name] = coerceEnvValue(def, raw)
-      return acc
-    },
-    { ...seed }
+function buildProgram(env: NodeJS.ProcessEnv): Command {
+  return (
+    new Command()
+      .name('it-runner')
+      .description('OneCX Integration Tests Runner')
+      .usage('[options]')
+      .allowUnknownOption(false)
+      .allowExcessArguments(false)
+      // Silence commander's default output because the runner controls user-facing output itself.
+      .configureOutput({
+        writeOut: () => undefined,
+        writeErr: () => undefined,
+      })
+      // Throw instead of process.exit() so callers can handle CLI errors consistently.
+      .exitOverride()
+      .option('-v, --verbose', 'Enable verbose output', toBoolean(env.IT_VERBOSE, false))
+      .option('--capture-logs', 'Capture runner console output to file', toBoolean(env.IT_CAPTURE_LOGS, false))
+      .option('--dry-run', 'Print execution plan without running', false)
   )
 }
 
-function findDefinition(flagName: string): OptionDefinition | undefined {
-  return FLAG_DEFINITIONS.find((def) => def.name === flagName || def.alias === flagName)
-}
-
+/**
+ * Parse CLI arguments into normalized runner options.
+ *
+ * Uses environment variables as defaults where available:
+ * - `IT_VERBOSE`
+ * - `IT_CAPTURE_LOGS`
+ *
+ * @param argv User-provided CLI arguments (without node executable prefix).
+ * @param env Process environment used for default values.
+ * @returns Normalized CLI options for the integration test runner.
+ */
 export function parseCliArgs(argv: string[], env: NodeJS.ProcessEnv): CliOptions {
-  const args = [...argv]
-  const withDefaults = applyDefaults(FLAG_DEFINITIONS)
-  const withEnv = applyEnv(FLAG_DEFINITIONS, env, withDefaults)
-  const parsed: Record<string, unknown> = { ...withEnv }
+  const program = buildProgram(env)
 
-  for (let i = 0; i < args.length; i++) {
-    const raw = args[i]
-    if (!raw.startsWith('-')) {
-      throw new Error(`Unknown positional argument: ${raw}`)
+  try {
+    program.parse(argv, { from: 'user' })
+  } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === 'commander.helpDisplayed'
+    ) {
+      const helpOptions = program.opts<{ verbose?: boolean; captureLogs?: boolean }>()
+      return {
+        verbose: Boolean(helpOptions.verbose),
+        dryRun: false,
+        captureLogsToFile: Boolean(helpOptions.captureLogs),
+        help: true,
+      }
     }
 
-    const isLong = raw.startsWith('--')
-    const clean = isLong ? raw.slice(2) : raw.slice(1)
-    const [flagName, inlineValue] = clean.split('=')
-
-    const definition = findDefinition(flagName)
-    if (!definition) {
-      throw new Error(`Unknown flag: ${raw}`)
+    if (error instanceof Error && error.message) {
+      throw new Error(error.message.replace(/^error: /i, '').trim())
     }
-
-    const readNextArg = (): string | undefined => {
-      const next = args[i + 1]
-      if (next && !next.startsWith('-')) {
-        i += 1
-        return next
-      }
-      return undefined
-    }
-
-    switch (definition.type) {
-      case 'boolean': {
-        parsed[definition.name] = inlineValue !== undefined ? inlineValue === 'true' : true
-        break
-      }
-      case 'number': {
-        const valueStr = inlineValue ?? readNextArg()
-        if (valueStr === undefined) throw new Error(`Flag ${raw} requires a number value`)
-        const num = Number(valueStr)
-        if (Number.isNaN(num)) throw new Error(`Flag ${raw} expects a number, got '${valueStr}'`)
-        parsed[definition.name] = num
-        break
-      }
-      case 'string': {
-        const valueStr = inlineValue ?? readNextArg()
-        if (valueStr === undefined) throw new Error(`Flag ${raw} requires a value`)
-        parsed[definition.name] = valueStr
-        break
-      }
-      case 'stringOrBoolean': {
-        if (inlineValue !== undefined) {
-          parsed[definition.name] = inlineValue === '' ? true : inlineValue
-        } else {
-          const next = readNextArg()
-          parsed[definition.name] = next === undefined ? true : next
-        }
-        break
-      }
-      default:
-        throw new Error(`Unsupported flag type for ${definition.name}`)
-    }
+    throw error
   }
 
+  if (program.args.length > 0) {
+    throw new Error(`Unknown positional argument: ${String(program.args[0])}`)
+  }
+
+  const parsed = program.opts<{
+    verbose?: boolean
+    captureLogs?: boolean
+    dryRun?: boolean
+    help?: boolean
+  }>()
+
   const options: CliOptions = {
-    verbose: Boolean(parsed['verbose']),
-    dryRun: Boolean(parsed['dry-run']),
-    captureLogsToFile: Boolean(parsed['capture-logs']),
-    containerLogs: parsed['container-logs'] as string | boolean | undefined,
-    help: Boolean(parsed['help']),
+    verbose: Boolean(parsed.verbose),
+    dryRun: Boolean(parsed.dryRun),
+    captureLogsToFile: Boolean(parsed.captureLogs),
+    // Help is handled via commander.exitOverride() in the catch block above.
+    help: Boolean(parsed.help),
   }
 
   return options
 }
 
+/**
+ * Print generated CLI help text to stdout.
+ *
+ * @returns No return value.
+ */
 export function printHelp(): void {
-  console.log(buildUsage())
+  console.log(buildProgram(process.env).helpInformation())
 }

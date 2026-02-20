@@ -2,6 +2,9 @@ import { IntegrationTestsRunner } from './runner'
 import { PlatformAdapter } from './types/platform-adapter.interface'
 import { E2eExecutionResult } from './types/results.interface'
 
+/**
+ * Test double used to validate dry-run behavior without starting real containers.
+ */
 class StubAdapter implements PlatformAdapter {
   constructor(private readonly configValid = true) {}
   hasValidatedConfig(): boolean {
@@ -33,6 +36,9 @@ class StubAdapter implements PlatformAdapter {
   }
 }
 
+/**
+ * Verifies that dry-run mode exits successfully without touching container lifecycle operations.
+ */
 describe('IntegrationTestsRunner dry-run', () => {
   it('exits successfully without starting containers', async () => {
     const options = {
@@ -42,7 +48,6 @@ describe('IntegrationTestsRunner dry-run', () => {
       verbose: false,
       dryRun: true,
       captureLogsToFile: false,
-      containerLogs: undefined,
       help: false,
     }
     const runner = new IntegrationTestsRunner(options, () => new StubAdapter())

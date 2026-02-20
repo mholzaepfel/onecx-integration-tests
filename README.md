@@ -1,155 +1,141 @@
 # onecx-integration-tests
 
-OneCX Integration-tests
+OneCX integration test toolkit for starting a local platform stack (via Testcontainers), validating health, and optionally executing E2E tests.
 
----
+## What this project provides
+
+- A programmatic API (`PlatformManager`) to orchestrate platform containers.
+- A CLI runner (`it-runner`) for end-to-end integration test execution.
+- Config-driven startup from `integration-tests/platform/platform.json`.
+- Run artefacts with summaries, logs, reports, and E2E outputs.
+
+## Public API
+
+The package exports the following symbols from `src/index.ts`:
+
+- `PlatformManager`
+- `PlatformConfig`
+- `CONTAINER`
+- `AllowedContainerTypes` (type)
+
+## Prerequisites
+
+- Node.js and npm
+- Docker (required for Testcontainers-based execution)
+
+## Quick Start
+
+Install dependencies:
+
+```sh
+npm install
+```
+
+Run the integration test runner:
+
+```sh
+npm run it:run
+```
+
+Run a dry run (validation + execution plan only):
+
+```sh
+npm run it:run -- --dry-run
+```
+
+Run with verbose output and log capture:
+
+```sh
+npm run it:run -- --verbose --capture-logs
+```
+
+## Runner behavior
+
+- **E2E mode**: If `platformConfig.container.e2e` exists, the runner starts the platform, waits for health checks, runs E2E, then shuts down.
+- **Platform-only mode**: If no E2E container is configured, the runner starts and validates the platform, collects artefacts, then shuts down.
+
+## CLI options (`it-runner`)
+
+| Option           | Description                           | Default |
+| ---------------- | ------------------------------------- | ------- |
+| `-v, --verbose`  | Enable verbose output                 | `false` |
+| `--capture-logs` | Capture runner console output to file | `false` |
+| `--dry-run`      | Print execution plan without running  | `false` |
+| `-h, --help`     | Show help                             | `false` |
+
+## Supported environment variables
+
+| Variable          | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| `IT_VERBOSE`      | Default for `--verbose` (`true` / `false`)      |
+| `IT_CAPTURE_LOGS` | Default for `--capture-logs` (`true` / `false`) |
+
+## Configuration
+
+- Default config path: `integration-tests/platform/platform.json`
+- The config is validated against the project schema before execution.
+- If no valid config is found, the runner exits with config error.
+
+## Artefacts
+
+Each run creates a directory under:
+
+`integration-tests/artefacts/<run-id>/`
+
+Typical output:
+
+- `summary.json` – run metadata (status, duration, mode, exit code)
+- `logs/runner-output.log` – runner logs (with `--capture-logs`)
+- `logs/containers.log` – captured container/terminal streams (written when `--capture-logs` is enabled)
+- `reports/` – generated reports
+- `results-e2e/` – E2E result files
+- `e2e-results/` – copied E2E output (if source path differs)
 
 ## Development
 
-### Prerequisites
-
-- Node.js (see `package.json` engines field for version requirements)
-- npm or yarn
-
-### Building the Project
+Build:
 
 ```sh
 npm run build
 ```
 
-This compiles the TypeScript source code using Nx to JavaScript in the `dist/integration-tests` directory.
-
-### Testing
-
-Run all tests:
+Test:
 
 ```sh
 npm test
 ```
 
-Run tests in CI mode (no watch, with coverage):
+CI test command:
 
 ```sh
 npm run test:ci
 ```
 
-Run linting:
+Lint:
 
 ```sh
 npm run lint
 ```
 
-Format code:
+Format:
 
 ```sh
 npm run format
 ```
 
-## Integration Tests Runner
-
-The Integration Tests Runner is a config-driven orchestrator for platform and E2E tests.
-
-### Quick Start
-
-```sh
-# Run with auto-detected config
-npm run it:run
-
-# Run with specific config
-npm run it:run -- --config=./integration/integration-tests.json
-
-# Dry run (show plan without executing)
-npm run it:run:dry
-
-# Verbose output
-npm run it:run:verbose
-```
-
-### Behavior
-
-- **E2E Mode**: If `platformConfig.container.e2e` is configured → Start platform → Run E2E container → Shutdown
-- **Platform-Only Mode**: If no E2E configured → Start platform → Wait for timeout/signal → Shutdown
-
-### CLI Options
-
-| Option                   | Description                    | Default               |
-| ------------------------ | ------------------------------ | --------------------- |
-| `--config <path>`        | Path to integration-tests.json | Auto-detect           |
-| `--timeout-ms <ms>`      | Override suite timeout         | From config or 600000 |
-| `--artifacts-dir <path>` | Directory for logs/artifacts   | `./artefacts`         |
-| `--verbose`, `-v`        | Enable verbose output          | false                 |
-| `--capture-logs`         | Capture all output to log file | false                 |
-| `--dry-run`              | Show plan without execution    | false                 |
-
-### Environment Variables
-
-| Variable           | Description                        |
-| ------------------ | ---------------------------------- |
-| `CONFIG_PATH`      | Alternative to `--config`          |
-| `IT_TIMEOUT_MS`    | Alternative to `--timeout-ms`      |
-| `IT_ARTIFACTS_DIR` | Alternative to `--artifacts-dir`   |
-| `IT_VERBOSE`       | Set to `'true'` for verbose output |
-| `IT_CAPTURE_LOGS`  | Set to `'true'` to capture logs    |
-
-### Exit Codes
-
-| Code | Meaning                |
-| ---- | ---------------------- |
-| 0    | Success                |
-| 1    | Config/schema invalid  |
-| 2    | Runtime timeout        |
-| 3    | Docker/container error |
-| 4    | E2E/test failure       |
-| 5    | Unexpected error       |
-
-### Artifacts
-
-Each run creates a unique directory in `./artefacts/<run-id>/`:
-
-- `summary.json` - Run summary with status, duration, exit code
-- `logs/runner-output.log` - Console output (if `--capture-logs` enabled)
-- `e2e-results/` - E2E test results from the container
-
-### Code Quality
-
-This project uses SonarQube for code quality analysis:
+Sonar analysis:
 
 ```sh
 npm run sonar
 ```
 
-Configuration is in `sonar-project.properties`.
+## E2E Playwright project
 
-## Publishing
+Playwright tests are located in:
 
-> **Story Created**
+`integration-tests/e2e/playwright`
 
-**Planned approach:**
-
-- Automated publishing via GitHub Actions on release tags
-- Semantic versioning
-- NPM registry publication
-
-**Note:** Package is currently marked as `private: true` in `package.json`.
-
-## CI/CD Pipeline
-
-> **Story Created**
-
-**Planned workflows:**
-
-- **On PR**: Lint, test, build validation, Dependency Review, CodeQL and SonarQube analysis
-- **On merge to main**: Full test suite, coverage reporting, SonarQube analysis
-- **On release tag**: Automated npm publishing
-
-## Dependency Management
-
-> **Stories Created**
-
-- Dependabot
-- Renovate bot
-
----
+See its local README for container execution and local debug commands.
 
 ## License
 

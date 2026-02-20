@@ -1,3 +1,6 @@
+/**
+ * Persisted summary of one integration test runner execution.
+ */
 export interface RunSummary {
   runId: string
   startTime: string

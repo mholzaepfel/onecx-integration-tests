@@ -2,62 +2,92 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { RunSummary } from '../types/run-summary.interface'
 import { getE2eOutputPath } from '../../lib/config/e2e-constants'
-import { resolveArtefactsRoot, resolveRunArtefactsDir, resolveLocalArtefactsDir } from '../../lib/config/artefacts'
+import { resolveArtefactsRoot, resolveRunArtefactsDir } from '../../lib/config/artefacts'
 
+/**
+ * Handles artefact directory setup and persistence for one runner execution.
+ */
 export class ArtefactsManager {
   private artifactsRoot: string
   private runDir: string
   private logsDir: string
   private runnerLogPath: string
-  private localDir: string
 
   constructor(baseDir: string | undefined, runId: string) {
     this.artifactsRoot = resolveArtefactsRoot(baseDir)
     this.runDir = resolveRunArtefactsDir(this.artifactsRoot, runId)
-    this.localDir = resolveLocalArtefactsDir(this.artifactsRoot)
     this.logsDir = path.join(this.runDir, 'logs')
     this.runnerLogPath = path.join(this.logsDir, 'runner-output.log')
   }
 
+  /**
+   * Create all required artefact directories for the current run.
+   *
+   * @returns No return value.
+   */
   ensureDirectories(): void {
     fs.mkdirSync(this.runDir, { recursive: true })
     fs.mkdirSync(this.logsDir, { recursive: true })
     fs.mkdirSync(path.join(this.runDir, 'reports'), { recursive: true })
     fs.mkdirSync(path.join(this.runDir, 'results-e2e'), { recursive: true })
-    fs.mkdirSync(this.localDir, { recursive: true })
   }
 
+  /**
+   * @returns Absolute path to the run-specific artefact directory.
+   */
   getRunDir(): string {
     return this.runDir
   }
 
+  /**
+   * @returns Absolute path to the artefacts root directory.
+   */
   getArtefactsRoot(): string {
     return this.artifactsRoot
   }
 
-  getLocalDir(): string {
-    return this.localDir
-  }
-
+  /**
+   * @returns Absolute path to the run-specific logs directory.
+   */
   getLogsDir(): string {
     return this.logsDir
   }
 
+  /**
+   * @returns Absolute path to the runner log file.
+   */
   getRunnerLogPath(): string {
     return this.runnerLogPath
   }
 
+  /**
+   * Append a timestamped line to the runner log file.
+   *
+   * @param message Message text to append.
+   * @returns No return value.
+   */
   writeLogLine(message: string): void {
     const timestamp = new Date().toISOString()
     const line = `[${timestamp}] ${message}\n`
     fs.appendFileSync(this.runnerLogPath, line)
   }
 
+  /**
+   * Write the run summary as JSON.
+   *
+   * @param summary Summary object to persist.
+   * @returns No return value.
+   */
   writeSummary(summary: RunSummary): void {
     const summaryPath = path.join(this.runDir, 'summary.json')
     fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2))
   }
 
+  /**
+   * Copy E2E result files into the run artefacts directory when present.
+   *
+   * @returns No return value.
+   */
   copyE2eResults(): void {
     const e2eResultsDir = getE2eOutputPath()
     const targetDir = path.join(this.runDir, 'e2e-results')

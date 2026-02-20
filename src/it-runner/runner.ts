@@ -2,16 +2,21 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { ArtefactsManager } from './artefacts/artefacts-manager'
 import { CliOptions } from './types/cli-options.interface'
-import { EXIT_CODES } from './types/exit-codes'
 import { PlatformManagerAdapter } from './platform/platform-adapter'
 import { PlatformAdapter } from './types/platform-adapter.interface'
 import { RunSummary } from './types/run-summary.interface'
 import { E2eExecutionResult } from './types/results.interface'
 import { ContainerWithLogs } from './types/container-logs.interface'
-import { PlatformConfig } from '../lib/models/platform-config.interface'
+import { PlatformConfig } from '../lib/models/interfaces/platform-config.interface'
 import { Logger, LoggerLevel } from '../lib/utils/logger'
 
+/**
+ * Orchestrates one complete integration test run lifecycle.
+ */
 export class IntegrationTestsRunner {
+  private static readonly EXIT_SUCCESS = 0
+  private static readonly EXIT_FAILURE = 1
+
   private options: CliOptions
   private artefacts: ArtefactsManager
   private logger: Logger
@@ -23,6 +28,7 @@ export class IntegrationTestsRunner {
   private containerLogPath?: string
   private containerLogWriter?: fs.WriteStream
   private containerLogStreams: NodeJS.ReadableStream[] = []
+  private restoreTerminalStreams?: () => void
 
   constructor(options: CliOptions, adapterFactory?: () => PlatformAdapter) {
     this.options = options
@@ -35,6 +41,11 @@ export class IntegrationTestsRunner {
     this.startTime = Date.now()
   }
 
+  /**
+   * Execute the integration run: bootstrap, validate, run checks/tests, and cleanup.
+   *
+   * @returns Numeric process-style exit code describing the final run status.
+   */
   async run(): Promise<number> {
     this.setupSignalHandlers()
 
@@ -56,9 +67,11 @@ export class IntegrationTestsRunner {
         this.log('info', `Container logs: ${this.containerLogPath}`)
       }
 
+      this.startTerminalLogCapture()
+
       const config = this.loadConfig()
       if (!config) {
-        return this.finalize(EXIT_CODES.CONFIG_INVALID, 'failure')
+        return this.finalize(IntegrationTestsRunner.EXIT_FAILURE, 'failure')
       }
 
       const mode = this.platformAdapter.hasE2eConfig() ? 'e2e' : 'platform-only'
@@ -67,7 +80,7 @@ export class IntegrationTestsRunner {
 
       if (this.options.dryRun) {
         this.log('info', 'Dry run complete')
-        return this.finalize(EXIT_CODES.SUCCESS, 'success')
+        return this.finalize(IntegrationTestsRunner.EXIT_SUCCESS, 'success')
       }
 
       this.log('info', 'Starting platform...')
@@ -93,7 +106,6 @@ export class IntegrationTestsRunner {
             `E2E ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode})`
           )
         }
-      } else {
       }
 
       this.log('info', 'Collecting artefacts...')
@@ -101,12 +113,13 @@ export class IntegrationTestsRunner {
 
       await this.cleanup()
 
-      const exitCode = e2eResult?.success === false ? EXIT_CODES.E2E_FAILURE : EXIT_CODES.SUCCESS
-      return this.finalize(exitCode, exitCode === EXIT_CODES.SUCCESS ? 'success' : 'failure', e2eResult)
+      const successfulRun = e2eResult?.success !== false
+      const exitCode = successfulRun ? IntegrationTestsRunner.EXIT_SUCCESS : IntegrationTestsRunner.EXIT_FAILURE
+      return this.finalize(exitCode, successfulRun ? 'success' : 'failure', e2eResult)
     } catch (error) {
       this.log('error', `Error: ${error}`)
       await this.cleanup()
-      return this.finalize(EXIT_CODES.UNEXPECTED_ERROR, 'error')
+      return this.finalize(IntegrationTestsRunner.EXIT_FAILURE, 'error')
     }
   }
 
@@ -137,6 +150,8 @@ export class IntegrationTestsRunner {
     this.isShuttingDown = true
 
     if (this.timeoutHandle) clearTimeout(this.timeoutHandle)
+
+    this.stopTerminalLogCapture()
 
     await this.stopContainerLogCapture()
 
@@ -189,7 +204,7 @@ export class IntegrationTestsRunner {
     const handler = async (signal: string) => {
       this.log('info', `Received ${signal}, shutting down...`)
       await this.cleanup()
-      process.exit(EXIT_CODES.SUCCESS)
+      process.exit(IntegrationTestsRunner.EXIT_SUCCESS)
     }
 
     process.on('SIGINT', () => handler('SIGINT'))
@@ -201,31 +216,14 @@ export class IntegrationTestsRunner {
   }
 
   private resolveContainerLogPath(): string | undefined {
-    if (!this.options.containerLogs) return undefined
-
-    const runDir = this.artefacts.getRunDir()
-
-    if (this.options.containerLogs === true) {
-      return path.join(this.artefacts.getLogsDir(), 'containers.log')
-    }
-
-    const provided = String(this.options.containerLogs)
-    const candidate = path.isAbsolute(provided) ? provided : path.join(runDir, provided)
-    const resolved = path.resolve(candidate)
-    const normalizedRunDir = path.resolve(runDir)
-
-    if (!resolved.startsWith(`${normalizedRunDir}${path.sep}`) && resolved !== normalizedRunDir) {
-      throw new Error(`Container logs must be written inside artefacts directory: ${resolved}`)
-    }
-
-    return resolved
+    if (!this.options.captureLogsToFile) return undefined
+    return path.join(this.artefacts.getLogsDir(), 'containers.log')
   }
 
   private async startContainerLogCapture(): Promise<void> {
     if (!this.containerLogPath) return
 
-    fs.mkdirSync(path.dirname(this.containerLogPath), { recursive: true })
-    this.containerLogWriter = fs.createWriteStream(this.containerLogPath, { flags: 'a' })
+    this.ensureContainerLogWriter()
 
     const containers = this.platformAdapter.getAllContainers()
     for (const [key, container] of containers.entries()) {
@@ -263,8 +261,47 @@ export class IntegrationTestsRunner {
     }
   }
 
-  private writeContainerLog(containerName: string, chunk: Buffer | string): void {
+  private ensureContainerLogWriter(): void {
+    if (!this.containerLogPath || this.containerLogWriter) return
+    // Keep all generated log files local to the selected artefacts path.
+    fs.mkdirSync(path.dirname(this.containerLogPath), { recursive: true })
+    this.containerLogWriter = fs.createWriteStream(this.containerLogPath, { flags: 'a' })
+  }
+
+  private startTerminalLogCapture(): void {
+    if (!this.containerLogPath || this.restoreTerminalStreams) return
+
+    this.ensureContainerLogWriter()
+
+    // Tee process stdout/stderr into the container log file while preserving normal terminal output.
+    const originalStdoutWrite = process.stdout.write.bind(process.stdout)
+    const originalStderrWrite = process.stderr.write.bind(process.stderr)
+
+    process.stdout.write = ((chunk: string | Uint8Array, ...args: unknown[]) => {
+      this.writeContainerLog('stdout', chunk)
+      return (originalStdoutWrite as (...innerArgs: unknown[]) => boolean)(chunk, ...args)
+    }) as typeof process.stdout.write
+
+    process.stderr.write = ((chunk: string | Uint8Array, ...args: unknown[]) => {
+      this.writeContainerLog('stderr', chunk)
+      return (originalStderrWrite as (...innerArgs: unknown[]) => boolean)(chunk, ...args)
+    }) as typeof process.stderr.write
+
+    this.restoreTerminalStreams = () => {
+      // Always restore native stream writers to avoid leaking monkey patches across runs/tests.
+      process.stdout.write = originalStdoutWrite as typeof process.stdout.write
+      process.stderr.write = originalStderrWrite as typeof process.stderr.write
+      this.restoreTerminalStreams = undefined
+    }
+  }
+
+  private stopTerminalLogCapture(): void {
+    this.restoreTerminalStreams?.()
+  }
+
+  private writeContainerLog(containerName: string, chunk: Buffer | string | Uint8Array): void {
     if (!this.containerLogWriter) return
+    // Prefix each line with timestamp and source to make mixed logs traceable.
     const line = `[${new Date().toISOString()}] [${containerName}] ${chunk.toString()}`
     this.containerLogWriter.write(`${line}\n`)
   }
