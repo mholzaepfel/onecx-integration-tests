@@ -20,7 +20,7 @@ describe('PlatformConfigJsonValidator', () => {
         const mockConfig = {
           platformConfig: {
             importData: true,
-            enableLogging: true,
+            withLoggingEnabled: true,
             heartbeat: {
               enabled: true,
             },
@@ -33,7 +33,7 @@ describe('PlatformConfigJsonValidator', () => {
               type: 'object',
               properties: {
                 importData: { type: 'boolean' },
-                enableLogging: { type: 'boolean' },
+                withLoggingEnabled: { type: 'boolean' },
                 heartbeat: {
                   type: 'object',
                   properties: {

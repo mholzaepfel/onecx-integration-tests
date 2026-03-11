@@ -8,10 +8,13 @@ import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 import { SvcContainer } from '../containers/basic/onecx-svc'
 import { BffContainer } from '../containers/basic/onecx-bff'
 import { UiContainer } from '../containers/basic/onecx-ui'
+import { E2eContainer } from '../containers/e2e/onecx-e2e'
+import { E2E_DEFAULT_TIMEOUT_MS } from '../config/e2e-constants'
 
 jest.mock('../containers/basic/onecx-svc')
 jest.mock('../containers/basic/onecx-bff')
 jest.mock('../containers/basic/onecx-ui')
+jest.mock('../containers/e2e/onecx-e2e')
 
 describe('UserDefinedContainerStarter', () => {
   let starter: UserDefinedContainerStarter
@@ -49,9 +52,13 @@ describe('UserDefinedContainerStarter', () => {
         withAppBaseHref: jest.fn().mockReturnThis(),
         withAppId: jest.fn().mockReturnThis(),
         withProductName: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
+        withBaseUrl: jest.fn().mockReturnThis(),
+        withLoggingEnabled: jest.fn().mockReturnThis(),
         withNetwork: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue({}),
+        withStartupTimeout: jest.fn().mockReturnThis(),
+        start: jest.fn().mockResolvedValue({
+          getExitCode: jest.fn().mockResolvedValue(0),
+        }),
       }
       return mock
     }
@@ -59,6 +66,7 @@ describe('UserDefinedContainerStarter', () => {
     ;(SvcContainer as unknown as jest.Mock).mockImplementation(() => createMockContainer())
     ;(BffContainer as unknown as jest.Mock).mockImplementation(() => createMockContainer())
     ;(UiContainer as unknown as jest.Mock).mockImplementation(() => createMockContainer())
+    ;(E2eContainer as unknown as jest.Mock).mockImplementation(() => createMockContainer())
   })
 
   it('should start all types of containers', async () => {
@@ -166,5 +174,36 @@ describe('UserDefinedContainerStarter', () => {
     await expect(starterWithoutKeycloak.createAndStartContainers(config)).rejects.toThrow(
       'Keycloak container is required for BFF containers but was not provided.'
     )
+  })
+
+  it('should use default e2e startup timeout when timeoutMs is not configured', async () => {
+    mockImageResolver.getImage.mockResolvedValue('resolved-e2e-image')
+
+    await starter.createE2eContainer(
+      {
+        image: 'e2e-image',
+        networkAlias: 'e2e-runner',
+      },
+      false
+    )
+
+    const e2eInstance = (E2eContainer as unknown as jest.Mock).mock.results[0].value
+    expect(e2eInstance.withStartupTimeout).toHaveBeenCalledWith(E2E_DEFAULT_TIMEOUT_MS)
+  })
+
+  it('should use configured e2e startup timeout when timeoutMs is provided', async () => {
+    mockImageResolver.getImage.mockResolvedValue('resolved-e2e-image')
+
+    await starter.createE2eContainer(
+      {
+        image: 'e2e-image',
+        networkAlias: 'e2e-runner',
+        timeoutMs: 2_400_000,
+      },
+      false
+    )
+
+    const e2eInstance = (E2eContainer as unknown as jest.Mock).mock.results[0].value
+    expect(e2eInstance.withStartupTimeout).toHaveBeenCalledWith(2_400_000)
   })
 })

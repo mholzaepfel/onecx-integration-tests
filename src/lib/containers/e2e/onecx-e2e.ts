@@ -4,14 +4,11 @@ import { HealthCheckableContainer } from '../../models/interfaces/health-checkab
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
-import { Logger } from '../../utils/logger'
-
-const logger = new Logger('E2eContainer')
 
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
  * The container is expected to exit with code 0 (success) or 1 (failure).
- * Results are written under integration-tests/artefacts/<runId>/report-e2e
+ * Results are written to the fixed output directory: e2e-results/
  */
 export class E2eContainer extends GenericContainer {
   protected loggingEnabled = false
@@ -26,7 +23,7 @@ export class E2eContainer extends GenericContainer {
     super(image)
   }
 
-  enableLogging(log: boolean): this {
+  withLoggingEnabled(log: boolean): this {
     this.loggingEnabled = log
     return this
   }
@@ -37,13 +34,9 @@ export class E2eContainer extends GenericContainer {
   }
 
   override async start(): Promise<StartedE2eContainer> {
-    // Add network alias
-    this.withNetworkAliases(this.networkAliases[0])
-
     // Pass BASE_URL environment variable if configured
     if (this.baseUrl) {
       this.withEnvironment({ BASE_URL: this.baseUrl })
-      logger.info(`E2E BASE_URL: ${this.baseUrl}`)
     }
 
     // Mount fixed output directory for E2E results
@@ -55,14 +48,10 @@ export class E2eContainer extends GenericContainer {
         mode: 'rw' as const,
       },
     ])
-    logger.info(`E2E output directory: ${outputPath} -> ${E2E_CONTAINER_OUTPUT_PATH}`)
 
     // Use one-shot wait strategy for containers that exit on their own
     // This waits for the container to stop with exit code 0
     this.withWaitStrategy(Wait.forOneShotStartup())
-
-    // Set a reasonable startup timeout (10 minutes for E2E tests)
-    this.withStartupTimeout(10 * 60 * 1000)
 
     // Enable logging if configured
     if (this.loggingEnabled) {
@@ -107,8 +96,7 @@ export class StartedE2eContainer extends AbstractStartedContainer implements Hea
       const dockerContainer = dockerode.getContainer(this.getId())
       const inspectData = await dockerContainer.inspect()
       return inspectData.State.ExitCode
-    } catch (error) {
-      logger.error(`Failed to get exit code: ${error}`)
+    } catch {
       return 1 // Return error code if inspection fails
     }
   }

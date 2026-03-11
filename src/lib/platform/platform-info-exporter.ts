@@ -1,22 +1,38 @@
 import { StartedNetwork } from 'testcontainers'
+import * as path from 'path'
 import { ContainerRegistry } from './container-registry'
 import { CONTAINER } from '../models/enums/container.enum'
-import { AllowedContainerTypes } from '../models/types/allowed-container.type'
+import { PortAwareContainer } from '../models/types/allowed-container.type'
+import { getE2eOutputPath } from '../config/e2e-constants'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
-import { PlatformInfo, ContainerInfo } from '../models/interfaces/platform-info-exporter.interface'
-import { DEFAULT_ARTEFACTS_ROOT, RUNS_DIR } from '../config/artefacts'
+import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
+import {
+  getInternalPort,
+  isPortAwareContainer,
+  isE2eContainer,
+  getPlatformInfoExportDecision,
+} from '../utils/container-utils'
 
 const logger = new Logger('PlatformInfoExporter')
 
 export class PlatformInfoExporter {
-  constructor(private readonly containerRegistry: ContainerRegistry, private readonly network: StartedNetwork) {}
+  private readonly outputDir: string
+
+  constructor(private readonly containerRegistry: ContainerRegistry, private readonly network: StartedNetwork) {
+    // Always use fixed E2E output directory
+    this.outputDir = getE2eOutputPath()
+    // Ensure directory exists
+    if (!fs.existsSync(this.outputDir)) {
+      fs.mkdirSync(this.outputDir, { recursive: true })
+    }
+  }
 
   /**
    * Get complete platform info with all URLs
    */
-  getPlatformInfo(): PlatformInfo {
-    const containers = this.getAllContainerInfos()
+  async getPlatformInfo(): Promise<PlatformInfo> {
+    const containers = await this.getAllContainerInfos()
 
     return {
       network: {
@@ -30,7 +46,6 @@ export class PlatformInfoExporter {
       external: {
         shellUi: containers[CONTAINER.SHELL_UI]?.externalUrl ?? '',
         keycloak: containers[CONTAINER.KEYCLOAK]?.externalUrl ?? '',
-        shellBff: containers[CONTAINER.SHELL_BFF]?.externalUrl ?? '',
       },
       containers,
     }
@@ -39,26 +54,54 @@ export class PlatformInfoExporter {
   /**
    * Get info for a specific container
    */
-  getContainerInfo(containerName: CONTAINER): ContainerInfo | undefined {
+  async getContainerInfo(containerName: CONTAINER): Promise<ContainerInfo | undefined> {
     const container = this.containerRegistry.getContainer(containerName)
     if (!container) {
       return undefined
     }
-    return this.buildContainerInfo(containerName, container)
+
+    if (isE2eContainer(container)) {
+      return {
+        name: containerName,
+        type: 'e2e',
+        running: true,
+        note: 'E2E runner has no service port mapping',
+      }
+    }
+
+    if (isPortAwareContainer(container)) {
+      return await this.buildContainerInfo(containerName, container)
+    }
+
+    return {
+      name: containerName,
+      type: 'custom',
+      running: true,
+      note: 'Container does not expose getPort()',
+    }
   }
 
   /**
    * Get all container infos - dynamically from registry
    */
-  getAllContainerInfos(): Record<string, ContainerInfo> {
+  async getAllContainerInfos(): Promise<Record<string, ContainerInfo>> {
     const infos: Record<string, ContainerInfo> = {}
 
     // Get all containers from registry
     const allContainers = this.containerRegistry.getAllContainers()
 
-    allContainers.forEach((container, name) => {
-      infos[name] = this.buildContainerInfo(name, container)
-    })
+    for (const [name, container] of allContainers) {
+      const exportDecision = getPlatformInfoExportDecision(container)
+      if (!exportDecision.include) {
+        logger.info('CONTAINER_SKIPPED', `${name} - ${exportDecision.reason ?? 'Skipped by export policy'}`)
+        continue
+      }
+
+      if (isPortAwareContainer(container)) {
+        infos[name] = await this.buildContainerInfo(name, container)
+        continue
+      }
+    }
 
     return infos
   }
@@ -66,8 +109,8 @@ export class PlatformInfoExporter {
   /**
    * Log platform info to console
    */
-  logPlatformInfo(): void {
-    const info = this.getPlatformInfo()
+  async logPlatformInfo(): Promise<void> {
+    const info = await this.getPlatformInfo()
 
     logger.info('═'.repeat(70))
     logger.info('Platform Ready!')
@@ -80,88 +123,58 @@ export class PlatformInfoExporter {
     logger.info('For Browser/Debugging (from host):')
     logger.info(`  Shell UI:     ${info.external.shellUi}`)
     logger.info(`  Keycloak:     ${info.external.keycloak}`)
-    logger.info(`  Shell BFF:    ${info.external.shellBff}`)
     logger.info('═'.repeat(70))
   }
 
   /**
    * Write platform info to JSON file
+   * Always writes to the fixed E2E output directory
    */
-  writePlatformInfoFile(filePath?: string): void {
-    const info = this.getPlatformInfo()
-    const outputPath =
-      filePath ?? process.env.PLATFORM_INFO_FILE ?? `${DEFAULT_ARTEFACTS_ROOT}${RUNS_DIR}/platform-info.json`
+  async writePlatformInfoFile(filePath?: string): Promise<void> {
+    const info = await this.getPlatformInfo()
+    const outputPath = filePath ?? path.join(this.outputDir, 'platform-info.json')
+
+    // Ensure directory exists
+    const dir = path.dirname(outputPath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
 
     fs.writeFileSync(outputPath, JSON.stringify(info, null, 2))
     logger.info(`Platform info written to: ${outputPath}`)
   }
 
   /**
-   * Write outputs for GitHub Actions
+   * Export all (log + file)
    */
-  writeGitHubActionsOutput(): void {
-    const githubOutput = process.env.GITHUB_OUTPUT
-    if (!githubOutput) {
-      logger.info('GITHUB_OUTPUT not set, skipping GitHub Actions output')
-      return
-    }
 
-    const info = this.getPlatformInfo()
-
-    const outputs = [
-      `network-name=${info.network.name}`,
-      `network-id=${info.network.id}`,
-      `base-url=${info.e2e.baseUrl}`,
-      `keycloak-url=${info.e2e.keycloakUrl}`,
-      `shell-ui-external=${info.external.shellUi}`,
-      `keycloak-external=${info.external.keycloak}`,
-      `platform-ready=true`,
-    ]
-
-    for (const output of outputs) {
-      fs.appendFileSync(githubOutput, `${output}\n`)
-    }
-
-    logger.info('GitHub Actions outputs written')
+  async exportAll(filePath?: string): Promise<void> {
+    await this.logPlatformInfo()
+    await this.writePlatformInfoFile(filePath)
   }
 
-  /**
-   * Export all (log + file + GitHub Actions)
-   */
-  exportAll(filePath?: string): PlatformInfo {
-    const info = this.getPlatformInfo()
-
-    this.logPlatformInfo()
-    this.writePlatformInfoFile(filePath)
-    this.writeGitHubActionsOutput()
-
-    return info
-  }
-
-  private buildContainerInfo(containerName: string, container: AllowedContainerTypes): ContainerInfo {
+  private async buildContainerInfo(containerName: string, container: PortAwareContainer): Promise<ContainerInfo> {
     // Get internal port from container
-    const internalPort = this.getInternalPort(container)
+    const internalPort = getInternalPort(container)
 
     try {
       const mappedPort = container.getMappedPort(internalPort)
       const host = container.getHost()
 
-      // Use localhost for external URLs when host is Docker bridge IP
-      // Docker bridge IPs (172.17.x.x) are often not reachable from the host
-      const externalHost = this.normalizeHost(host)
-
       return {
         name: containerName,
-        host: externalHost,
+        type: 'service',
+        host: host,
         port: mappedPort,
         internalPort,
         internalUrl: `http://${containerName}:${internalPort}`,
-        externalUrl: `http://${externalHost}:${mappedPort}`,
+        externalUrl: `http://${host}:${mappedPort}`,
         running: true,
       }
     } catch {
       return {
         name: containerName,
+        type: 'service',
         host: '',
         port: 0,
         internalPort,
@@ -170,29 +183,5 @@ export class PlatformInfoExporter {
         running: false,
       }
     }
-  }
-
-  /**
-   * Normalize host - convert Docker bridge IPs to localhost for better accessibility
-   */
-  private normalizeHost(host: string): string {
-    // Docker bridge network IPs (172.17.x.x) are not reachable from host on some systems
-    if (host.startsWith('172.17.') || host.startsWith('172.18.')) {
-      return 'localhost'
-    }
-    return host
-  }
-
-  /**
-   * Get internal port from container - tries getPort() method first, then falls back to defaults
-   */
-  private getInternalPort(container: AllowedContainerTypes): number {
-    // Try to get port from container if it has a getPort method
-    if ('getPort' in container && typeof (container as { getPort?: () => number }).getPort === 'function') {
-      return (container as { getPort: () => number }).getPort()
-    }
-
-    // Default ports based on container type (should rarely be needed)
-    return 8080
   }
 }

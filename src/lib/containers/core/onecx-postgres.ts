@@ -61,7 +61,7 @@ export class OnecxPostgresContainer extends GenericContainer {
     return this.onecxPostgresDetails.postgresPassword
   }
 
-  public enableLogging(log: boolean): this {
+  public withLoggingEnabled(log: boolean): this {
     this.loggingEnabled = log
     return this
   }

@@ -127,7 +127,7 @@ describe('DataImporter', () => {
 
       const mockImporterContainer = {
         withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
+        withLoggingEnabled: jest.fn().mockReturnThis(),
         start: jest.fn().mockResolvedValue(mockStartedImporter),
       }
 

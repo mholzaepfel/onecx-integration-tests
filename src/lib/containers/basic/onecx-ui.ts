@@ -39,7 +39,7 @@ export class UiContainer extends GenericContainer {
     return this
   }
 
-  enableLogging(log: boolean): this {
+  withLoggingEnabled(log: boolean): this {
     this.loggingEnabled = log
     return this
   }

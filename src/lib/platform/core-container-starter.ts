@@ -85,7 +85,7 @@ export class CoreContainerStarter {
     const postgresImage = await this.imageResolver.getPostgresImage(this.config)
     return await new OnecxPostgresContainer(postgresImage)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.POSTGRES]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.POSTGRES]))
       .start()
   }
 
@@ -95,7 +95,7 @@ export class CoreContainerStarter {
     const keycloakImage = await this.imageResolver.getKeycloakImage(this.config)
     return await new OnecxKeycloakContainer(keycloakImage, postgres)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.KEYCLOAK]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.KEYCLOAK]))
       .start()
   }
 
@@ -103,7 +103,7 @@ export class CoreContainerStarter {
     const iamKcImage = await this.imageResolver.getServiceImage(OnecxService.IAM_KC_SVC, this.config)
     const container = await new IamKcContainer(iamKcImage, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.IAMKC_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.IAMKC_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.IAMKC_SVC, container)
   }
@@ -115,7 +115,7 @@ export class CoreContainerStarter {
     const workspaceImage = await this.imageResolver.getServiceImage(OnecxService.WORKSPACE_SVC, this.config)
     const container = await new WorkspaceSvcContainer(workspaceImage, postgres, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.WORKSPACE_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.WORKSPACE_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.WORKSPACE_SVC, container)
   }
@@ -127,7 +127,7 @@ export class CoreContainerStarter {
     const userProfileImage = await this.imageResolver.getServiceImage(OnecxService.USER_PROFILE_SVC, this.config)
     const container = await new UserProfileSvcContainer(userProfileImage, postgres, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.USER_PROFILE_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.USER_PROFILE_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.USER_PROFILE_SVC, container)
   }
@@ -139,7 +139,7 @@ export class CoreContainerStarter {
     const themeImage = await this.imageResolver.getServiceImage(OnecxService.THEME_SVC, this.config)
     const container = await new ThemeSvcContainer(themeImage, postgres, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.THEME_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.THEME_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.THEME_SVC, container)
   }
@@ -151,7 +151,7 @@ export class CoreContainerStarter {
     const tenantImage = await this.imageResolver.getServiceImage(OnecxService.TENANT_SVC, this.config)
     const container = await new TenantSvcContainer(tenantImage, postgres, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.TENANT_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.TENANT_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.TENANT_SVC, container)
   }
@@ -163,7 +163,7 @@ export class CoreContainerStarter {
     const productStoreImage = await this.imageResolver.getServiceImage(OnecxService.PRODUCT_STORE_SVC, this.config)
     const container = await new ProductStoreSvcContainer(productStoreImage, postgres, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.PRODUCT_STORE_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.PRODUCT_STORE_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.PRODUCT_STORE_SVC, container)
   }
@@ -186,7 +186,7 @@ export class CoreContainerStarter {
       tenantSvcContainer as StartedSvcContainer
     )
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.PERMISSION_SVC]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.PERMISSION_SVC]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.PERMISSION_SVC, container)
   }
@@ -195,7 +195,7 @@ export class CoreContainerStarter {
     const shellBffImage = await this.imageResolver.getBffImage(OnecxBff.SHELL_BFF, this.config)
     const container = await new ShellBffContainer(shellBffImage, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.SHELL_BFF]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.SHELL_BFF]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.SHELL_BFF, container)
   }
@@ -210,7 +210,7 @@ export class CoreContainerStarter {
     const shellUiImage = await this.imageResolver.getUiImage(OnecxUi.SHELL_UI, this.config)
     const container = await new ShellUiContainer(shellUiImage, keycloak)
       .withNetwork(this.network)
-      .enableLogging(loggingEnabled(this.config, [CONTAINER.SHELL_UI]))
+      .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.SHELL_UI]))
       .start()
     this.containerRegistry.addContainer(CONTAINER.SHELL_UI, container)
   }

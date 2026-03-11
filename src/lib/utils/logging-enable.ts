@@ -7,17 +7,17 @@ import { PlatformConfig } from '../models/interfaces/platform-config.interface'
  * @returns boolean indicating whether logging should be enabled
  */
 export function loggingEnabled(config: PlatformConfig, networkAliases?: string[]): boolean {
-  if (typeof config.enableLogging === 'boolean') {
-    return config.enableLogging
-  } else if (Array.isArray(config.enableLogging)) {
+  if (typeof config.withLoggingEnabled === 'boolean') {
+    return config.withLoggingEnabled
+  } else if (Array.isArray(config.withLoggingEnabled)) {
     // If no networkAliases provided, just check if there are any items in the array
     if (!networkAliases || networkAliases.length === 0) {
-      return config.enableLogging.length > 0
+      return config.withLoggingEnabled.length > 0
     }
 
     // Separate positive and negative (with !) entries
-    const positiveEntries = config.enableLogging.filter((entry) => !entry.startsWith('!'))
-    const negativeEntries = config.enableLogging
+    const positiveEntries = config.withLoggingEnabled.filter((entry) => !entry.startsWith('!'))
+    const negativeEntries = config.withLoggingEnabled
       .filter((entry) => entry.startsWith('!'))
       .map((entry) => entry.substring(1)) // Remove the '!' prefix
 

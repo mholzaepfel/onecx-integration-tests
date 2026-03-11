@@ -1,4 +1,3 @@
-
 import { CoreContainerStarter } from './core-container-starter'
 import { CONTAINER } from '../models/enums/container.enum'
 import { OnecxPostgresContainer, StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
@@ -53,84 +52,67 @@ describe('CoreContainerStarter', () => {
   const network = {} as StartedNetwork
   const config = {} as PlatformConfig
 
-
   let starter: CoreContainerStarter
 
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(OnecxPostgresContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedPostgres),
+    }))
+    ;(OnecxKeycloakContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedKeycloak),
+    }))
+    ;(ShellBffContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedBff),
+    }))
+    ;(ShellUiContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedUi),
+    }))
+    ;(IamKcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedIamKc),
+    }))
+    ;(WorkspaceSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedWorkspace),
+    }))
+    ;(UserProfileSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedUserProfile),
+    }))
+    ;(ThemeSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedTheme),
+    }))
+    ;(TenantSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedTenant),
+    }))
+    ;(ProductStoreSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedProductStore),
+    }))
+    ;(PermissionSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetwork: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(mockStartedPermission),
+    }))
 
-      ; (OnecxPostgresContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedPostgres),
-      }))
-
-      ; (OnecxKeycloakContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedKeycloak),
-      }))
-
-      ; (ShellBffContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedBff),
-      }))
-
-      ; (ShellUiContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedUi),
-      }))
-
-      ; (IamKcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedIamKc),
-      }))
-
-      ; (WorkspaceSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedWorkspace),
-      }))
-
-      ; (UserProfileSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedUserProfile),
-      }))
-
-      ; (ThemeSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedTheme),
-      }))
-
-      ; (TenantSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedTenant),
-      }))
-
-      ; (ProductStoreSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedProductStore),
-      }))
-
-      ; (PermissionSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
-        withNetwork: jest.fn().mockReturnThis(),
-        enableLogging: jest.fn().mockReturnThis(),
-        start: jest.fn().mockResolvedValue(mockStartedPermission),
-      }))
-
-    starter = new CoreContainerStarter(
-      imageResolver,
-      network,
-      containerRegistry,
-      config
-    )
+    starter = new CoreContainerStarter(imageResolver, network, containerRegistry, config)
   })
 
   it('start core containers', async () => {
@@ -139,15 +121,9 @@ describe('CoreContainerStarter', () => {
 
     await starter.startCoreContainers()
 
-    expect(containerRegistry.addContainer).toHaveBeenCalledWith(
-      CONTAINER.POSTGRES,
-      mockStartedPostgres
-    )
+    expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.POSTGRES, mockStartedPostgres)
 
-    expect(containerRegistry.addContainer).toHaveBeenCalledWith(
-      CONTAINER.KEYCLOAK,
-      mockStartedKeycloak
-    )
+    expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.KEYCLOAK, mockStartedKeycloak)
   })
 
   it('start bff containers', async () => {
@@ -155,10 +131,7 @@ describe('CoreContainerStarter', () => {
 
     await starter.startBffContainers(mockStartedKeycloak)
 
-    expect(containerRegistry.addContainer).toHaveBeenCalledWith(
-      CONTAINER.SHELL_BFF,
-      mockStartedBff
-    )
+    expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.SHELL_BFF, mockStartedBff)
   })
 
   it('start ui containers', async () => {
@@ -168,10 +141,7 @@ describe('CoreContainerStarter', () => {
 
     await starter.startUiContainers(mockStartedKeycloak)
 
-    expect(containerRegistry.addContainer).toHaveBeenCalledWith(
-      CONTAINER.SHELL_UI,
-      mockStartedUi
-    )
+    expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.SHELL_UI, mockStartedUi)
   })
 
   it('start service containers', async () => {

@@ -48,7 +48,7 @@ export class BffContainer extends GenericContainer {
     return this.port
   }
 
-  enableLogging(log: boolean): this {
+  withLoggingEnabled(log: boolean): this {
     this.loggingEnabled = log
     return this
   }

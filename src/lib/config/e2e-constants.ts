@@ -1,29 +1,30 @@
 import * as path from 'path'
-import { DEFAULT_ARTEFACTS_ROOT, DEFAULT_RUN_ID, resolveRunArtefactsDir } from './artefacts'
 
 /**
  * Constants for E2E test execution
  */
 
 /**
- * Output directory name for E2E results under artefacts/runs/<runId>
+ * Output directory for E2E results (relative to cwd)
  * Used by both E2E container volume mount and PlatformInfoExporter
  */
-export const E2E_OUTPUT_DIR = 'results-e2e'
-
-// Base directory for artefacts root (can be overridden via env)
-const E2E_BASE_DIR = process.env.E2E_BASE_DIR || DEFAULT_ARTEFACTS_ROOT
+export const E2E_OUTPUT_DIR = 'e2e-results'
 
 /**
  * Container path where E2E results are written inside the container
  */
-export const E2E_CONTAINER_OUTPUT_PATH = '/results-e2e'
+export const E2E_CONTAINER_OUTPUT_PATH = '/reports'
 
 /**
- * Get the absolute path for E2E output directory within artefacts/runs/<runId>
+ * Default timeout for E2E container startup/termination wait in milliseconds.
+ * 10 minutes is intended for slower CI/CD pipelines.
+ * 1000 milli * 60 sec * 10 min
+ */
+export const E2E_DEFAULT_TIMEOUT_MS = 1000 * 60 * 10
+
+/**
+ * Get the absolute path for E2E output directory
  */
 export function getE2eOutputPath(): string {
-  const runId = process.env.E2E_RUN_ID || DEFAULT_RUN_ID
-  const runDir = resolveRunArtefactsDir(E2E_BASE_DIR, runId)
-  return path.resolve(path.join(runDir, E2E_OUTPUT_DIR))
+  return path.resolve(process.cwd(), E2E_OUTPUT_DIR)
 }

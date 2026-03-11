@@ -19,7 +19,7 @@
           "description": "Whether to run data import after starting services",
           "default": true
         },
-        "enableLogging": {
+        "withLoggingEnabled": {
           "oneOf": [
             {
               "type": "boolean",
@@ -363,17 +363,13 @@
         },
         "baseUrl": {
           "type": "string",
-          "description": "Base URL for E2E tests (e.g., http://onecx-shell:8080/admin/)."
+          "description": "Base URL for E2E tests (e.g., http://onecx-shell:8080/<BASEHREF>/)."
         },
-        "environments": {
-          "$ref": "#/definitions/environmentVariables"
-        },
-        "command": {
-          "type": "array",
-          "description": "Override default command",
-          "items": {
-            "type": "string"
-          }
+        "timeoutMs": {
+          "type": "number",
+          "minimum": 1000,
+          "default": 600000,
+          "description": "Maximum wait time in milliseconds for E2E one-shot startup/finish before failing."
         }
       },
       "required": ["image", "networkAlias"]

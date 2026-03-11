@@ -15,7 +15,8 @@ import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
 import { PlatformInfoExporter } from './platform-info-exporter'
-import { PlatformInfo } from '../models/interfaces/platform-info-exporter.interface'
+import { PlatformInfo } from '../models/platform-info-exporter.interface'
+import { DEFAULT_PLATFORM_CONFIG } from '../config/default-platform-config'
 
 const logger = new Logger('PlatformManager')
 
@@ -48,10 +49,8 @@ export class PlatformManager {
    * @param config Optional config override. If not provided, uses validated config from constructor
    */
   async startContainers(config?: PlatformConfig): Promise<void> {
-    const finalConfig = config || this.validatedConfig
-    if (!finalConfig) {
-      throw new Error('No valid platform configuration found. Expected integration-tests/platform/platform.json')
-    }
+    // Use validated config from constructor if available, otherwise use provided config or default
+    const finalConfig = config || this.validatedConfig || DEFAULT_PLATFORM_CONFIG
 
     // Configure logger based on platform config
     logger.setPlatformConfig(finalConfig)
@@ -103,7 +102,7 @@ export class PlatformManager {
     }
 
     // Import data if configured
-    if (finalConfig.importData && this.network && this.dataImporter) {
+    if (finalConfig.importData && this.dataImporter) {
       this.dataImporter.createContainerInfo(this.containerRegistry.getAllContainers())
       await this.dataImporter.importDefaultData(this.network, this.containerRegistry.getAllContainers(), finalConfig)
     }
@@ -114,9 +113,7 @@ export class PlatformManager {
     this.healthChecker.startHeartbeat(this.containerRegistry.getAllContainers())
 
     // Initialize exporter after all containers are started
-    if (this.network) {
-      this.platformInfoExporter = new PlatformInfoExporter(this.containerRegistry, this.network)
-    }
+    this.platformInfoExporter = new PlatformInfoExporter(this.containerRegistry, this.network)
   }
 
   /**
@@ -271,6 +268,60 @@ export class PlatformManager {
   }
 
   /**
+   * Get platform info exporter for URL access
+   */
+  getInfoExporter(): PlatformInfoExporter | undefined {
+    return this.platformInfoExporter
+  }
+
+  /**
+   * Get platform info (convenience method)
+   */
+  async getPlatformInfo(): Promise<PlatformInfo | undefined> {
+    return await this.platformInfoExporter?.getPlatformInfo()
+  }
+
+  /**
+   * Check if E2E tests are configured
+   */
+  hasE2eConfig(): boolean {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+    return !!config.container?.e2e
+  }
+
+  /**
+   * Run E2E tests if configured
+   * This should be called after all containers are healthy
+   * The E2E container will be started as the last container
+   * @returns E2E result with exit code, or undefined if no E2E configured
+   */
+  async startE2eContainer(): Promise<E2eResult | undefined> {
+    const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
+
+    if (!config.container?.e2e) {
+      return undefined
+    }
+
+    if (!this.UserDefinedContainerStarter) {
+      // Initialize UserDefinedContainerStarter if not already done
+      if (!this.network || !this.imageResolver) {
+        throw new Error('Network and ImageResolver must be initialized before running E2E tests')
+      }
+      const postgres = this.containerRegistry.getContainer(CONTAINER.POSTGRES) as StartedOnecxPostgresContainer
+      const keycloak = this.containerRegistry.getContainer(CONTAINER.KEYCLOAK) as StartedOnecxKeycloakContainer
+      this.UserDefinedContainerStarter = new UserDefinedContainerStarter(
+        this.network,
+        this.imageResolver,
+        this.containerRegistry,
+        postgres,
+        keycloak
+      )
+    }
+
+    return await this.UserDefinedContainerStarter.startE2eContainer(config)
+  }
+
+  /**
    * Create user-defined containers using the UserDefinedContainerStarter
    */
   private async createContainers(config: PlatformConfig): Promise<void> {
@@ -322,61 +373,5 @@ export class PlatformManager {
       logger.error(LogMessages.CONTAINER_FAILED, containerKey, error)
       throw error
     }
-  }
-
-  /**
-   * Get platform info exporter for URL access
-   */
-  getInfoExporter(): PlatformInfoExporter | undefined {
-    return this.platformInfoExporter
-  }
-
-  /**
-   * Get platform info (convenience method)
-   */
-  getPlatformInfo(): PlatformInfo | undefined {
-    return this.platformInfoExporter?.getPlatformInfo()
-  }
-
-  /**
-   * Check if E2E tests are configured
-   */
-  hasE2eConfig(): boolean {
-    return !!this.validatedConfig?.container?.e2e
-  }
-
-  /**
-   * Run E2E tests if configured
-   * This should be called after all containers are healthy
-   * The E2E container will be started as the last container
-   * @returns E2E result with exit code, or undefined if no E2E configured
-   */
-  async runE2eTests(): Promise<E2eResult | undefined> {
-    const config = this.validatedConfig
-    if (!config) {
-      throw new Error('No valid platform configuration found. Expected integration-tests/platform/platform.json')
-    }
-
-    if (!config.container?.e2e) {
-      return undefined
-    }
-
-    if (!this.UserDefinedContainerStarter) {
-      // Initialize UserDefinedContainerStarter if not already done
-      if (!this.network || !this.imageResolver) {
-        throw new Error('Network and ImageResolver must be initialized before running E2E tests')
-      }
-      const postgres = this.containerRegistry.getContainer(CONTAINER.POSTGRES) as StartedOnecxPostgresContainer
-      const keycloak = this.containerRegistry.getContainer(CONTAINER.KEYCLOAK) as StartedOnecxKeycloakContainer
-      this.UserDefinedContainerStarter = new UserDefinedContainerStarter(
-        this.network,
-        this.imageResolver,
-        this.containerRegistry,
-        postgres,
-        keycloak
-      )
-    }
-
-    return await this.UserDefinedContainerStarter.runE2eTests(config)
   }
 }

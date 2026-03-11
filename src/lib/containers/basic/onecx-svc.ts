@@ -26,10 +26,7 @@ export class SvcContainer extends GenericContainer {
     retries: 3,
   }
 
-  constructor(
-    image: string,
-    private services: SvcContainerServices
-  ) {
+  constructor(image: string, private services: SvcContainerServices) {
     super(image)
     this.withHealthCheck(this.defaultHealthCheck)
     this.withExposedPorts(this.port)
@@ -63,7 +60,7 @@ export class SvcContainer extends GenericContainer {
     this.shouldCreateDatabase = shouldStart
   }
 
-  enableLogging(log: boolean): this {
+  withLoggingEnabled(log: boolean): this {
     this.loggingEnabled = log
     return this
   }
@@ -87,7 +84,9 @@ export class SvcContainer extends GenericContainer {
       ...this.environment,
       QUARKUS_DATASOURCE_USERNAME: this.details.databaseUsername,
       QUARKUS_DATASOURCE_PASSWORD: this.details.databaseUsername,
-      QUARKUS_DATASOURCE_JDBC_URL: `jdbc:postgresql://${this.services.databaseContainer?.getNetworkAliases()[0]}:${this.services.databaseContainer?.getPort()}/${this.details.databaseUsername}?sslmode=disable`,
+      QUARKUS_DATASOURCE_JDBC_URL: `jdbc:postgresql://${
+        this.services.databaseContainer?.getNetworkAliases()[0]
+      }:${this.services.databaseContainer?.getPort()}/${this.details.databaseUsername}?sslmode=disable`,
       TKIT_DATAIMPORT_ENABLED: 'true',
       ONECX_TENANT_CACHE_ENABLED: 'false',
     }).withEnvironment(getCommonEnvironmentVariables(this.services.keycloakContainer))
