@@ -14,6 +14,7 @@ import { Logger, LogMessages } from '../utils/logger'
 import { ContainerRegistry } from './container-registry'
 import { E2eContainerInterface, E2eResult } from '../models/e2e.interface'
 import { E2eContainer } from '../containers/e2e/onecx-e2e'
+import { E2E_DEFAULT_TIMEOUT_MS } from '../config/e2e-constants'
 
 const logger = new Logger('UserDefinedContainerStarter')
 
@@ -187,6 +188,7 @@ export class UserDefinedContainerStarter {
    */
   async createE2eContainer(e2eConfig: E2eContainerInterface, withLoggingEnabled: boolean): Promise<E2eResult> {
     const startTime = Date.now()
+    const startupTimeoutMs = e2eConfig.timeoutMs ?? E2E_DEFAULT_TIMEOUT_MS
 
     // Resolve image (may need to pull from registry)
     const resolvedImage = await this.imageResolver.getImage(e2eConfig.image)
@@ -198,7 +200,11 @@ export class UserDefinedContainerStarter {
       e2eContainer.withBaseUrl(e2eConfig.baseUrl)
     }
 
-    const startedContainer = await e2eContainer.withLoggingEnabled(withLoggingEnabled).withNetwork(this.network).start()
+    const startedContainer = await e2eContainer
+      .withLoggingEnabled(withLoggingEnabled)
+      .withNetwork(this.network)
+      .withStartupTimeout(startupTimeoutMs)
+      .start()
 
     // With the E2E one-shot completion strategy, start() resolves after container exit.
     // We then inspect and report the real exit code.

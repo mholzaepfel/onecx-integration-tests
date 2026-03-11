@@ -8,6 +8,8 @@ export interface E2eContainerInterface {
   networkAlias: string
   /** Base URL the E2E runner should target for the UI */
   baseUrl?: string
+  /** Maximum wait time in milliseconds for one-shot startup/finish (default: 600_000 (10min)) */
+  timeoutMs?: number
 }
 
 /**
