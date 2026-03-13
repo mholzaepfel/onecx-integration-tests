@@ -15,12 +15,13 @@ import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
 import { PlatformInfoExporter } from './platform-info-exporter'
-import { PlatformInfo } from '../models/platform-info-exporter.interface'
+import { PlatformInfo } from '../models/interfaces/platform-info-exporter.interface'
 import { DEFAULT_PLATFORM_CONFIG } from '../config/default-platform-config'
+import type { PlatformRuntime } from '../models/interfaces/platform-runtime.interface'
 
 const logger = new Logger('PlatformManager')
 
-export class PlatformManager {
+export class PlatformManager implements PlatformRuntime {
   /**
    * Container registry for managing all containers
    */
@@ -279,6 +280,13 @@ export class PlatformManager {
    */
   async getPlatformInfo(): Promise<PlatformInfo | undefined> {
     return await this.platformInfoExporter?.getPlatformInfo()
+  }
+
+  /**
+   * Export runtime platform metadata to artefacts.
+   */
+  exportPlatformInfo(): void {
+    this.platformInfoExporter?.exportAll()
   }
 
   /**

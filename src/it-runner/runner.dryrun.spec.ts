@@ -1,11 +1,11 @@
 import { IntegrationTestsRunner } from './runner'
-import { PlatformAdapter } from './types/platform-adapter.interface'
-import { E2eExecutionResult } from './types/results.interface'
+import { PlatformRuntime } from '../lib/models/interfaces/platform-runtime.interface'
+import { E2eResult } from '../lib/models/interfaces/e2e.interface'
 
 /**
  * Test double used to validate dry-run behavior without starting real containers.
  */
-class StubAdapter implements PlatformAdapter {
+class StubPlatformRuntime implements PlatformRuntime {
   constructor(private readonly configValid = true) {}
   hasValidatedConfig(): boolean {
     return this.configValid
@@ -25,13 +25,13 @@ class StubAdapter implements PlatformAdapter {
   async checkAllHealthy(): Promise<unknown> {
     throw new Error('checkAllHealthy should not be called in dry-run')
   }
-  async runE2eTests(): Promise<E2eExecutionResult | undefined> {
-    throw new Error('runE2eTests should not be called in dry-run')
+  async startE2eContainer(): Promise<E2eResult | undefined> {
+    throw new Error('startE2eContainer should not be called in dry-run')
   }
   async stopAllContainers(): Promise<void> {
     return
   }
-  getAllContainers(): Map<string | symbol, unknown> {
+  getAllContainers(): Map<string, unknown> {
     return new Map()
   }
 }
@@ -50,7 +50,7 @@ describe('IntegrationTestsRunner dry-run', () => {
       captureLogsToFile: false,
       help: false,
     }
-    const runner = new IntegrationTestsRunner(options, () => new StubAdapter())
+    const runner = new IntegrationTestsRunner(options, () => new StubPlatformRuntime())
     const exitCode = await runner.run()
     expect(exitCode).toBe(0)
   })

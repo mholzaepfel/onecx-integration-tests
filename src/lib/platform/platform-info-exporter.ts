@@ -6,7 +6,7 @@ import { PortAwareContainer } from '../models/types/allowed-container.type'
 import { getE2eOutputPath } from '../config/e2e-constants'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
-import { PlatformInfo, ContainerInfo } from '../models/platform-info-exporter.interface'
+import { PlatformInfo, ContainerInfo } from '../models/interfaces/platform-info-exporter.interface'
 import {
   getInternalPort,
   isPortAwareContainer,

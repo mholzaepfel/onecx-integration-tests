@@ -2,13 +2,13 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { ArtefactsManager } from './artefacts/artefacts-manager'
 import { CliOptions } from './types/cli-options.interface'
-import { PlatformManagerAdapter } from './platform/platform-adapter'
-import { PlatformAdapter } from './types/platform-adapter.interface'
 import { RunSummary } from './types/run-summary.interface'
 import { E2eExecutionResult } from './types/results.interface'
 import { ContainerWithLogs } from './types/container-logs.interface'
 import { PlatformConfig } from '../lib/models/interfaces/platform-config.interface'
 import { Logger, LoggerLevel } from '../lib/utils/logger'
+import { PlatformManager } from '../lib/platform/platform-manager'
+import { PlatformRuntime } from '../lib/models/interfaces/platform-runtime.interface'
 
 /**
  * Orchestrates one complete integration test run lifecycle.
@@ -20,7 +20,7 @@ export class IntegrationTestsRunner {
   private options: CliOptions
   private artefacts: ArtefactsManager
   private logger: Logger
-  private platformAdapter: PlatformAdapter
+  private platformRuntime: PlatformRuntime
   private startTime: number
   private runId: string
   private isShuttingDown = false
@@ -30,14 +30,14 @@ export class IntegrationTestsRunner {
   private containerLogStreams: NodeJS.ReadableStream[] = []
   private restoreTerminalStreams?: () => void
 
-  constructor(options: CliOptions, adapterFactory?: () => PlatformAdapter) {
+  constructor(options: CliOptions, platformFactory?: () => PlatformRuntime) {
     this.options = options
     this.runId = this.generateRunId()
     this.artefacts = new ArtefactsManager(undefined, this.runId)
     const logPath = options.captureLogsToFile ? this.artefacts.getRunnerLogPath() : undefined
     this.logger = new Logger('IntegrationTestsRunner', logPath)
-    const factory = adapterFactory ?? (() => new PlatformManagerAdapter())
-    this.platformAdapter = factory()
+    const factory = platformFactory ?? (() => new PlatformManager())
+    this.platformRuntime = factory()
     this.startTime = Date.now()
   }
 
@@ -74,7 +74,7 @@ export class IntegrationTestsRunner {
         return this.finalize(IntegrationTestsRunner.EXIT_FAILURE, 'failure')
       }
 
-      const mode = this.platformAdapter.hasE2eConfig() ? 'e2e' : 'platform-only'
+      const mode = this.platformRuntime.hasE2eConfig() ? 'e2e' : 'platform-only'
 
       this.log('info', `Mode: ${mode}`)
 
@@ -84,12 +84,12 @@ export class IntegrationTestsRunner {
       }
 
       this.log('info', 'Starting platform...')
-      await this.platformAdapter.startContainers()
+      await this.platformRuntime.startContainers()
 
-      this.platformAdapter.exportPlatformInfo()
+      this.platformRuntime.exportPlatformInfo()
 
       this.log('info', 'Waiting for health checks...')
-      await this.platformAdapter.checkAllHealthy()
+      await this.platformRuntime.checkAllHealthy()
       this.log('success', 'Platform is ready')
 
       await this.startContainerLogCapture()
@@ -98,9 +98,9 @@ export class IntegrationTestsRunner {
 
       if (mode === 'e2e') {
         this.log('info', 'Running E2E tests...')
-        const result = await this.platformAdapter.runE2eTests()
+        const result = await this.platformRuntime.startE2eContainer()
         if (result) {
-          e2eResult = { exitCode: result.exitCode, success: result.success, durationMs: result.durationMs }
+          e2eResult = { exitCode: result.exitCode, success: result.success, durationMs: result.duration }
           this.log(
             result.success ? 'success' : 'error',
             `E2E ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode})`
@@ -124,11 +124,11 @@ export class IntegrationTestsRunner {
   }
 
   private loadConfig(): PlatformConfig | undefined {
-    if (!this.platformAdapter.hasValidatedConfig()) {
+    if (!this.platformRuntime.hasValidatedConfig()) {
       this.log('error', 'Configuration validation failed')
       return undefined
     }
-    return this.platformAdapter.getValidatedConfig()
+    return this.platformRuntime.getValidatedConfig()
   }
 
   private waitWithTimeout(timeoutMs: number): Promise<void> {
@@ -157,7 +157,7 @@ export class IntegrationTestsRunner {
 
     this.log('info', 'Shutting down platform...')
     try {
-      await this.platformAdapter.stopAllContainers()
+      await this.platformRuntime.stopAllContainers()
       this.log('success', 'Platform shutdown complete')
     } catch (error) {
       this.log('error', `Cleanup error: ${error}`)
@@ -180,7 +180,7 @@ export class IntegrationTestsRunner {
       durationMs,
       exitCode,
       status,
-      mode: this.platformAdapter.hasE2eConfig() ? 'e2e' : 'platform-only',
+      mode: this.platformRuntime.hasE2eConfig() ? 'e2e' : 'platform-only',
       e2eResult,
     }
 
@@ -225,7 +225,7 @@ export class IntegrationTestsRunner {
 
     this.ensureContainerLogWriter()
 
-    const containers = this.platformAdapter.getAllContainers()
+    const containers = this.platformRuntime.getAllContainers()
     for (const [key, container] of containers.entries()) {
       const name = typeof key === 'string' ? key : String(key)
       const candidate = container as ContainerWithLogs
