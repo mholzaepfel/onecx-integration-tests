@@ -6,17 +6,14 @@ OneCX integration test toolkit for starting a local platform stack (via Testcont
 
 - A programmatic API (`PlatformManager`) to orchestrate platform containers.
 - A CLI runner (`it-runner`) for end-to-end integration test execution.
-- Config-driven startup from `integration-tests/platform/platform.json`.
+- Config-driven startup with default lookup at `integration-tests/platform/platform.json`.
 - Run artefacts with summaries, logs, reports, and E2E outputs.
 
 ## Public API
 
-The package exports the following symbols from `src/index.ts`:
+The package currently exports the following symbol from `src/index.ts`:
 
 - `PlatformManager`
-- `PlatformConfig`
-- `CONTAINER`
-- `AllowedContainerTypes` (type)
 
 ## Prerequisites
 
@@ -37,7 +34,7 @@ Run the integration test runner:
 npm run it:run
 ```
 
-Run a dry run (validation + execution plan only):
+Run a dry run (validation + mode detection only):
 
 ```sh
 npm run it:run -- --dry-run
@@ -49,10 +46,17 @@ Run with verbose output and log capture:
 npm run it:run -- --verbose --capture-logs
 ```
 
+Show CLI help:
+
+```sh
+npm run it:run -- --help
+```
+
 ## Runner behavior
 
 - **E2E mode**: If `platformConfig.container.e2e` exists, the runner starts the platform, waits for health checks, runs E2E, then shuts down.
 - **Platform-only mode**: If no E2E container is configured, the runner starts and validates the platform, collects artefacts, then shuts down.
+- **Dry-run mode** (`--dry-run`): Validates and resolves configuration, determines run mode, creates run artefact directories, and exits without starting containers.
 
 ## CLI options (`it-runner`)
 
@@ -73,8 +77,9 @@ npm run it:run -- --verbose --capture-logs
 ## Configuration
 
 - Default config path: `integration-tests/platform/platform.json`
+- If no explicit config path is provided, the validator first checks the default path and then searches recursively from the current working directory for files matching `*platform.json`.
 - The config is validated against the project schema before execution.
-- If no valid config is found, the runner exits with config error.
+- If no valid config is found, the runner exits with status `failure`.
 
 ## Artefacts
 
@@ -86,10 +91,12 @@ Typical output:
 
 - `summary.json` – run metadata (status, duration, mode, exit code)
 - `logs/runner-output.log` – runner logs (with `--capture-logs`)
-- `logs/containers.log` – captured container/terminal streams (written when `--capture-logs` is enabled)
+- `logs/containers.log` – captured stdout/stderr and container streams (written when `--capture-logs` is enabled)
 - `reports/` – generated reports
 - `results-e2e/` – E2E result files
 - `e2e-results/` – copied E2E output (if source path differs)
+
+Additional generated runtime metadata may be exported by the platform runtime to the same run artefacts directory.
 
 ## Development
 
@@ -136,6 +143,16 @@ Playwright tests are located in:
 `integration-tests/e2e/playwright`
 
 See its local README for container execution and local debug commands.
+
+## Import Data Assets
+
+Import payloads and import logic used by the platform data importer are located under:
+
+`src/imports`
+
+Assumptions about container network aliases used by import payloads are documented in:
+
+`docs/import-assumptions.adoc`
 
 ## License
 
