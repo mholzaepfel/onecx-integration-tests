@@ -17,12 +17,13 @@ export class IntegrationTestsRunner {
   private static readonly EXIT_SUCCESS = 0
   private static readonly EXIT_FAILURE = 1
 
-  private options: CliOptions
-  private artefacts: ArtefactsManager
-  private logger: Logger
-  private platformRuntime: PlatformRuntime
-  private startTime: number
-  private runId: string
+  private readonly options: CliOptions
+  private readonly artefacts: ArtefactsManager
+  private readonly logger: Logger
+  private readonly platformRuntime: PlatformRuntime
+  private readonly startTime: number
+  private readonly runId: string
+
   private isShuttingDown = false
   private timeoutHandle?: NodeJS.Timeout
   private containerLogPath?: string
@@ -50,77 +51,98 @@ export class IntegrationTestsRunner {
     this.setupSignalHandlers()
 
     try {
-      this.artefacts.ensureDirectories()
-      this.containerLogPath = this.resolveContainerLogPath()
-
-      const artefactsRoot = this.artefacts.getArtefactsRoot()
-      process.env.artefacts_ROOT = artefactsRoot
-      process.env.E2E_BASE_DIR = artefactsRoot
-      process.env.E2E_RUN_ID = this.runId
-      process.env.RUN_ID = this.runId
-      this.log('info', `Run ID: ${this.runId}`)
-      this.log('info', `Artefacts: ${this.artefacts.getRunDir()}`)
-      if (this.options.captureLogsToFile) {
-        this.log('info', `Runner log file: ${this.artefacts.getRunnerLogPath()}`)
-      }
-      if (this.containerLogPath) {
-        this.log('info', `Container logs: ${this.containerLogPath}`)
-      }
-
-      this.startTerminalLogCapture()
-
+      this.initializeRunContext()
       const config = this.loadConfig()
       if (!config) {
         return this.finalize(IntegrationTestsRunner.EXIT_FAILURE, 'failure')
       }
 
-      const mode = this.platformRuntime.hasE2eConfig() ? 'e2e' : 'platform-only'
-
-      this.log('info', `Mode: ${mode}`)
+      this.log('info', 'Mode: e2e')
 
       if (this.options.dryRun) {
-        this.log('info', 'Dry run complete')
-        return this.finalize(IntegrationTestsRunner.EXIT_SUCCESS, 'success')
+        return this.finishDryRun()
       }
 
-      this.log('info', 'Starting platform...')
-      await this.platformRuntime.startContainers()
-
-      this.platformRuntime.exportPlatformInfo()
-
-      this.log('info', 'Waiting for health checks...')
-      await this.platformRuntime.checkAllHealthy()
-      this.log('success', 'Platform is ready')
-
-      await this.startContainerLogCapture()
-
-      let e2eResult: E2eExecutionResult | undefined
-
-      if (mode === 'e2e') {
-        this.log('info', 'Running E2E tests...')
-        const result = await this.platformRuntime.startE2eContainer()
-        if (result) {
-          e2eResult = { exitCode: result.exitCode, success: result.success, durationMs: result.duration }
-          this.log(
-            result.success ? 'success' : 'error',
-            `E2E ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode})`
-          )
-        }
-      }
+      await this.executePlatformFlow()
+      const e2eResult = await this.runE2e()
 
       this.log('info', 'Collecting artefacts...')
       this.artefacts.copyE2eResults()
 
       await this.cleanup()
-
-      const successfulRun = e2eResult?.success !== false
-      const exitCode = successfulRun ? IntegrationTestsRunner.EXIT_SUCCESS : IntegrationTestsRunner.EXIT_FAILURE
-      return this.finalize(exitCode, successfulRun ? 'success' : 'failure', e2eResult)
+      return this.finalizeByE2eResult(e2eResult)
     } catch (error) {
       this.log('error', `Error: ${error}`)
       await this.cleanup()
       return this.finalize(IntegrationTestsRunner.EXIT_FAILURE, 'error')
     }
+  }
+
+  private initializeRunContext(): void {
+    this.artefacts.ensureDirectories()
+    this.containerLogPath = this.resolveContainerLogPath()
+
+    const artefactsRoot = this.artefacts.getArtefactsRoot()
+    process.env.artefacts_ROOT = artefactsRoot
+    process.env.E2E_BASE_DIR = artefactsRoot
+    process.env.E2E_RUN_ID = this.runId
+    process.env.RUN_ID = this.runId
+
+    this.log('info', `Run ID: ${this.runId}`)
+    this.log('info', `Artefacts: ${this.artefacts.getRunDir()}`)
+    if (this.options.captureLogsToFile) {
+      this.log('info', `Runner log file: ${this.artefacts.getRunnerLogPath()}`)
+    }
+    if (this.containerLogPath) {
+      this.log('info', `Container logs: ${this.containerLogPath}`)
+    }
+
+    this.startTerminalLogCapture()
+  }
+
+  private finishDryRun(): number {
+    this.log('info', 'Dry run complete')
+    return this.finalize(IntegrationTestsRunner.EXIT_SUCCESS, 'success')
+  }
+
+  private async executePlatformFlow(): Promise<void> {
+    this.log('info', 'Starting platform...')
+    await this.platformRuntime.startContainers()
+
+    await this.platformRuntime.exportPlatformInfo()
+
+    this.log('info', 'Waiting for health checks...')
+    await this.platformRuntime.checkAllHealthy()
+    this.log('success', 'Platform is ready')
+
+    await this.startContainerLogCapture()
+  }
+
+  private async runE2e(): Promise<E2eExecutionResult | undefined> {
+    this.log('info', 'Running E2E tests...')
+    const result = await this.platformRuntime.startE2eContainer()
+    if (!result) {
+      return undefined
+    }
+
+    const e2eResult: E2eExecutionResult = {
+      exitCode: result.exitCode,
+      success: result.success,
+      durationMs: result.duration,
+    }
+
+    this.log(
+      result.success ? 'success' : 'error',
+      `E2E ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode})`
+    )
+
+    return e2eResult
+  }
+
+  private finalizeByE2eResult(e2eResult?: E2eExecutionResult): number {
+    const successfulRun = e2eResult?.success !== false
+    const exitCode = successfulRun ? IntegrationTestsRunner.EXIT_SUCCESS : IntegrationTestsRunner.EXIT_FAILURE
+    return this.finalize(exitCode, successfulRun ? 'success' : 'failure', e2eResult)
   }
 
   private loadConfig(): PlatformConfig | undefined {
@@ -129,20 +151,6 @@ export class IntegrationTestsRunner {
       return undefined
     }
     return this.platformRuntime.getValidatedConfig()
-  }
-
-  private waitWithTimeout(timeoutMs: number): Promise<void> {
-    return new Promise((resolve) => {
-      this.timeoutHandle = setTimeout(resolve, timeoutMs)
-
-      const shutdown = () => {
-        if (this.timeoutHandle) clearTimeout(this.timeoutHandle)
-        resolve()
-      }
-
-      process.once('SIGINT', shutdown)
-      process.once('SIGTERM', shutdown)
-    })
   }
 
   private async cleanup(): Promise<void> {
@@ -180,7 +188,7 @@ export class IntegrationTestsRunner {
       durationMs,
       exitCode,
       status,
-      mode: this.platformRuntime.hasE2eConfig() ? 'e2e' : 'platform-only',
+      mode: 'e2e',
       e2eResult,
     }
 
@@ -304,30 +312,6 @@ export class IntegrationTestsRunner {
     // Prefix each line with timestamp and source to make mixed logs traceable.
     const line = `[${new Date().toISOString()}] [${containerName}] ${chunk.toString()}`
     this.containerLogWriter.write(`${line}\n`)
-  }
-
-  private printExecutionPlan(
-    mode: 'e2e' | 'platform-only',
-    timeouts: Required<{ startupMs: number; healthCheckMs: number; e2eMs: number }>
-  ): void {
-    const steps = [
-      'Load configuration',
-      'Initialize PlatformManager',
-      'Start core and user-defined containers',
-      'Export platform info',
-      'Run health checks',
-    ]
-
-    if (mode === 'e2e') {
-      steps.push('Run E2E tests via e2e container')
-    } else {
-      steps.push(`Keep platform running for ${timeouts.e2eMs}ms or until interrupted`)
-    }
-
-    steps.push('Collect artefacts (logs, reports, e2e-results, summary)', 'Shutdown containers')
-
-    this.log('info', 'Execution plan:')
-    steps.forEach((step, idx) => this.log('info', `  ${idx + 1}. ${step}`))
   }
 
   private generateRunId(): string {

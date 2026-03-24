@@ -9,7 +9,7 @@ export interface PlatformRuntime {
   getValidatedConfig(): PlatformConfig | undefined
   hasE2eConfig(): boolean
   startContainers(): Promise<void>
-  exportPlatformInfo(): void
+  exportPlatformInfo(): Promise<void>
   checkAllHealthy(): Promise<unknown>
   startE2eContainer(): Promise<E2eResult | undefined>
   stopAllContainers(): Promise<void>

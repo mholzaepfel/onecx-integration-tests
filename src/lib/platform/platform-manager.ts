@@ -285,8 +285,8 @@ export class PlatformManager implements PlatformRuntime {
   /**
    * Export runtime platform metadata to artefacts.
    */
-  exportPlatformInfo(): void {
-    this.platformInfoExporter?.exportAll()
+  async exportPlatformInfo(): Promise<void> {
+    await this.platformInfoExporter?.exportAll()
   }
 
   /**
