@@ -3,7 +3,7 @@ import * as path from 'path'
 import { ContainerRegistry } from './container-registry'
 import { CONTAINER } from '../models/enums/container.enum'
 import { PortAwareContainer } from '../models/types/allowed-container.type'
-import { getE2eOutputPath } from '../config/e2e-constants'
+import { resolveRunContextPaths } from '../utils/run-context'
 import { Logger } from '../utils/logger'
 import * as fs from 'fs'
 import { PlatformInfo, ContainerInfo } from '../models/interfaces/platform-info-exporter.interface'
@@ -20,8 +20,8 @@ export class PlatformInfoExporter {
   private readonly outputDir: string
 
   constructor(private readonly containerRegistry: ContainerRegistry, private readonly network: StartedNetwork) {
-    // Always use fixed E2E output directory
-    this.outputDir = getE2eOutputPath()
+    // Resolve output path from centralized run context.
+    this.outputDir = resolveRunContextPaths().e2eDir
     // Ensure directory exists
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir, { recursive: true })

@@ -7,6 +7,7 @@ import { E2eExecutionResult } from './types/results.interface'
 import { ContainerWithLogs } from './types/container-logs.interface'
 import { PlatformConfig } from '../lib/models/interfaces/platform-config.interface'
 import { Logger, LoggerLevel } from '../lib/utils/logger'
+import { applyRunContextEnv, resolveRunContextPaths } from '../lib/utils/run-context'
 import { PlatformManager } from '../lib/platform/platform-manager'
 import { PlatformRuntime } from '../lib/models/interfaces/platform-runtime.interface'
 
@@ -82,11 +83,8 @@ export class IntegrationTestsRunner {
     this.artifacts.ensureDirectories()
     this.containerLogPath = this.resolveContainerLogPath()
 
-    const artifactsRoot = this.artifacts.getArtifactsRoot()
-    process.env.artifacts_ROOT = artifactsRoot
-    process.env.E2E_BASE_DIR = artifactsRoot
-    process.env.E2E_RUN_ID = this.runId
-    process.env.RUN_ID = this.runId
+    const runContext = resolveRunContextPaths(this.artifacts.getArtifactsRoot(), this.runId)
+    applyRunContextEnv(runContext)
 
     this.log('info', `Run ID: ${this.runId}`)
     this.log('info', `Artifacts: ${this.artifacts.getRunDir()}`)

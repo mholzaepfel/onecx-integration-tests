@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { RunSummary } from '../types/run-summary.interface'
-import { getE2eOutputPath } from '../../lib/config/e2e-constants'
+import { E2E_OUTPUT_DIR, getE2eOutputPath } from '../../lib/config/e2e-constants'
 import { resolveArtifactsRoot, resolveRunArtifactsDir } from '../../lib/config/artifacts'
 
 /**
@@ -29,7 +29,7 @@ export class ArtifactsManager {
     fs.mkdirSync(this.runDir, { recursive: true })
     fs.mkdirSync(this.logsDir, { recursive: true })
     fs.mkdirSync(path.join(this.runDir, 'reports'), { recursive: true })
-    fs.mkdirSync(path.join(this.runDir, 'results-e2e'), { recursive: true })
+    fs.mkdirSync(path.join(this.runDir, E2E_OUTPUT_DIR), { recursive: true })
   }
 
   /**
@@ -90,7 +90,7 @@ export class ArtifactsManager {
    */
   copyE2eResults(): void {
     const e2eResultsDir = getE2eOutputPath()
-    const targetDir = path.join(this.runDir, 'e2e-results')
+    const targetDir = path.join(this.runDir, E2E_OUTPUT_DIR)
 
     if (path.resolve(e2eResultsDir) === path.resolve(targetDir)) {
       return

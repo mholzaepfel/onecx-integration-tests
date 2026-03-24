@@ -93,8 +93,8 @@ Typical output:
 - `logs/runner-output.log` – runner logs (with `--capture-logs`)
 - `logs/containers.log` – captured stdout/stderr and container streams (written when `--capture-logs` is enabled)
 - `reports/` – generated reports
-- `results-e2e/` – E2E result files
-- `e2e-results/` – copied E2E output (if source path differs)
+- `e2e/` – runtime metadata (for example `platform-info.json`)
+- `e2e-results/` – E2E result files
 
 Additional generated runtime metadata may be exported by the platform runtime to the same run artifacts directory.
 
