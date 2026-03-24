@@ -2,26 +2,26 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { RunSummary } from '../types/run-summary.interface'
 import { getE2eOutputPath } from '../../lib/config/e2e-constants'
-import { resolveArtefactsRoot, resolveRunArtefactsDir } from '../../lib/config/artefacts'
+import { resolveArtifactsRoot, resolveRunArtifactsDir } from '../../lib/config/artifacts'
 
 /**
- * Handles artefact directory setup and persistence for one runner execution.
+ * Handles artifact directory setup and persistence for one runner execution.
  */
-export class ArtefactsManager {
+export class ArtifactsManager {
   private artifactsRoot: string
   private runDir: string
   private logsDir: string
   private runnerLogPath: string
 
   constructor(baseDir: string | undefined, runId: string) {
-    this.artifactsRoot = resolveArtefactsRoot(baseDir)
-    this.runDir = resolveRunArtefactsDir(this.artifactsRoot, runId)
+    this.artifactsRoot = resolveArtifactsRoot(baseDir)
+    this.runDir = resolveRunArtifactsDir(this.artifactsRoot, runId)
     this.logsDir = path.join(this.runDir, 'logs')
     this.runnerLogPath = path.join(this.logsDir, 'runner-output.log')
   }
 
   /**
-   * Create all required artefact directories for the current run.
+   * Create all required artifact directories for the current run.
    *
    * @returns No return value.
    */
@@ -33,16 +33,16 @@ export class ArtefactsManager {
   }
 
   /**
-   * @returns Absolute path to the run-specific artefact directory.
+   * @returns Absolute path to the run-specific artifact directory.
    */
   getRunDir(): string {
     return this.runDir
   }
 
   /**
-   * @returns Absolute path to the artefacts root directory.
+   * @returns Absolute path to the artifacts root directory.
    */
-  getArtefactsRoot(): string {
+  getArtifactsRoot(): string {
     return this.artifactsRoot
   }
 
@@ -84,7 +84,7 @@ export class ArtefactsManager {
   }
 
   /**
-   * Copy E2E result files into the run artefacts directory when present.
+   * Copy E2E result files into the run artifacts directory when present.
    *
    * @returns No return value.
    */

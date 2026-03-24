@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { ArtefactsManager } from './artefacts/artefacts-manager'
+import { ArtifactsManager } from './artifacts/artifacts-manager'
 import { CliOptions } from './types/cli-options.interface'
 import { RunSummary } from './types/run-summary.interface'
 import { E2eExecutionResult } from './types/results.interface'
@@ -18,7 +18,7 @@ export class IntegrationTestsRunner {
   private static readonly EXIT_FAILURE = 1
 
   private readonly options: CliOptions
-  private readonly artefacts: ArtefactsManager
+  private readonly artifacts: ArtifactsManager
   private readonly logger: Logger
   private readonly platformRuntime: PlatformRuntime
   private readonly startTime: number
@@ -34,8 +34,8 @@ export class IntegrationTestsRunner {
   constructor(options: CliOptions, platformFactory?: () => PlatformRuntime) {
     this.options = options
     this.runId = this.generateRunId()
-    this.artefacts = new ArtefactsManager(undefined, this.runId)
-    const logPath = options.captureLogsToFile ? this.artefacts.getRunnerLogPath() : undefined
+    this.artifacts = new ArtifactsManager(undefined, this.runId)
+    const logPath = options.captureLogsToFile ? this.artifacts.getRunnerLogPath() : undefined
     this.logger = new Logger('IntegrationTestsRunner', logPath)
     const factory = platformFactory ?? (() => new PlatformManager())
     this.platformRuntime = factory()
@@ -66,8 +66,8 @@ export class IntegrationTestsRunner {
       await this.executePlatformFlow()
       const e2eResult = await this.runE2e()
 
-      this.log('info', 'Collecting artefacts...')
-      this.artefacts.copyE2eResults()
+      this.log('info', 'Collecting artifacts...')
+      this.artifacts.copyE2eResults()
 
       await this.cleanup()
       return this.finalizeByE2eResult(e2eResult)
@@ -79,19 +79,19 @@ export class IntegrationTestsRunner {
   }
 
   private initializeRunContext(): void {
-    this.artefacts.ensureDirectories()
+    this.artifacts.ensureDirectories()
     this.containerLogPath = this.resolveContainerLogPath()
 
-    const artefactsRoot = this.artefacts.getArtefactsRoot()
-    process.env.artefacts_ROOT = artefactsRoot
-    process.env.E2E_BASE_DIR = artefactsRoot
+    const artifactsRoot = this.artifacts.getArtifactsRoot()
+    process.env.artifacts_ROOT = artifactsRoot
+    process.env.E2E_BASE_DIR = artifactsRoot
     process.env.E2E_RUN_ID = this.runId
     process.env.RUN_ID = this.runId
 
     this.log('info', `Run ID: ${this.runId}`)
-    this.log('info', `Artefacts: ${this.artefacts.getRunDir()}`)
+    this.log('info', `Artifacts: ${this.artifacts.getRunDir()}`)
     if (this.options.captureLogsToFile) {
-      this.log('info', `Runner log file: ${this.artefacts.getRunnerLogPath()}`)
+      this.log('info', `Runner log file: ${this.artifacts.getRunnerLogPath()}`)
     }
     if (this.containerLogPath) {
       this.log('info', `Container logs: ${this.containerLogPath}`)
@@ -192,7 +192,7 @@ export class IntegrationTestsRunner {
       e2eResult,
     }
 
-    this.artefacts.writeSummary(summary)
+    this.artifacts.writeSummary(summary)
 
     console.log('')
     console.log('============================================================')
@@ -200,8 +200,8 @@ export class IntegrationTestsRunner {
     console.log(`  Status:     ${status.toUpperCase()}`)
     console.log(`  Duration:   ${Math.round(durationMs / 1000)}s`)
     console.log(`  Exit Code:  ${exitCode}`)
-    console.log(`  Artefacts:  ${this.artefacts.getRunDir()}`)
-    console.log(`  Runner log: ${this.options.captureLogsToFile ? this.artefacts.getRunnerLogPath() : 'disabled'}`)
+    console.log(`  Artifacts:  ${this.artifacts.getRunDir()}`)
+    console.log(`  Runner log: ${this.options.captureLogsToFile ? this.artifacts.getRunnerLogPath() : 'disabled'}`)
     console.log(`  Container logs: ${this.containerLogPath ?? 'disabled'}`)
     console.log('============================================================')
 
@@ -225,7 +225,7 @@ export class IntegrationTestsRunner {
 
   private resolveContainerLogPath(): string | undefined {
     if (!this.options.captureLogsToFile) return undefined
-    return path.join(this.artefacts.getLogsDir(), 'containers.log')
+    return path.join(this.artifacts.getLogsDir(), 'containers.log')
   }
 
   private async startContainerLogCapture(): Promise<void> {
@@ -271,7 +271,7 @@ export class IntegrationTestsRunner {
 
   private ensureContainerLogWriter(): void {
     if (!this.containerLogPath || this.containerLogWriter) return
-    // Keep all generated log files local to the selected artefacts path.
+    // Keep all generated log files local to the selected artifacts path.
     fs.mkdirSync(path.dirname(this.containerLogPath), { recursive: true })
     this.containerLogWriter = fs.createWriteStream(this.containerLogPath, { flags: 'a' })
   }

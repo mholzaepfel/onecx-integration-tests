@@ -44,7 +44,7 @@ describe('IntegrationTestsRunner dry-run', () => {
     const options = {
       config: undefined,
       timeoutMs: undefined,
-      artefactsDir: './artefacts',
+      artifactsDir: './artifacts',
       verbose: false,
       dryRun: true,
       captureLogsToFile: false,

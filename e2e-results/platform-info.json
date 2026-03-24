@@ -1,0 +1,126 @@
+{
+  "network": {
+    "name": "82c2a2089a89",
+    "id": "b325ac64ac5bdc216822e31dda60d4304c747fe1fe0bfed97ce176095b738f39"
+  },
+  "e2e": {
+    "baseUrl": "http://onecx-shell-ui:8080",
+    "keycloakUrl": "http://keycloak-app:8080"
+  },
+  "external": {
+    "shellUi": "http://172.17.0.1:32801",
+    "keycloak": "http://172.17.0.1:32785"
+  },
+  "containers": {
+    "postgresdb": {
+      "name": "postgresdb",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32783,
+      "internalPort": 5432,
+      "internalUrl": "http://postgresdb:5432",
+      "externalUrl": "http://172.17.0.1:32783",
+      "running": true
+    },
+    "keycloak-app": {
+      "name": "keycloak-app",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32785,
+      "internalPort": 8080,
+      "internalUrl": "http://keycloak-app:8080",
+      "externalUrl": "http://172.17.0.1:32785",
+      "running": true
+    },
+    "onecx-iam-kc-svc": {
+      "name": "onecx-iam-kc-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32787,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-iam-kc-svc:8080",
+      "externalUrl": "http://172.17.0.1:32787",
+      "running": true
+    },
+    "onecx-workspace-svc": {
+      "name": "onecx-workspace-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32789,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-workspace-svc:8080",
+      "externalUrl": "http://172.17.0.1:32789",
+      "running": true
+    },
+    "onecx-user-profile-svc": {
+      "name": "onecx-user-profile-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32791,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-user-profile-svc:8080",
+      "externalUrl": "http://172.17.0.1:32791",
+      "running": true
+    },
+    "onecx-theme-svc": {
+      "name": "onecx-theme-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32792,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-theme-svc:8080",
+      "externalUrl": "http://172.17.0.1:32792",
+      "running": true
+    },
+    "onecx-tenant-svc": {
+      "name": "onecx-tenant-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32794,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-tenant-svc:8080",
+      "externalUrl": "http://172.17.0.1:32794",
+      "running": true
+    },
+    "onecx-product-store-svc": {
+      "name": "onecx-product-store-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32796,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-product-store-svc:8080",
+      "externalUrl": "http://172.17.0.1:32796",
+      "running": true
+    },
+    "onecx-permission-svc": {
+      "name": "onecx-permission-svc",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32798,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-permission-svc:8080",
+      "externalUrl": "http://172.17.0.1:32798",
+      "running": true
+    },
+    "onecx-shell-bff": {
+      "name": "onecx-shell-bff",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32800,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-shell-bff:8080",
+      "externalUrl": "http://172.17.0.1:32800",
+      "running": true
+    },
+    "onecx-shell-ui": {
+      "name": "onecx-shell-ui",
+      "type": "service",
+      "host": "172.17.0.1",
+      "port": 32801,
+      "internalPort": 8080,
+      "internalUrl": "http://onecx-shell-ui:8080",
+      "externalUrl": "http://172.17.0.1:32801",
+      "running": true
+    }
+  }
+}
