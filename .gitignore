@@ -142,4 +142,4 @@ vite.config.ts.timestamp-*
 
 .vscode/extensions.json
 
-reports
+integration-tests/artifacts

@@ -1,7 +1,7 @@
 import Ajv from 'ajv'
 import * as fs from 'fs'
 import * as path from 'path'
-import { PlatformConfig } from '../models/platform-config.interface'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 import { Logger, LogMessages } from '../utils/logger'
 
 const logger = new Logger('PlatformConfigJsonValidator')
@@ -14,7 +14,8 @@ export interface ValidationResult {
 
 export class PlatformConfigJsonValidator {
   private ajv: InstanceType<typeof Ajv>
-  private readonly CONFIG_FILE_PATTERN = /integration-tests\.json$/
+  private readonly CONFIG_FILE_PATTERN = /platform\.json$/
+  private readonly DEFAULT_CONFIG_RELATIVE_PATH = path.join('integration-tests', 'platform', 'platform.json')
   private readonly SEARCH_ROOT = process.cwd() // Search recursively from current working directory
   private readonly SCHEMA = 'integration-tests.schema.json'
 
@@ -23,9 +24,9 @@ export class PlatformConfigJsonValidator {
   }
 
   /**
-   * Validates the integration-tests.json file against the schema
-   * @param configFilePath Optional path to config file. If not provided, searches recursively from SEARCH_ROOT
-   * @returns ValidationResult with config data if valid
+   * Validates the platform config JSON file against the schema.
+   * @param configFilePath Optional path to config file. If not provided, resolves default and then searches recursively.
+   * @returns ValidationResult with config data if valid.
    */
   validateConfigFile(configFilePath?: string): ValidationResult {
     try {
@@ -35,7 +36,7 @@ export class PlatformConfigJsonValidator {
         return {
           isValid: false,
           errors: [
-            `No valid config file found. Expected a file name matching '*integration-tests.json' (for example 'integration-tests.json') under search root: ${this.SEARCH_ROOT}.`,
+            `No valid config file found. Expected '${this.DEFAULT_CONFIG_RELATIVE_PATH}' or a file matching '*platform.json' under search root: ${this.SEARCH_ROOT}.`,
           ],
         }
       }
@@ -47,7 +48,7 @@ export class PlatformConfigJsonValidator {
       const config = this.parseConfigFile(configContent, configPath)
 
       // Load schema
-      const schemaPath = path.join(__dirname, `../models/${this.SCHEMA}`)
+      const schemaPath = path.join(__dirname, `../models/schemas/${this.SCHEMA}`)
       const schemaContent = fs.readFileSync(schemaPath, 'utf8')
       const schema = JSON.parse(schemaContent)
 
@@ -84,18 +85,26 @@ export class PlatformConfigJsonValidator {
    */
   private resolveConfigPath(configFilePath?: string): string | null {
     if (configFilePath) {
-      // Check if provided path meets requirements
-      if (!this.CONFIG_FILE_PATTERN.test(configFilePath)) {
-        return null
-      }
-
       if (fs.existsSync(configFilePath)) {
         return configFilePath
       }
+
+      const resolvedPath = path.isAbsolute(configFilePath)
+        ? configFilePath
+        : path.resolve(this.SEARCH_ROOT, configFilePath)
+
+      if (fs.existsSync(resolvedPath)) {
+        return resolvedPath
+      }
+    }
+
+    const defaultConfigPath = path.join(this.SEARCH_ROOT, this.DEFAULT_CONFIG_RELATIVE_PATH)
+    if (fs.existsSync(defaultConfigPath)) {
+      return defaultConfigPath
     }
 
     // Search recursively from current working directory
-    const foundFiles = this.findConfigFilesRecursively(this.SEARCH_ROOT)
+    const foundFiles = this.findConfigFilesRecursively(this.SEARCH_ROOT, this.CONFIG_FILE_PATTERN)
 
     if (foundFiles.length > 0) {
       // Return the first found file
@@ -108,7 +117,7 @@ export class PlatformConfigJsonValidator {
   /**
    * Recursively search for config files in the given directory
    */
-  private findConfigFilesRecursively(dir: string): string[] {
+  private findConfigFilesRecursively(dir: string, filePattern: RegExp): string[] {
     const configFiles: string[] = []
 
     if (!fs.existsSync(dir)) {
@@ -128,9 +137,9 @@ export class PlatformConfigJsonValidator {
               item.name
             )
           ) {
-            configFiles.push(...this.findConfigFilesRecursively(fullPath))
+            configFiles.push(...this.findConfigFilesRecursively(fullPath, filePattern))
           }
-        } else if (item.isFile() && this.CONFIG_FILE_PATTERN.test(item.name)) {
+        } else if (item.isFile() && filePattern.test(item.name)) {
           logger.info(LogMessages.CONFIG_FOUND, `Found config file: ${fullPath}`)
           configFiles.push(fullPath)
         }
@@ -187,13 +196,14 @@ export class PlatformConfigJsonValidator {
    * Checks if a file path follows the naming convention
    */
   isValidConfigFileName(filePath: string): boolean {
-    return this.CONFIG_FILE_PATTERN.test(filePath)
+    const fileName = path.basename(filePath)
+    return this.CONFIG_FILE_PATTERN.test(fileName)
   }
 
   /**
    * Gets the search root directory path
    */
   getDefaultConfigPath(): string {
-    return this.SEARCH_ROOT
+    return path.join(this.SEARCH_ROOT)
   }
 }

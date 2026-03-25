@@ -1,6 +1,6 @@
-import type { AllowedContainerTypes } from '../models/allowed-container.type'
+import type { AllowedContainerTypes } from '../models/types/allowed-container.type'
 import { Logger, LogMessages } from '../utils/logger'
-import { ContainerHealthStatus, HeartbeatConfig } from '../models/health-checker.interface'
+import { ContainerHealthStatus, HeartbeatConfig } from '../models/interfaces/health-checker.interface'
 
 const logger = new Logger('HealthChecker')
 

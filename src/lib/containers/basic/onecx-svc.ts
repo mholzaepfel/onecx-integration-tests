@@ -1,9 +1,9 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
 import { HealthCheck } from 'testcontainers/build/types'
-import { SvcDetails, SvcContainerServices } from '../../models/svc.interface'
+import { SvcDetails, SvcContainerServices } from '../../models/interfaces/svc.interface'
 import { getCommonEnvironmentVariables } from '../../utils/common-env.utils'
-import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
-import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
+import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
+import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { buildHealthCheckUrl } from '../../utils/health-check.utils'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 

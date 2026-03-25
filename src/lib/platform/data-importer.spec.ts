@@ -2,10 +2,10 @@
 import { DataImporter } from './data-importer'
 import { ImportManagerContainer } from '../containers/import/import-container'
 import { ImageResolver } from './image-resolver'
-import { CONTAINER } from '../models/container.enum'
+import { CONTAINER } from '../models/enums/container.enum'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import { StartedShellUiContainer } from '../containers/ui/onecx-shell-ui'
-import type { AllowedContainerTypes } from '../models/allowed-container.type'
+import type { AllowedContainerTypes } from '../models/types/allowed-container.type'
 import * as fs from 'fs'
 
 jest.mock('fs')

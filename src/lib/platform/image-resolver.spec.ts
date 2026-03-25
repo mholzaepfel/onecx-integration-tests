@@ -19,7 +19,7 @@ jest.mock('../utils/logger', () => ({
 import { ImagePullChecker } from "./image-pull-checker"
 import { ImageResolver } from "./image-resolver"
 import { ContainerImageOverrideMapper } from '../utils/container-image-override-mapper'
-import { PlatformConfig } from "../models/platform-config.interface"
+import { PlatformConfig } from "../models/interfaces/platform-config.interface"
 import { OnecxBff, OnecxService, OnecxUi } from "../config/env"
 
 jest.mock('../config/env', () => {

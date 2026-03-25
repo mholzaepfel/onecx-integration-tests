@@ -1,7 +1,7 @@
-import { AbstractStartedContainer, GenericContainer, StartedTestContainer } from 'testcontainers'
-import { UiDetails } from '../../models/ui.interface'
-import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
-import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
+import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
+import { UiDetails } from '../../models/interfaces/ui.interface'
+import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
+import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 
 export class UiContainer extends GenericContainer {
@@ -61,6 +61,8 @@ export class UiContainer extends GenericContainer {
     }
 
     this.withExposedPorts(this.port)
+
+    this.withWaitStrategy(Wait.forLogMessage(/start worker process/)).withStartupTimeout(120_000) // 2 minutes timeout for UI startup
 
     return new StartedUiContainer(await super.start(), this.details, this.networkAliases, this.port)
   }

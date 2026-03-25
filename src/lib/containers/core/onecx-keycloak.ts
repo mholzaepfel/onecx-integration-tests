@@ -2,8 +2,8 @@ import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait 
 import * as path from 'path'
 import { StartedOnecxPostgresContainer } from './onecx-postgres'
 import { HealthCheck } from 'testcontainers/build/types'
-import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
-import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
+import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
+import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 
 interface OnecxEnvironment {
@@ -172,7 +172,7 @@ export class OnecxKeycloakContainer extends GenericContainer {
       KC_DB_URL_HOST: this.databaseContainer.getNetworkAliases()[0],
       KC_DB_USERNAME: this.onecxEnvironment.keycloakDatabaseUsername,
       KC_DB_PASSWORD: this.onecxEnvironment.keycloakDatabasePassword,
-      KC_HOSTNAME: this.onecxEnvironment.keycloakHostname,
+      KC_HOSTNAME_URL: `http://${this.onecxEnvironment.keycloakHostname}:${this.onecxEnvironment.port}`,
       KC_HOSTNAME_STRICT: 'false',
       KC_HTTP_ENABLED: 'true',
       KC_HTTP_PORT: `${this.onecxEnvironment.port}`,

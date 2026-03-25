@@ -1,14 +1,14 @@
 import { GenericContainer, StartedTestContainer, AbstractStartedContainer, Wait } from 'testcontainers'
 import Dockerode from 'dockerode'
-import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
-import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
+import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
+import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
 
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
  * The container is expected to exit with code 0 (success) or 1 (failure).
- * Results are written to the fixed output directory: e2e-results/
+ * Results are written to the resolved E2E output directory.
  */
 export class E2eContainer extends GenericContainer {
   protected loggingEnabled = false
@@ -39,7 +39,7 @@ export class E2eContainer extends GenericContainer {
       this.withEnvironment({ BASE_URL: this.baseUrl })
     }
 
-    // Mount fixed output directory for E2E results
+    // Mount resolved output directory for E2E results
     const outputPath = getE2eOutputPath()
     this.withBindMounts([
       {

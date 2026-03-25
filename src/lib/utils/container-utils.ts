@@ -1,8 +1,8 @@
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import { StartedShellUiContainer } from '../containers/ui/onecx-shell-ui'
 import { StartedE2eContainer } from '../containers/e2e/onecx-e2e'
-import type { AllowedContainerTypes, PortAwareContainer } from '../models/allowed-container.type'
-import { PlatformInfoExportDecision } from '../models/platform-info-exporter.interface'
+import type { AllowedContainerTypes, PortAwareContainer } from '../models/types/allowed-container.type'
+import { PlatformInfoExportDecision } from '../models/interfaces/platform-info-exporter.interface'
 
 export function isPortAwareContainer(container: AllowedContainerTypes): container is PortAwareContainer {
   return 'getPort' in container && typeof container.getPort === 'function'

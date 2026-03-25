@@ -1,26 +1,27 @@
 import { Network, StartedNetwork } from 'testcontainers'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
-import { CONTAINER } from '../models/container.enum'
-import { PlatformConfig } from '../models/platform-config.interface'
-import { DEFAULT_PLATFORM_CONFIG } from '../config/default-platform-config'
+import { CONTAINER } from '../models/enums/container.enum'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
+import { E2eResult } from '../models/interfaces/e2e.interface'
 import { ImageResolver } from './image-resolver'
 import { HealthChecker } from './health-checker'
 import { CoreContainerStarter } from './core-container-starter'
 import { UserDefinedContainerStarter } from './user-defined-container-starter'
 import { DataImporter } from './data-importer'
-import type { AllowedContainerTypes } from '../models/allowed-container.type'
-import { ContainerHealthStatus } from '../models/health-checker.interface'
+import type { AllowedContainerTypes } from '../models/types/allowed-container.type'
+import { ContainerHealthStatus } from '../models/interfaces/health-checker.interface'
 import { Logger, LogMessages } from '../utils/logger'
 import { PlatformConfigJsonValidator } from './json-validator'
 import { StartedOnecxPostgresContainer } from '../containers/core/onecx-postgres'
 import { ContainerRegistry } from './container-registry'
 import { PlatformInfoExporter } from './platform-info-exporter'
-import { PlatformInfo } from '../models/platform-info-exporter.interface'
-import { E2eResult } from '../models/e2e.interface'
+import { PlatformInfo } from '../models/interfaces/platform-info-exporter.interface'
+import { DEFAULT_PLATFORM_CONFIG } from '../config/default-platform-config'
+import type { PlatformRuntime } from '../models/interfaces/platform-runtime.interface'
 
 const logger = new Logger('PlatformManager')
 
-export class PlatformManager {
+export class PlatformManager implements PlatformRuntime {
   /**
    * Container registry for managing all containers
    */
@@ -46,7 +47,7 @@ export class PlatformManager {
 
   /**
    * Orchestrates the startup of the default services and the creation of user-defined containers.
-   * @param config Optional config override. If not provided, uses validated config from constructor or default config
+   * @param config Optional config override. If not provided, uses validated config from constructor
    */
   async startContainers(config?: PlatformConfig): Promise<void> {
     // Use validated config from constructor if available, otherwise use provided config or default
@@ -282,6 +283,13 @@ export class PlatformManager {
   }
 
   /**
+   * Export runtime platform metadata to artifacts.
+   */
+  async exportPlatformInfo(): Promise<void> {
+    await this.platformInfoExporter?.exportAll()
+  }
+
+  /**
    * Check if E2E tests are configured
    */
   hasE2eConfig(): boolean {
@@ -353,9 +361,9 @@ export class PlatformManager {
         LogMessages.CONFIG_VALIDATION_WARN,
         `Configuration validation failed: ${validationResult.errors.join(', ')}`
       )
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'Using default configuration')
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No valid platform configuration found')
     } else {
-      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found, using default configuration')
+      logger.info(LogMessages.CONFIG_NOT_FOUND, 'No configuration file found')
     }
   }
 

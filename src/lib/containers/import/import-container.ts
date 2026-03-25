@@ -1,7 +1,7 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer } from 'testcontainers'
 import * as path from 'path'
-import { HealthCheckableContainer } from '../../models/health-checkable-container.interface'
-import { HealthCheckExecutor } from '../../models/health-check-executor.interface'
+import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
+import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 
 export class ImportManagerContainer extends GenericContainer {

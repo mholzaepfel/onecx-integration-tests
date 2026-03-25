@@ -5,8 +5,7 @@ import * as path from 'path'
  */
 
 /**
- * Output directory for E2E results (relative to cwd)
- * Used by both E2E container volume mount and PlatformInfoExporter
+ * Output directory name for E2E results
  */
 export const E2E_OUTPUT_DIR = 'e2e-results'
 
@@ -26,5 +25,10 @@ export const E2E_DEFAULT_TIMEOUT_MS = 1000 * 60 * 10
  * Get the absolute path for E2E output directory
  */
 export function getE2eOutputPath(): string {
+  const baseDir = process.env.E2E_BASE_DIR?.trim()
+  if (baseDir) {
+    return path.resolve(baseDir, E2E_OUTPUT_DIR)
+  }
+
   return path.resolve(process.cwd(), E2E_OUTPUT_DIR)
 }

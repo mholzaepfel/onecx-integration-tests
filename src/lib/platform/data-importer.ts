@@ -1,14 +1,14 @@
 import { StartedNetwork } from 'testcontainers'
 import { ImportManagerContainer, StartedImportManagerContainer } from '../containers/import/import-container'
 import { ImageResolver } from './image-resolver'
-import { CONTAINER } from '../models/container.enum'
-import type { AllowedContainerTypes } from '../models/allowed-container.type'
+import { CONTAINER } from '../models/enums/container.enum'
+import type { AllowedContainerTypes } from '../models/types/allowed-container.type'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import * as fs from 'fs'
 import * as path from 'path'
 import { StartedShellUiContainer } from '../containers/ui/onecx-shell-ui'
 import { ContainerInfo } from '../../imports/import-manager'
-import { PlatformConfig } from '../models/platform-config.interface'
+import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 import { loggingEnabled } from '../utils/logging-enable'
 import { Logger, LogMessages } from '../utils/logger'
 import { isE2eContainer, isKeycloakContainer, isShellUiContainer } from '../utils/container-utils'
@@ -164,6 +164,12 @@ export class DataImporter {
 
     // Iterate through all started containers and extract service info
     for (const [containerName, container] of startedContainers) {
+      // Skip E2E containers - they are test runners, not services
+      if (containerName.includes('-e2e') || !('getPort' in container)) {
+        logger.info('SERVICE_SKIPPED', `${containerName} - E2E container (test runner, not a service)`)
+        continue
+      }
+
       const serviceName = this.getServiceNameFromContainer(containerName)
 
       // Only add containers that have a valid service mapping
