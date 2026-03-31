@@ -1,0 +1,7 @@
+// This menu tree is included in main menu of parent project https://github.com/onecx/docs
+* xref:onecx-integration-tests:index.adoc[Integration Tests]
+
+** xref:onecx-integration-tests:architecture.adoc[Run integration tests]
+
+** xref:onecx-integration-tests:setup.adoc[Setting up]
+** xref:onecx-integration-tests:run-integration-tests.adoc[Run integration tests]

@@ -1,0 +1,6 @@
+:idprefix:
+:idseparator: -
+:imagesdir: ../images
+
+:asciidoc_doc_link:    link:https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoc]
+:api_guidelines_link:  xref:documentation:onecx-docs-dev:guidelines/api_guidelines.adoc[API Guidelines]
