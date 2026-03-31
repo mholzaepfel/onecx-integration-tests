@@ -1,6 +1,9 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+:imagesdir: ../images
+
 = E2E
-:toc:
-:toclevels: 2
 
 == Overview
 

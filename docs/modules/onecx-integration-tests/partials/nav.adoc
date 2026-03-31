@@ -1,7 +1,13 @@
 // This menu tree is included in main menu of parent project https://github.com/onecx/docs
+
 * xref:onecx-integration-tests:index.adoc[Integration Tests]
 
-** xref:onecx-integration-tests:architecture.adoc[Run integration tests]
+** xref:onecx-integration-tests:architecture.adoc[Architecture]
 
-** xref:onecx-integration-tests:setup.adoc[Setting up]
-** xref:onecx-integration-tests:run-integration-tests.adoc[Run integration tests]
+** xref:onecx-integration-tests:getting-started.adoc[Getting Started]
+*** xref:onecx-integration-tests:contract.adoc[Contract and Configuration]
+*** xref:onecx-integration-tests:e2e.adoc[E2E Testing]
+*** xref:onecx-integration-tests:ci.adoc[CI and GitHub Actions]
+*** xref:onecx-integration-tests:ui-repository.adoc[UI Repository Integration]
+
+** xref:onecx-integration-tests:reference.adoc[Reference]

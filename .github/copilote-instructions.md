@@ -1,181 +1,171 @@
 # Copilot Instructions — UI Platform Integration Tests (TypeScript + Testcontainers + Playwright)
 
-## 1) What this repository is for
+## 1) Quick Start
 
-This repository provides the **central integration-test runner** for a UI platform consisting of a **Shell** and multiple **Core Apps**.  
-The runner is consumed by UI repositories through a **GitHub Actions reusable workflow**:
-`org/integration-tests/.github/workflows/integration-tests.yml@<ref>`.
+**What:** Central integration-test runner for OneCX Shell + Core Apps. Consumed by UI repos via reusable workflow at `org/integration-tests/.github/workflows/integration-tests.yml`.
 
-Core goals:
+**Who:** Test engineers, platform developers, CI maintainers in UI repositories.
 
-- Verify that a **Shell version** runs with the **latest released** versions of all Core Apps.
-- Verify that an **App version** runs with the **latest released** version of the Shell (and latest released other apps).
-- Support **PR**, **scheduled nightly**, **on-demand**, and **local** runs with reproducible version resolution.
+**Core goals:** Verify Shell and App versions run with correct upstream versions (latest/main/PR/local/specified). Support reproducible runs in local, CI, and scheduled contexts.
 
-Tech stack:
+**Tech stack:** TypeScript (strict) → Testcontainers → Docker → Playwright E2E.
 
-- TypeScript (strict) for orchestration and tooling.
-- Testcontainers to start platform services.
-- Playwright E2E runs via an **E2E container definition** coming from UI repositories.
+## 2) Key Terminology
 
-## 2) Terminology (must be used consistently)
+Use consistently. Never reinterpret "latest" as "main":
 
-- **latest version**: latest **released** product version.
-- **main version**: latest build from **main branch** (including release candidates).
-- **PR version**: latest build from the PR branch.
-- **local version**: version from the currently checked-out repository.
-- **specified version**: explicitly pinned ref (tag/SHA/branch).
+| Term | Definition |
+|------|------------|
+| **latest** | Last product release (released artifact) |
+| **main** | Latest build from main branch (includes RC) |
+| **PR** | Latest build from pull request branch |
+| **local** | Currently checked-out repository version |
+| **specified** | Explicitly pinned ref (tag/SHA/branch) |
 
-Never reinterpret “latest” as “main”.
+## 3) Repository Boundaries
 
-## 3) Run matrix (what must be supported)
+### Caller Contract (Critical)
 
-### Scheduled (nightly)
+UI repositories provide **inside their own repo**:
+- `/integration/platform.json` — Platform stack configuration
+- `/integration/e2e/**` — Playwright E2E definitions
 
-Shell:
+This repo's reusable workflow MUST:
+1. Ensure caller repo is available in `$GITHUB_WORKSPACE`
+2. Read and validate caller's `platform.json` and `e2e/` folder
+3. Use those definitions to bootstrap platform and run E2E
 
-- main Shell + latest Apps (detect Shell UI changes breaking released UIs)
-- main Shell + main Apps (validate next-release constellation)
+**Do NOT** hardcode app lists; derive behavior from `platform.json`.
 
-Apps:
+### Run Matrix (What Must Work)
 
-- main App + latest Shell + latest other Apps (detect integration breaks from App changes)
+| Context | Shell | Apps |
+|---------|-------|------|
+| **Scheduled** | main + latest | main + latest, main + main |
+| **On-Demand** | latest, specified | latest (all), specified (per-app override) |
+| **Pull Request** | PR + latest | PR + latest (shell + other) |
+| **Local** | local + latest | local + latest (shell + other) |
 
-### On-demand
-
-Shell:
-
-- latest Shell + latest Apps (validate released constellation)
-- specified Shell + specified Apps (defaults to latest if not provided; per-app artifact override)
-
-### Pull Request
-
-Shell:
-
-- PR Shell + latest Apps
-  Apps:
-- PR App + latest Shell + latest other Apps
-
-### Local
-
-Shell:
-
-- local Shell + latest Apps
-  Apps:
-- local App + latest Shell + latest other Apps
-  Both:
-- optional parameters to override versions/images of specific artifacts.
-
-## 4) Caller repository contract (critical)
-
-Calling UI repositories define E2E and platform startup **inside the caller repo**:
-
-- `/integration/platform.json`
-- `/integration/e2e/**`
-
-The reusable workflow in this repo MUST:
-
-1. Ensure the caller repo is checked out into `$GITHUB_WORKSPACE`.
-2. Read and validate `integration/platform.json` and the `integration/e2e` folder from the **caller** workspace.
-3. Use these definitions to start the platform and then run Playwright E2E via the E2E container.
-
-Do not hardcode app lists; derive behavior from `platform.json` and validate required keys.
-
-## 5) Platform config model (authoritative concepts)
-
-`platform.json` describes:
-
-- optional flags (e.g., importData, withLoggingEnabled)
-- heartbeat/health-check settings
-- image overrides (core/services/bff/ui) for testing different images
-- container definitions (service/bff/ui/e2e)
-
-Use typed interfaces (e.g., PlatformConfig and container interfaces) at the boundaries:
-
-- parse JSON -> validate -> typed object.
-  Fail fast with actionable error messages when required config is missing/invalid.
-
-## 6) Reusable GitHub Actions workflow requirements
-
-The integration-tests repo MUST ship a reusable workflow at:
-
-- `.github/workflows/integration-tests.yml`
-- with `on: workflow_call` so it can be consumed cross-repo.
-
-### Workflow inputs (defaults must be sensible)
-
-Provide inputs that allow caller repos to keep their YAML minimal:
-
-- `integrationRoot` (default: `integration`)
-- `platformConfigPath` (default: `integration/platform.json`)
-- `e2eDir` (default: `integration/e2e`)
-- `mode` and `target` (scheduled/on-demand/pr/local; shell/app)
-- version selectors (latest/main/pr/local/specified) + per-artifact overrides when relevant
-- runtime config (node version, timeouts, retries)
-
-### Workflow outputs & artifacts
-
-Always produce and upload:
-
-- JUnit report
-- JSON report containing resolved versions/images + provenance + metadata
-- human-readable job summary
-  Return key outputs (e.g., report artifact name, resolved versions JSON) via workflow outputs.
-
-### Checkout rules (caller repo vs this repo)
-
-By default, `actions/checkout` checks out a repository into `$GITHUB_WORKSPACE`.
-Because this workflow must read `/integration/**` from the caller repo, ensure the caller is available in the workspace.  
-If the orchestration code lives in this repository (integration-tests), either:
-
-- distribute it as an npm package and install it in the job, OR
-- perform an additional checkout of this repo into a subfolder using `repository:` + `path:`.
-
-## 7) Architecture principles (enforce separation)
+### Architecture Principles
 
 Separate concerns into testable modules:
+- Version resolution → Artifact resolution → Environment bootstrap → E2E execution → Reporting
 
-- Version resolution (latest/main/pr/local/specified)
-- Artifact/image resolution (tags, registries, overrides)
-- Environment bootstrap (Testcontainers)
-- E2E execution (Playwright container)
-- Reporting + notifications
+Every run must be reproducible: **log resolved versions/images and their provenance.**
 
-Every run must be reproducible:
-
-- log final resolved versions/images and their provenance (latest/main/pr/local/specified).
-
-## 8) Versioning & “latest” tag semantics
-
-Assumptions that must be enforced:
-
-- `latest` maps to the **last product release** for Shell/App.
-- For multi-artifact components (svc/ui/bff), `latest` must reflect the last product release for each artifact.
-  If tags are missing or ambiguous, fail with a clear message:
-- what is missing,
-- where it was expected,
-- how to fix it (e.g., publish/retag).
-
-## 9) TypeScript + Testcontainers guidance
-
-- Use TypeScript strict typing, explicit types at boundaries (CLI/workflow inputs/config parsing).
-- Ensure containers are always cleaned up (finally/afterAll).
-- Make timeouts/retries configurable to reduce flakiness.
-- Prefer structured logs (JSON) plus concise human summaries.
-
-## 10) Local execution requirements
-
-Enable a consistent local entry point (e.g., package.json script):
-
-- `npm run integration:test` (or equivalent)
-  Local and CI runs must share the same underlying runner implementation.
-
-## 11) How Copilot should respond (format and behavior)
+## 4) How Copilot Should Respond
 
 When asked to change or extend the codebase:
 
-1. Start with a short plan (max 8 bullets).
-2. List concrete file changes (paths + rationale).
-3. Provide small, reviewable patches and avoid guessing conventions.
-4. Ask targeted questions if critical details are unknown (registry naming, required secrets, exact E2E config files).
-5. Never change the meaning of “latest” or the run-matrix rules above.
+1. **Start** with a short plan (max 8 bullets, bullet points only).
+2. **List** concrete file changes (paths + one-line rationale).
+3. **Implement** with small, reviewable patches—don't guess conventions.
+4. **Ask** targeted questions if critical details are unknown (registry, secrets, exact config files).
+5. **Protect** non-negotiables: Never change "latest" semantics or run-matrix rules.
+6. **Be concise** in explanations; use tables and bullets over prose.
+7. **Link** specific line numbers and file paths for context.
+
+## 5) Platform Config & Contracts
+
+### PlatformConfig Structure
+
+`platform.json` describes:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `importData` | boolean | Run data import after service startup |
+| `withLoggingEnabled` | boolean \| string[] | Enable logging globally or per-container |
+| `heartbeat` | HeartbeatConfig | Health check interval, thresholds, enabled flag |
+| `platformOverrides` | object | Override image tags for core/services/bff/ui |
+| `container` | object | User-defined service/bff/ui/e2e containers |
+
+**Validation rule:** Parse JSON → validate schema → fail fast with actionable error (what's missing, where, how to fix).
+
+### GitHub Actions Reusable Workflow
+
+Must ship at: `.github/workflows/integration-tests.yml` with `on: workflow_call`.
+
+**Inputs:**
+- `integrationRoot` (default: `integration`)
+- `platformConfigPath` (default: `integration/platform.json`)
+- `e2eDir` (default: `integration/e2e`)
+- `mode`, `target` (scheduled/on-demand/pr/local; shell/app)
+- Version selectors with per-artifact overrides
+- Runtime config (node version, timeouts)
+
+**Outputs:**
+- JUnit report artifact
+- JSON report (resolved versions, images, provenance)
+- Human-readable job summary
+
+## 6) Documentation Guidelines
+
+### Where Documentation Lives
+
+- **Source:** `docs/modules/onecx-integration-tests/` (Antora component)
+- **Config:** `docs/antora.yml` (component version: "latest")
+- **Navigation:** `docs/modules/onecx-integration-tests/partials/nav.adoc`
+
+### Documentation Skeleton
+
+Pages and their purposes:
+
+| Page | Purpose | Audience |
+|------|---------|----------|
+| `index.adoc` | Overview, purpose, audience, authoring guidelines | New users |
+| `architecture.adoc` | Concept, layers, startup/data-import sequences | Developers |
+| `getting-started.adoc` | Hub linking to Contract, E2E, CI, UI Repository | Integrators |
+| `contract.adoc` | Platform.json fields, container definitions | Integrators |
+| `e2e.adoc` | Running E2E tests, artifacts | Test engineers |
+| `ci.adoc` | Reusable workflow, inputs/outputs, GitHub Actions | CI/platform engineers |
+| `ui-repository.adoc` | How to use this runner in a UI repo | UI developers |
+| `reference.adoc` | CLI options, env vars, run artifacts | Advanced users |
+
+### Writing Style
+
+Follow OneCX Writing Style:
+- Imperative voice, present tense, active sentences
+- Max 3 heading levels; short, focused labels
+- Use bullets, description lists, tables over prose
+- Add screenshots for critical steps
+- Define acronyms on first use
+- Avoid jargon; explain technical terms
+
+## 7) TypeScript & Testcontainers
+
+### Strict Typing
+
+- Use explicit types at all boundaries: CLI input, workflow inputs, config parsing, container definitions
+- Implement typed interfaces for PlatformConfig, PlatformRuntime, container definitions
+- Fail fast on type mismatch with actionable errors
+
+### Container Lifecycle
+
+Order of operations:
+1. **Create network** (testcontainers abstraction)
+2. **Start core infrastructure:** PostgreSQL → Keycloak
+3. **Start services** (7 microservices, each depends on Postgres + Keycloak)
+4. **Start Shell BFF** (depends on Keycloak)
+5. **Start Shell UI** (depends on Shell BFF)
+6. **Start user-defined containers** (if config.container defined)
+7. **Import data** (if importData: true)
+8. **Heartbeat/health checks** (if heartbeat.enabled: true)
+9. **Run E2E container** (if config.container.e2e defined)
+10. **Cleanup:** Stop all containers in reverse order
+
+### Reliability
+
+- Always ensure containers are cleaned up (finally/afterAll)
+- Make timeouts and retries configurable
+- Prefer structured JSON logs plus human-readable summaries
+- Log resolved images and their provenance on every run
+
+## 8) Versioning & "Latest" Tag Semantics
+
+### Non-Negotiable Rules
+
+1. **`latest` = last released product version** (not main, not RC)
+2. **Multi-artifact components** (svc/ui/bff) must each have `latest` tag → fail if missing
+3. **Tag ambiguity = fail fast** with message: what is missing, where, how to fix
+4. **Every run logs resolved images and provenance.** Example: `keycloak: latest (resolved to SHA abc123 from registry.example.com)`
+5. **Version resolution is auditable:** CLI output, artifacts, logs must show final choices and reasons

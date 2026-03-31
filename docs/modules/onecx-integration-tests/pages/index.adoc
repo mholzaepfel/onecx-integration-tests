@@ -1,3 +1,7 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+:page-hide-prev:
 = Integration Tests
 :toc:
 :toclevels: 2

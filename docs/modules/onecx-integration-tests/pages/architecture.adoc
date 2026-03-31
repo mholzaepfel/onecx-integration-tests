@@ -1,21 +1,12 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+:imagesdir: ../images
+
 = Architecture
-:toc:
-:toclevels: 2
 
 == What is the idea?
-
-// TODO: Add concept diagram (Mermaid flowchart TD)
-[mermaid]
-....
-flowchart TD
-....
 
 == What is it?
 
 == How is it working?
-
-// TODO: Add runtime flow diagram (Mermaid sequence or flowchart)
-[mermaid]
-....
-flowchart TD
-....

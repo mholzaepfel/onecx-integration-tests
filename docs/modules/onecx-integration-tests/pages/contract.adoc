@@ -1,6 +1,9 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+:imagesdir: ../images
+
 = Contract
-:toc:
-:toclevels: 2
 
 == Overview
 
