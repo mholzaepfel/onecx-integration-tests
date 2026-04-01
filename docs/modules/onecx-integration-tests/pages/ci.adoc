@@ -1,0 +1,13 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= CI
+
+== Overview
+
+== Reusable Workflow
+
+== Inputs
+
+== Artifacts and Outputs

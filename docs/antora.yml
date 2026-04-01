@@ -1,0 +1,4 @@
+# Define the same name space as used in antora.yml
+name: documentation
+version: latest
+# Do not add any further properties here. This will affect the parent documentation project.

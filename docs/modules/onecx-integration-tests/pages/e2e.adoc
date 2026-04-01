@@ -1,0 +1,13 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= E2E
+
+== Overview
+
+== Prerequisites
+
+== Running E2E Tests
+
+== Artifacts

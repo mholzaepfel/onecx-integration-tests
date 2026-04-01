@@ -1,0 +1,13 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= UI Repository
+
+== Overview
+
+== Integration Directory
+
+== Platform Config
+
+== E2E Directory

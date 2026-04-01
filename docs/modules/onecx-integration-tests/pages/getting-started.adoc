@@ -1,0 +1,21 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= Getting Started
+
+== Contract
+
+See xref:contract.adoc[Contract] for the full platform configuration reference.
+
+== E2E
+
+See xref:e2e.adoc[E2E] for running end-to-end tests.
+
+== CI
+
+See xref:ci.adoc[CI] for integrating with GitHub Actions.
+
+== UI Repository
+
+See xref:ui-repository.adoc[UI Repository] for configuring a UI repository to use this runner.

@@ -1,0 +1,11 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= Architecture
+
+== What is the idea?
+
+== Components
+
+== How is it working?

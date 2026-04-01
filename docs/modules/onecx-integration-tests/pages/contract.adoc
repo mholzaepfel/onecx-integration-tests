@@ -1,0 +1,13 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= Contract
+
+== Overview
+
+== Platform Config
+
+== Container Definition
+
+== E2E Container

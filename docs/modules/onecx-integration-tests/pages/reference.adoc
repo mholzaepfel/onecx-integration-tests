@@ -1,0 +1,13 @@
+ifdef::env-site[]
+include::partial$_attributes.adoc[]
+endif::[]
+
+= Reference
+
+== Platform Configuration
+
+== CLI Options
+
+== Environment Variables
+
+== Run Artifacts
