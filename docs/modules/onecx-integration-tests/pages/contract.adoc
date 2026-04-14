@@ -111,7 +111,6 @@ Use `platformOverrides` to test specific image versions.
 
 Apply release semantics consistently:
 
-* `latest` for last released product images
 * `main` for latest main-branch build images
 
 == Container Definition
@@ -171,7 +170,6 @@ Required fields:
 Optional fields:
 
 * `baseUrl`
-* `timeoutMs`
 
 Example:
 
@@ -184,7 +182,6 @@ Example:
 				"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
 				"networkAlias": "shell-e2e",
 				"baseUrl": "http://onecx-shell-ui:8080",
-				"timeoutMs": 600000
 			}
 		}
 	}

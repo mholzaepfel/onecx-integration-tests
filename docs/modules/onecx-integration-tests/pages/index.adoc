@@ -23,7 +23,6 @@ Use this module to:
 
 The version semantics for docs and runtime contracts are strict:
 
-* `latest` means the last released product version
 * `main` means the latest build from the main branch
 * Ambiguous or missing tag resolution must fail fast
 
