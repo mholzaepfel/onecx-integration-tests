@@ -2,12 +2,195 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= Contract
+= Platform Configuration Contract (`platform.json`)
+
+The runner derives all startup behavior from a single JSON file, `platform.json`. This page describes every supported field, its type, accepted values, and how validation is enforced. Validation uses AJV at startup and fails immediately on any missing or invalid value, so configuration errors are reported before any container is started.
 
 == Overview
 
+The runtime contract is defined by `platform.json` and validated against `integration-tests.schema.json`.
+
+Validation behavior:
+
+* Validate JSON syntax
+* Validate schema constraints with AJV
+* Fail fast when required fields are missing or invalid
+* Search default path first, then fallback to recursive discovery
+
+Default lookup order:
+
+* `integration-tests/platform/platform.json`
+* First file matching `*platform.json` under the current working directory
+
+The expected top-level format is:
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"importData": true,
+		"withLoggingEnabled": true,
+		"heartbeat": { "enabled": true }
+	}
+}
+----
+
 == Platform Config
+
+[.stripes-even,cols="25,20,55"]
+|===
+| Field | Type | Description
+
+| `importData`
+| `boolean`
+| Run default data import after platform startup
+
+| `withLoggingEnabled`
+| `boolean` or `string[]`
+| Enable logging for all containers or only selected container names
+
+| `heartbeat`
+| `HeartbeatConfig`
+| Configure continuous health checks with `enabled`, `interval`, and `failureThreshold`
+
+| `platformOverrides`
+| `object`
+| Override image tags for core, services, BFF, and UI containers
+
+| `container`
+| `object`
+| Define user-managed service, BFF, UI, and E2E containers
+|===
+
+Example with heartbeat and E2E:
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"importData": true,
+		"withLoggingEnabled": true,
+		"heartbeat": {
+			"enabled": true,
+			"interval": 10000,
+			"failureThreshold": 3
+		},
+		"container": {
+			"e2e": {
+				"image": "e2e-example:latest",
+				"networkAlias": "e2e-example"
+			}
+		}
+	}
+}
+----
+
+=== Platform Overrides
+
+Use `platformOverrides` to test specific image versions.
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"platformOverrides": {
+			"core": {
+				"keycloak": { "image": "quay.io/keycloak/keycloak:23.0.4" }
+			},
+			"services": {
+				"tenant": { "image": "ghcr.io/onecx/onecx-tenant-svc:main-native" }
+			},
+			"bff": {
+				"shell": { "image": "ghcr.io/onecx/onecx-shell-bff:main-native" }
+			},
+			"ui": {
+				"shell": { "image": "ghcr.io/onecx/onecx-shell-ui:main" }
+			}
+		}
+	}
+}
+----
+
+Apply release semantics consistently:
+
+* `main` for latest main-branch build images
 
 == Container Definition
 
+User-defined containers are configured under `platformConfig.container`.
+
+=== Service Container
+
+Required fields:
+
+* `image`
+* `networkAlias`
+* `svcDetails.databaseUsername`
+* `svcDetails.databasePassword`
+
+Optional fields:
+
+* `environments`
+* `healthCheck`
+
+=== BFF Container
+
+Required fields:
+
+* `image`
+* `networkAlias`
+* `bffDetails.permissionsProductName`
+
+Optional fields:
+
+* `environments`
+* `healthCheck`
+
+=== UI Container
+
+Required fields:
+
+* `image`
+* `networkAlias`
+* `uiDetails.appBaseHref`
+* `uiDetails.appId`
+* `uiDetails.productName`
+
+Optional fields:
+
+* `environments`
+
 == E2E Container
+
+The E2E container is optional and runs after platform startup and health checks.
+
+Required fields:
+
+* `image`
+* `networkAlias`
+
+Optional fields:
+
+* `baseUrl`
+
+Example:
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"container": {
+			"e2e": {
+				"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
+				"networkAlias": "shell-e2e",
+				"baseUrl": "http://onecx-shell-ui:8080",
+			}
+		}
+	}
+}
+----
+
+[IMPORTANT]
+====
+The E2E container runs as a one-shot test workload and is expected to terminate with an explicit exit code
+====

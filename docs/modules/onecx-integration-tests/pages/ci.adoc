@@ -2,12 +2,88 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= CI
+= Continuous Integration with GitHub Actions
+
+This page documents the GitHub Actions reusable workflow included in this repository and its `workflow_call` interface for caller repositories. It describes the supported triggers, expected inputs, artifact outputs, and the run matrix that defines which image versions are used in each execution context.
 
 == Overview
 
+This repository includes a GitHub Actions workflow at `.github/workflows/integration-tests.yml`.
+
+The workflow is designed to execute integration tests in CI and to expose a `workflow_call` entry point for reuse.
+
+Current triggers include:
+
+* `workflow_call`
+* `workflow_dispatch`
+* `schedule`
+* `pull_request`
+
 == Reusable Workflow
+
+The reusable workflow contract for OneCX integration tests is based on these principles:
+
+* Caller repository provides integration assets
+* Runner validates and consumes caller configuration
+* Runtime behavior remains reproducible across local and CI execution
+
+Caller repository requirements:
+
+* `integration/platform.json`
+* `integration/e2e/**`
+
+In reusable mode, the workflow must operate on caller-provided configuration instead of hardcoded app lists.
 
 == Inputs
 
+The target reusable workflow contract supports these input categories:
+
+* Integration paths (`integrationRoot`, `platformConfigPath`, `e2eDir`)
+* Execution mode and target (`scheduled`, `on-demand`, `pr`, `local`)
+* Version selectors and per-artifact overrides
+* Runtime limits such as node version and timeouts
+
+[NOTE]
+====
+Keep input names and behavior aligned with the repository contract and avoid redefining `latest` semantics
+====
+
 == Artifacts and Outputs
+
+CI runs should publish:
+
+* Human-readable run summary
+* Machine-readable JSON summary with resolved artifacts and provenance
+* E2E outputs and logs
+
+Standard runtime artifact layout:
+
+* `integration-tests/artifacts/<run-id>/summary.json`
+* `integration-tests/artifacts/<run-id>/logs/`
+* `integration-tests/artifacts/<run-id>/e2e/`
+* `integration-tests/artifacts/<run-id>/e2e-results/`
+
+== Run Matrix Expectations
+
+Use this run matrix for consistency:
+
+[.stripes-even,cols="20,40,40"]
+|===
+| Context | Shell | Apps
+
+| Scheduled
+| main + latest
+| main + latest, main + main
+
+| On-demand
+| latest, specified
+| latest all, specified per app
+
+| Pull request
+| PR + latest
+| PR + latest
+
+| Local
+| local + latest
+| local + latest
+|===

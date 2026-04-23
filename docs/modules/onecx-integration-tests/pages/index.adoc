@@ -3,12 +3,52 @@ include::partial$_attributes.adoc[]
 endif::[]
 :page-hide-prev:
 
-= Integration Tests
+= OneCX Integration Test Runner
 
-== Overview
+OneCX Integration Tests is a TypeScript-based CLI that uses the `testcontainers` npm library — a Node.js port of the open-source Testcontainers framework — to start and orchestrate Docker containers for a complete OneCX platform stack. It validates configuration before startup, manages the full container lifecycle, and optionally runs End-to-End (E2E) tests as the final step. The runner works in local development environments and in CI pipelines and produces reproducible, inspectable run artifacts on every execution.
 
 == Purpose
 
+Use this module to:
+
+* Start core, service, BFF, and UI containers in a predictable order
+* Validate configuration before startup
+* Run health checks and optional heartbeat monitoring
+* Execute an E2E container as the final runtime step when configured
+* Export runtime metadata and structured artifacts for debugging and reporting
+
+The version semantics for docs and runtime contracts are strict:
+
+* `main` means the latest build from the main branch
+* Ambiguous or missing tag resolution must fail fast
+
 == Audience
 
+This documentation targets:
+
+* Integrators who configure platform startup through `platform.json`
+* Test engineers who run E2E and inspect artifacts
+* Platform maintainers who extend orchestration behavior
+* CI maintainers who integrate workflow execution
+
+== Documentation Map
+
+Use this reading order:
+
+* xref:getting-started.adoc[Getting Started] for prerequisites and your first run
+* xref:contract.adoc[Platform Configuration Contract] for `platform.json` fields and validation
+* xref:architecture.adoc[Runtime Architecture and Container Lifecycle] for startup flow and design
+* xref:e2e.adoc[End-to-End Test Execution and Artifacts] for test execution and outputs
+* xref:ci.adoc[CI and GitHub Actions] for reusable workflow and run matrix
+* xref:ui-repository.adoc[Integrating a UI Repository as a Caller] for caller-repository setup
+* xref:reference.adoc[Reference: CLI, Environment Variables, and Artifacts] for all runtime controls
+
 == Contributor Notes
+
+Follow OneCX writing conventions on every page:
+
+* Use active voice and present tense
+* Keep headings concise and consistent
+* Define acronyms on first use
+* Prefer tables and lists for options and procedures
+* Reuse repeated content with Antora includes and partials

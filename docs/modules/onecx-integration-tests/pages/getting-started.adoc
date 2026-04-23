@@ -2,20 +2,61 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= Getting Started
+= Getting Started: Prerequisites and First Run
+
+This page is the entry point for new users. It lists the required tools, walks through the first-run checklist, and provides role-based reading paths that direct each audience to the most relevant chapters. Complete the checklist before consulting any other page.
 
 == Contract
 
-See xref:contract.adoc[Contract] for the full platform configuration reference.
+Start with the configuration contract before running anything.
+
+See xref:contract.adoc[Contract and Configuration] for:
+
+* `platform.json` structure
+* Required and optional fields
+* Container definitions for service, BFF, UI, and E2E
+* Validation and fail-fast behavior
+
+== Role-Based Paths
+
+Choose your path based on your role:
+
+* Integrator: xref:contract.adoc[Contract and Configuration], then xref:e2e.adoc[E2E Testing]
+* Test engineer: xref:e2e.adoc[E2E Testing], then xref:reference.adoc[Reference]
+* Platform maintainer: xref:architecture.adoc[Architecture], then xref:ci.adoc[CI and GitHub Actions]
+* UI repository maintainer: xref:ui-repository.adoc[UI Repository Integration], then xref:contract.adoc[Contract and Configuration]
+
+== First Run Checklist
+
+Complete these steps in order:
+
+* Install Node.js, npm, and Docker
+* Run `npm install`
+* Prepare `integration-tests/platform/platform.json`
+* Run `npm run it:run -- --dry-run`
+* Run `npm run it:run -- --verbose --capture-logs`
+* Inspect `integration-tests/artifacts/<run-id>/summary.json`
 
 == E2E
 
-See xref:e2e.adoc[E2E] for running end-to-end tests.
+See xref:e2e.adoc[E2E Testing] for:
+
+* E2E prerequisites and container contract
+* Platform info export and consumption
+* Result collection under `e2e-results`
 
 == CI
 
-See xref:ci.adoc[CI] for integrating with GitHub Actions.
+See xref:ci.adoc[CI and GitHub Actions] for:
+
+* Workflow triggers and expected usage
+* Artifact expectations for CI runs
+* Alignment with run-mode and version semantics
 
 == UI Repository
 
-See xref:ui-repository.adoc[UI Repository] for configuring a UI repository to use this runner.
+See xref:ui-repository.adoc[UI Repository Integration] for:
+
+* Caller repository structure under `integration/`
+* Configuration handoff between caller repository and runner
+* Practical integration checklist

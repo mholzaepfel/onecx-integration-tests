@@ -2,12 +2,90 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= UI Repository
+= Integrating a UI Repository as a Caller
+
+UI repositories act as callers: they provide a `platform.json` configuration and an `integration/e2e/` directory containing Playwright tests, and they delegate platform bootstrap, health validation, and artifact handling to this runner. This page explains the required directory layout, the configuration the runner expects from the caller, and a pre-pull-request integration checklist.
 
 == Overview
 
+UI repositories consume this integration-test runner through a shared contract.
+
+The caller repository owns test intent and test assets.
+This runner owns platform bootstrap, health validation, and artifact handling.
+
 == Integration Directory
+
+Create and maintain this structure inside the UI repository:
+
+[source,text]
+----
+integration/
+	platform.json
+	e2e/
+		... Playwright tests and support files ...
+----
+
+Required contract inputs:
+
+* `integration/platform.json` for platform runtime configuration
+* `integration/e2e/**` for test definitions
 
 == Platform Config
 
+The UI repository provides `integration/platform.json`.
+
+The runner validates this file against the integration schema and fails fast if validation fails.
+
+Recommended minimum structure:
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"importData": true,
+		"withLoggingEnabled": true,
+		"heartbeat": {
+			"enabled": true
+		},
+		"container": {
+			"e2e": {
+				"image": "ghcr.io/onecx/your-ui-e2e:latest",
+				"networkAlias": "your-ui-e2e"
+			}
+		}
+	}
+}
+----
+
+For field-level details, see xref:contract.adoc[Contract and Configuration].
+
 == E2E Directory
+
+Store all E2E assets under `integration/e2e/`.
+
+Recommended layout:
+
+[source,text]
+----
+integration/e2e/
+	playwright.config.ts
+	tests/
+	fixtures/
+	utils/
+----
+
+Implementation guidance:
+
+* Read runtime endpoints from exported platform metadata
+* Keep tests deterministic and environment-agnostic
+* Do not embed secrets directly in test sources
+
+== Integration Checklist
+
+Verify these items before opening a pull request:
+
+* `integration/platform.json` exists and validates
+* `integration/e2e/` contains runnable tests
+* E2E image is available for CI runners
+* Run succeeds with `npm run it:run -- --verbose --capture-logs`
+* Artifacts include `summary.json` and `e2e-results/`

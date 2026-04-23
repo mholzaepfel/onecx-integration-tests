@@ -2,12 +2,131 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= Reference
+= Reference: CLI, Environment Variables, and Run Artifacts
+
+This page is a quick-lookup reference for all runtime controls and outputs. It covers available CLI flags, environment variable overrides, the run artifact directory structure, and common troubleshooting steps. For conceptual context behind each option, refer to the relevant chapter pages.
 
 == Platform Configuration
 
+Configuration source of truth:
+
+* `platform.json` validated by `integration-tests.schema.json`
+* Expected top-level key: `platformConfig`
+* Default path: `integration-tests/platform/platform.json`
+
+Important fields:
+
+* `importData`
+* `withLoggingEnabled`
+* `heartbeat`
+* `platformOverrides`
+* `container`
+
+See xref:contract.adoc[Contract and Configuration] for full field details.
+
 == CLI Options
+
+Runner entry command:
+
+[source,bash]
+----
+npm run it:run -- [options]
+----
+
+[.stripes-even,cols="25,20,55"]
+|===
+| Option | Default | Description
+
+| `-v, --verbose`
+| `false`
+| Enable verbose output
+
+| `--capture-logs`
+| `false`
+| Capture runner console output and container streams to artifact logs
+
+| `--dry-run`
+| `false`
+| Validate setup and print execution plan without starting containers
+
+| `-h, --help`
+| `false`
+| Show help text
+|===
+
+Example:
+
+[source,bash]
+----
+npm run it:run -- --verbose --capture-logs
+----
 
 == Environment Variables
 
+[.stripes-even,cols="30,70"]
+|===
+| Variable | Description
+
+| `IT_VERBOSE`
+| Default value source for `--verbose`
+
+| `IT_CAPTURE_LOGS`
+| Default value source for `--capture-logs`
+
+| `RUN_ID`
+| Optional run identifier override used for artifact path resolution
+
+| `E2E_RUN_ID`
+| Backward-compatible run identifier fallback
+
+| `E2E_BASE_DIR`
+| Base directory for E2E output path resolution
+
+| `ARTIFACTS_ROOT`
+| Runtime artifact root set by run context
+
+| `CONFIG_PATH`
+| Optional config path used by `start-e2e.ts`
+|===
+
 == Run Artifacts
+
+Artifacts are written under:
+
+`integration-tests/artifacts/<run-id>/`
+
+Typical structure:
+
+[source,text]
+----
+integration-tests/artifacts/<run-id>/
+	summary.json
+	logs/
+		runner-output.log
+		containers.log
+	reports/
+	e2e/
+		platform-info.json
+	e2e-results/
+----
+
+`summary.json` fields include:
+
+* `runId`
+* `startTime`
+* `endTime`
+* `durationMs`
+* `exitCode`
+* `status`
+* `mode`
+* `e2eResult`
+
+== Troubleshooting Quick Checks
+
+Use this order for fast diagnosis:
+
+* Confirm config validation succeeds in `--dry-run`
+* Confirm E2E section exists in `platformConfig.container.e2e`
+* Confirm health checks pass before E2E execution
+* Review `summary.json` for final status and exit code
+* Review `logs/containers.log` for container startup and dependency issues

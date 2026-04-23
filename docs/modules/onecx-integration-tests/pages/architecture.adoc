@@ -2,10 +2,142 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= Architecture
+= Runtime Architecture and Container Lifecycle
 
-== What is the idea?
+This page describes the internal design of the integration test runner: its layered module structure, the responsibilities of each layer, and the deterministic container startup sequence. Understanding this architecture helps contributors extend or debug the runner. The design separates configuration validation, image resolution, orchestration, and execution into independent modules so that each concern is testable and replaceable.
+
+== Design Goals
+
+The repository provides a layered integration-test runtime for OneCX.
+
+The runtime separates concerns into clear modules:
+
+* Configuration validation
+* Image resolution
+* Container startup orchestration
+* Data import
+* Health checks and heartbeat monitoring
+* E2E execution
+* Artifact export and reporting
+
+This separation keeps test runs reproducible and easier to debug.
 
 == Components
 
-== How is it working?
+[.stripes-even,cols="20,35,45"]
+|===
+| Layer | Main Classes | Responsibility
+
+| Entry points
+| `src/it-runner/index.ts`, `src/lib/start-e2e.ts`
+| Parse user input and trigger runner flows
+
+| Run orchestration
+| `IntegrationTestsRunner`
+| Control one full run lifecycle and write run summary
+
+| Platform orchestration
+| `PlatformManager`
+| Start and stop the platform, run health checks, and trigger E2E
+
+| Core startup
+| `CoreContainerStarter`
+| Start PostgreSQL, Keycloak, services, Shell BFF, and Shell UI
+
+| User-defined startup
+| `UserDefinedContainerStarter`
+| Start optional custom service, BFF, UI, and E2E containers
+
+| Data import
+| `DataImporter`
+| Build import metadata, run Import Manager, and monitor import status
+
+| Health monitoring
+| `HealthChecker`
+| Run one-time health checks and optional heartbeat checks
+
+| Metadata export
+| `PlatformInfoExporter`
+| Export URLs and network metadata to run artifacts
+|===
+
+== Startup Sequence and Lifecycle
+
+The runtime flow is deterministic and follows startup dependencies.
+
+.Lifecycle Sequence
+[.stripes-even,cols="10,90"]
+|===
+| Step | Action
+
+| 1
+| Validate `platform.json` with AJV schema validation
+
+| 2
+| Resolve run context and create artifact directories
+
+| 3
+| Create a dedicated Docker network
+
+| 4
+| Start core containers: PostgreSQL, then Keycloak
+
+| 5
+| Start service containers: IAM-KC, Workspace, User Profile, Theme, Tenant, Product Store, Permission
+
+| 6
+| Start Shell BFF, then Shell UI
+
+| 7
+| Start user-defined containers from `platformConfig.container` when present
+
+| 8
+| Run data import when `importData: true`
+
+| 9
+| Export platform runtime metadata to `e2e/platform-info.json`
+
+| 10
+| Run health checks and start heartbeat when enabled
+
+| 11
+| Run configured E2E container as the final execution step
+
+| 12
+| Stop all containers in reverse startup order and clean up network
+|===
+
+=== Health Model
+
+Every started container provides a health-check executor.
+
+The runner supports:
+
+* One-shot health checks after startup
+* Continuous heartbeat checks when `heartbeat.enabled` is true
+* Failure threshold tracking with `heartbeat.failureThreshold`
+
+When a container exceeds the configured threshold, the runtime logs an unhealthy-state error.
+
+=== Data Import Model
+
+When `importData` is enabled, the runtime:
+
+* Derives Keycloak and Shell UI values from running containers
+* Builds a temporary `container-info.json` file
+* Starts the Import Manager container
+* Polls the import process until completion or timeout
+* Removes temporary import metadata on cleanup
+
+=== Run Artifacts and Metadata
+
+Each run produces a dedicated artifact directory at:
+
+`integration-tests/artifacts/<run-id>/`
+
+Core outputs include:
+
+* `summary.json` with run status and timing
+* `logs/` with optional runner and container logs
+* `e2e/platform-info.json` with internal and external URLs
+* `e2e-results/` with test output copied from E2E execution

@@ -2,12 +2,103 @@ ifdef::env-site[]
 include::partial$_attributes.adoc[]
 endif::[]
 
-= E2E
+= End-to-End Test Execution and Artifacts
+
+This page explains how to configure and trigger E2E test execution, what platform metadata the runner exports for use inside tests, and where results are written after the E2E container exits. E2E execution is entirely configuration-driven through `platform.json`; no additional CLI arguments are required once the E2E container image is available.
 
 == Overview
 
+E2E execution is configuration-driven.
+
+When `platformConfig.container.e2e` exists, the runner starts the platform, waits for health checks, starts the E2E container, collects results, and shuts down all resources.
+
+The E2E container is executed after the platform is ready.
+
 == Prerequisites
+
+Before running E2E:
+
+* Install Node.js, npm, and Docker
+* Provide a valid `platform.json`
+* Configure `platformConfig.container.e2e.image` and `platformConfig.container.e2e.networkAlias`
+* Ensure the E2E image can access Shell UI and Keycloak over the Docker network
+
+Minimal E2E configuration:
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"container": {
+			"e2e": {
+				"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
+				"networkAlias": "shell-e2e"
+			}
+		}
+	}
+}
+----
 
 == Running E2E Tests
 
+Run E2E through the integration test runner:
+
+[source,bash]
+----
+npm run it:run -- --verbose --capture-logs
+----
+
+Use dry-run to validate setup without starting containers:
+
+[source,bash]
+----
+npm run it:run -- --dry-run
+----
+
+The standalone entry point also supports `--config` and `CONFIG_PATH`:
+
+[source,bash]
+----
+CONFIG_PATH=integration-tests/platform/platform.json npx tsx src/lib/start-e2e.ts
+----
+
+== Platform Metadata for E2E
+
+During startup, the runtime exports platform metadata to:
+
+`integration-tests/artifacts/<run-id>/e2e/platform-info.json`
+
+The file contains:
+
+* Docker network details
+* Internal URLs for container-to-container access
+* External URLs for host-side debugging
+* Container runtime metadata
+
+Use this metadata inside E2E tests to resolve runtime endpoints consistently.
+
 == Artifacts
+
+E2E-relevant outputs are written under:
+
+`integration-tests/artifacts/<run-id>/`
+
+Key paths:
+
+* `summary.json`
+* `e2e/platform-info.json`
+* `e2e-results/`
+* `logs/runner-output.log`
+* `logs/containers.log` when `--capture-logs` is enabled
+
+Use `summary.json` as the first source for pass or fail state and exit code.
+
+== Troubleshooting
+
+Common checks:
+
+* Verify `platformConfig.container.e2e` exists
+* Confirm the E2E image is available in your registry
+* Check `e2e/platform-info.json` for expected URLs
+* Review `logs/containers.log` for startup and health-check failures
+* Increase `timeoutMs` for slow CI environments
