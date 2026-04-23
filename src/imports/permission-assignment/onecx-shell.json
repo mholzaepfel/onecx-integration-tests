@@ -1,0 +1,19 @@
+{
+  "id": "onecx-local-env_import-permission-assignments_onecx-shell",
+  "assignments": {
+    "onecx-shell": {
+      "onecx-shell-bff": {
+        "onecx-admin": {
+          "workspaceConfig": ["read"],
+          "userProfile": ["read"],
+          "permission": ["read"]
+        },
+        "onecx-user": {
+          "workspaceConfig": ["read"],
+          "userProfile": ["read"],
+          "permission": ["read"]
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,14 @@
 {
-    "version": "xxx",
-    "description": "OneCX user profile",
-    "basePath": "/user",
-    "displayName": "OneCX user profile",
-    "iconName": "lock"
+  "version": "xxx",
+  "description": "Manage User Settings",
+  "imageUrl": null,
+  "iconName": "user",
+  "displayName": "OneCX User Profile",
+  "basePath": "/user",
+  "provider": "OneCX Team",
+  "classifications": [
+    "Administration"
+  ],
+  "multitenancy": true,
+  "undeployed": false
 }

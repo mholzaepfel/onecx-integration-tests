@@ -1,7 +1,14 @@
 {
-    "version": "xxx",
-    "description": "OneCX Welcome",
-    "basePath": "/welcome",
-    "displayName": "OneCX Welcome",
-    "iconName": "home"
+  "version": "xxx",
+  "description": "Manage the content of the Workspace Start page",
+  "imageUrl": null,
+  "iconName": "home",
+  "displayName": "OneCX Welcome",
+  "basePath": "/welcome",
+  "provider": "OneCX Team",
+  "classifications": [
+    "Administration"
+  ],
+  "multitenancy": true,
+  "undeployed": false
 }

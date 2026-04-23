@@ -1,7 +1,14 @@
 {
-    "version": "xxx",
-    "description": "OneCX iam",
-    "basePath": "/iam",
-    "displayName": "OneCX iam",
-    "iconName": "id-card"
+  "version": "xxx",
+  "description": "OneCX IAM",
+  "imageUrl": null,
+  "iconName": "id-card",
+  "displayName": "OneCX IAM",
+  "basePath": "/iam",
+  "provider": "OneCX Team",
+  "classifications": [
+    "Administration"
+  ],
+  "multitenancy": false,
+  "undeployed": false
 }

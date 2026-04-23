@@ -5,9 +5,39 @@
     "withLoggingEnabled": true,
     "heartbeat": { "enabled": true },
     "container": {
+      "bff": [
+        {
+          "image": "ghcr.io/onecx/onecx-workspace-bff:main-native",
+          "networkAlias": "onecx-workspace-bff",
+          "bffDetails": {
+            "permissionsProductName": "onecx-workspace"
+          },
+          "environments": {
+            "QUARKUS_HTTP_CORS_ENABLED": "true",
+            "QUARKUS_HTTP_CORS_ORIGINS": "*",
+            "QUARKUS_HTTP_CORS_HEADERS": "*",
+            "QUARKUS_HTTP_CORS_METHODS": "GET,HEAD,POST,PUT,DELETE,OPTIONS,PATCH"
+          }
+        }
+      ],
+      "ui": [
+        {
+          "image": "ghcr.io/onecx/onecx-workspace-ui:main",
+          "networkAlias": "onecx-workspace-ui",
+          "uiDetails": {
+            "appBaseHref": "/workspace/",
+            "appId": "onecx-workspace-ui",
+            "productName": "onecx-workspace"
+          },
+          "environments": {
+            "CORS_ENABLED": "true"
+          }
+        }
+      ],
       "e2e": {
-        "image": "e2e-example:latest",
-        "networkAlias": "e2e-example"
+        "image": "onecx-workspace-e2e:20260423-1440",
+        "networkAlias": "onecx-workspace-e2e",
+        "baseUrl": "http://onecx-shell-ui:8080/onecx-shell/admin/workspace"
       }
     }
   }

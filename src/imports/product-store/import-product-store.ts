@@ -5,28 +5,6 @@ import { Logger } from '../utils/imports-logger'
 
 const logger = new Logger('ImportProductStore')
 
-/**
- * Imports product configurations from JSON files to the product store service
- *
- * This function processes all JSON files in the `products` subdirectory and uploads them as product configurations.
- * Each JSON file represents a product configuration where the filename (without .json) becomes the product name.
- *
- * @param baseDir - Base directory path containing the `products` subdirectory with JSON files
- * @param endpointBase - Base URL for the product store service API
- *
- * @example
- * ```typescript
- * await importProducts(
- *   './data',
- *   'http://localhost:8080/onecx-product-store-svc'
- * )
- * ```
- *
- * @remarks
- * - Looks for files in `{baseDir}/products/` directory
- * - Uses PUT method for product updates
- * - Endpoint format: `{endpointBase}/operator/product/v1/update/{productName}`
- */
 export async function importProducts(baseDir: string, endpointBase: string) {
   logger.info('IMPORT_PRODUCTS_START')
   const dir = path.join(baseDir, 'products')
@@ -51,29 +29,6 @@ export async function importProducts(baseDir: string, endpointBase: string) {
   }
 }
 
-/**
- * Imports slot configurations from JSON files to the product store service
- *
- * This function processes all JSON files in the `slots` subdirectory and uploads them as slot configurations.
- * Each file should follow the naming convention: `{productName}_{appId}_{slotName}.json`
- *
- * @param baseDir - Base directory path containing the `slots` subdirectory with JSON files
- * @param endpointBase - Base URL for the product store service API
- *
- * @example
- * ```typescript
- * await importSlots(
- *   './data',
- *   'http://localhost:8080/onecx-product-store-svc'
- * )
- * ```
- *
- * @remarks
- * - Looks for files in `{baseDir}/slots/` directory
- * - Uses PUT method for slot updates
- * - Endpoint format: `{endpointBase}/operator/slot/v1/{product}/{appId}`
- * - Filename format: `{product}_{appId}_{slot}.json`
- */
 export async function importSlots(baseDir: string, endpointBase: string) {
   logger.info('IMPORT_SLOTS_START')
   const dir = path.join(baseDir, 'slots')
@@ -81,14 +36,46 @@ export async function importSlots(baseDir: string, endpointBase: string) {
   for (const file of files) {
     if (!file.endsWith('.json')) continue
     const fileName = file.replace('.json', '')
-    const [product, appid, slot] = fileName.split('_')
-
-    logger.info('PROCESSING_FILE', `${file} - Product: ${product}, App: ${appid}, Slot: ${slot}`)
     const data = await readFile(path.join(dir, file), 'utf-8')
-    const endpoint = `${endpointBase}/operator/slot/v1/${product}/${appid}`
+    const parsedData = JSON.parse(data)
 
+    // v2 format: filename is product name, payload is [{ appId, slots: [{...}, ...] }]
+    // Send each slot individually: PUT /operator/slot/v1/{product}/{appId} with single slot object
+    if (
+      Array.isArray(parsedData) &&
+      parsedData.every(
+        (entry) => entry && typeof entry === 'object' && typeof entry.appId === 'string' && Array.isArray(entry.slots)
+      )
+    ) {
+      const product = fileName
+      for (const entry of parsedData) {
+        const endpoint = `${endpointBase}/operator/slot/v1/${product}/${entry.appId}`
+        for (const slot of entry.slots) {
+          logger.info('PROCESSING_FILE', `${file} - Product: ${product}, App: ${entry.appId}, Slot: ${slot.name}`)
+          try {
+            const response = await axios.put(endpoint, slot, {
+              headers: { 'Content-Type': 'application/json' },
+              validateStatus: () => true,
+            })
+            logger.status(
+              'UPLOAD_SUCCESS',
+              response.status,
+              `Slot ${slot.name} for app ${entry.appId} in product ${product}`
+            )
+          } catch (err) {
+            logger.error('UPLOAD_ERROR', `Slot ${slot.name} for app ${entry.appId} in product ${product}`, err)
+          }
+        }
+      }
+      continue
+    }
+
+    // Legacy format: filename is {product}_{appId}_{slotName}.json, payload is single slot object
+    const [product, appid, slot] = fileName.split('_')
+    logger.info('PROCESSING_FILE', `${file} - Product: ${product}, App: ${appid}, Slot: ${slot}`)
+    const endpoint = `${endpointBase}/operator/slot/v1/${product}/${appid}`
     try {
-      const response = await axios.put(endpoint, JSON.parse(data), {
+      const response = await axios.put(endpoint, parsedData, {
         headers: { 'Content-Type': 'application/json' },
         validateStatus: () => true,
       })
@@ -99,29 +86,6 @@ export async function importSlots(baseDir: string, endpointBase: string) {
   }
 }
 
-/**
- * Imports microservice configurations from JSON files to the product store service
- *
- * This function processes all JSON files in the `microservices` subdirectory and uploads them as microservice configurations.
- * Each file should follow the naming convention: `{productName}_{appId}.json`
- *
- * @param baseDir - Base directory path containing the `microservices` subdirectory with JSON files
- * @param endpointBase - Base URL for the product store service API
- *
- * @example
- * ```typescript
- * await importMicroservices(
- *   './data',
- *   'http://localhost:8080/onecx-product-store-svc'
- * )
- * ```
- *
- * @remarks
- * - Looks for files in `{baseDir}/microservices/` directory
- * - Uses PUT method for microservice updates
- * - Endpoint format: `{endpointBase}/operator/ms/v1/{product}/{appId}`
- * - Filename format: `{product}_{appId}.json`
- */
 export async function importMicroservices(baseDir: string, endpointBase: string) {
   logger.info('IMPORT_MICROSERVICES_START')
   const dir = path.join(baseDir, 'microservices')
@@ -147,32 +111,6 @@ export async function importMicroservices(baseDir: string, endpointBase: string)
   }
 }
 
-/**
- * Imports microfrontend configurations from JSON files to the product store service
- *
- * This function processes all JSON files in the `microfrontends` subdirectory and uploads them as microfrontend configurations.
- * Each file should follow the naming convention: `{productName}_{appId}_{mfeName}.json`
- * The function automatically transforms relative URLs to direct container URLs if needed.
- *
- * @param baseDir - Base directory path containing the `microfrontends` subdirectory with JSON files
- * @param endpointBase - Base URL for the product store service API
- *
- * @example
- * ```typescript
- * await importMicrofrontends(
- *   './data',
- *   'http://localhost:8080/onecx-product-store-svc'
- * )
- * ```
- *
- * @remarks
- * - Looks for files in `{baseDir}/microfrontends/` directory
- * - Uses PUT method for microfrontend updates
- * - Endpoint format: `{endpointBase}/operator/mfe/v1/{product}/{appId}`
- * - Filename format: `{product}_{appId}_{mfeName}.json`
- * - Automatically transforms relative URLs (e.g., `/mfe/help/`) to container URLs (e.g., `http://onecx-help-ui/`)
- * - URLs already starting with `http` are used as-is
- */
 export async function importMicrofrontends(baseDir: string, endpointBase: string, port: number) {
   logger.info('IMPORT_MICROFRONTENDS_START')
   const dir = path.join(baseDir, 'microfrontends')
@@ -186,17 +124,17 @@ export async function importMicrofrontends(baseDir: string, endpointBase: string
     const data = await readFile(path.join(dir, file), 'utf-8')
     const mfeData = JSON.parse(data)
 
-    // Transform URLs if they don't start with http
-    const appName = mfeData.appName
-    if (appName && mfeData.remoteBaseUrl && !mfeData.remoteBaseUrl.startsWith('http')) {
+    // Transform relative URLs to Docker-network URLs using appId from filename as hostname.
+    // The MFE assets are served from the UI container directly (no nginx proxy needed for loading).
+    if (appid && mfeData.remoteBaseUrl && !mfeData.remoteBaseUrl.startsWith('http')) {
       const originalBaseUrl = mfeData.remoteBaseUrl
-      mfeData.remoteBaseUrl = `http://${appName}:${port}/`
+      mfeData.remoteBaseUrl = `http://${appid}:${port}/`
       logger.info('PROCESSING_FILE', `URL Transform - BaseURL: ${originalBaseUrl} -> ${mfeData.remoteBaseUrl}`)
     }
 
-    if (appName && mfeData.remoteEntry && !mfeData.remoteEntry.startsWith('http')) {
+    if (appid && mfeData.remoteEntry && !mfeData.remoteEntry.startsWith('http')) {
       const originalEntry = mfeData.remoteEntry
-      mfeData.remoteEntry = `http://${appName}:${port}/remoteEntry.js`
+      mfeData.remoteEntry = `http://${appid}:${port}/remoteEntry.js`
       logger.info('PROCESSING_FILE', `URL Transform - Entry: ${originalEntry} -> ${mfeData.remoteEntry}`)
     }
 

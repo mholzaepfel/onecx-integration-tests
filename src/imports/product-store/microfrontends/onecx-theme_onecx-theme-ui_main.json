@@ -1,15 +1,22 @@
 {
   "appVersion": "xxx",
-  "appName": "onecx-theme-ui",
-  "description": "onecx-theme-ui",
-  "remoteBaseUrl": "http://onecx-theme-ui/",
-  "remoteEntry": "http://onecx-theme-ui/remoteEntry.js",
-  "note": "Imported MFE",
+  "appName": "OneCX Theme UI",
+  "description": "OneCX Theme UI",
+  "contact": "onecx@1000kit.org",
+  "remoteBaseUrl": "/mfe/theme/",
+  "remoteEntry": "/mfe/theme/remoteEntry.js",
+  "note": "Import via MF operator",
   "exposedModule": "./OneCXThemeModule",
   "technology": "WEBCOMPONENTMODULE",
   "remoteName": "onecx-theme",
   "tagName": "ocx-theme-component",
   "type": "MODULE",
   "deprecated": false,
-  "undeployed": false
+  "undeployed": false,
+  "endpoints": [
+    {
+      "name": "theme-detail",
+      "path": "/{theme-name}"
+    }
+  ]
 }

@@ -13,8 +13,8 @@
       "theme/*": ["theme/*"],
       "assignments/*": ["assignments/*"],
       "workspace/*": ["workspace/*"],
-      "product-store/*": ["product-store/*"],
-      "permissions/*": ["permissions/*"]
+      "product-store/*": ["product-store-bak/*"],
+      "permissions/*": ["permissions-bak/*"]
     }
   }
 }

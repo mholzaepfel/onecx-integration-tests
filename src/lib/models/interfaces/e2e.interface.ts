@@ -1,3 +1,5 @@
+import { Environment } from 'testcontainers/build/types'
+
 /**
  * E2E container configuration interface
  */
@@ -10,6 +12,8 @@ export interface E2eContainerInterface {
   baseUrl?: string
   /** Maximum wait time in milliseconds for one-shot startup/finish (default: 600_000 (10min)) */
   timeoutMs?: number
+  /** Additional environment variables passed to the E2E container */
+  environments?: Environment
 }
 
 /**
