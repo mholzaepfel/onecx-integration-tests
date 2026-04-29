@@ -144,4 +144,8 @@ vite.config.ts.timestamp-*
 
 integration-tests/artifacts
 
-onecx-data
+onecx-data/*
+
+e2e-workspace-ui
+
+.github/memory/*
