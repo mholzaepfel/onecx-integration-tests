@@ -151,3 +151,5 @@ e2e-workspace-ui
 .github/memory/*
 
 html
+ 
+integration-tests
