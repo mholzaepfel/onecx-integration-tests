@@ -876,7 +876,7 @@
                 {
                   "key": "PDT_KEYCLOAK_DEF",
                   "name": "Keycloak default",
-                  "url": "http://keycloak-app",
+                  "url": "http://keycloak-app:8080",
                   "disabled": false,
                   "position": 1,
                   "badge": "user-edit",
