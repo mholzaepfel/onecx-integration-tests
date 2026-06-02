@@ -177,6 +177,10 @@ export class UserDefinedContainerStarter {
       uiContainer.withProductName(uiConfig.uiDetails.productName)
     }
 
+    if (uiConfig.environments) {
+      uiContainer.withEnvironment(uiConfig.environments)
+    }
+
     return await uiContainer.withLoggingEnabled(withLoggingEnabled).withNetwork(this.network).start()
   }
 
@@ -198,6 +202,10 @@ export class UserDefinedContainerStarter {
 
     if (e2eConfig.baseUrl) {
       e2eContainer.withBaseUrl(e2eConfig.baseUrl)
+    }
+
+    if (e2eConfig.environments) {
+      e2eContainer.withEnvironment(e2eConfig.environments)
     }
 
     const startedContainer = await e2eContainer

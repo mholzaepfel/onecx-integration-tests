@@ -143,3 +143,13 @@ vite.config.ts.timestamp-*
 .vscode/extensions.json
 
 integration-tests/artifacts
+
+onecx-data/*
+
+e2e-workspace-ui
+
+.github/memory/*
+
+html
+ 
+integration-tests

@@ -12,7 +12,7 @@ export const E2E_OUTPUT_DIR = 'e2e-results'
 /**
  * Container path where E2E results are written inside the container
  */
-export const E2E_CONTAINER_OUTPUT_PATH = '/reports'
+export const E2E_CONTAINER_OUTPUT_PATH = '/e2e-results'
 
 /**
  * Default timeout for E2E container startup/termination wait in milliseconds.

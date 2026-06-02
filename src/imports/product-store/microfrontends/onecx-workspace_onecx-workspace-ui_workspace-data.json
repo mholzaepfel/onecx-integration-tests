@@ -1,0 +1,15 @@
+{
+  "appVersion": "xxx",
+  "appName": "OneCX Workspace UI",
+  "description": "Provide workspace data like workspaces, workspace, logo",
+  "contact": "onecx@1000kit.org",
+  "remoteBaseUrl": "/mfe/workspace/",
+  "remoteEntry": "/mfe/workspace/remoteEntry.js",
+  "exposedModule": "./OneCXWorkspaceDataComponent",
+  "technology": "WEBCOMPONENTMODULE",
+  "remoteName": "onecx-workspace",
+  "tagName": "ocx-workspace-data-component",
+  "type": "COMPONENT",
+  "deprecated": false,
+  "undeployed": false
+}

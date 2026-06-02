@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { importTenants } from './tenant/import-tenants'
 import { importThemes } from './theme/import-themes'
-import { importAssignments } from './assignments/import-assignments'
+import { importAssignments } from './permission-assignment/import-assignments'
 import { importWorkspaces } from './workspace/import-workspaces'
 import {
   importMicrofrontends,
@@ -147,8 +147,7 @@ export class ImportManager {
       await importPermissions(path.join(base, 'permissions'), this.getServiceUrl('onecx-permission-svc'))
 
       await importAssignments(
-        path.join(base, 'assignments'),
-        async () => token,
+        path.join(base, 'permission-assignment'),
         this.getServiceUrl('onecx-permission-svc', '/exim/v1/assignments/operator')
       )
     } else {
@@ -161,7 +160,7 @@ export class ImportManager {
       await importWorkspaces(
         path.join(base, 'workspace'),
         async () => token,
-        this.getServiceUrl('onecx-workspace-svc', '/exim/v1/workspace/operator')
+        this.getServiceUrl('onecx-workspace-svc', '/exim/v1/workspace/import')
       )
     } else {
       logger.info('SERVICE_UNAVAILABLE', 'onecx-workspace-svc - skipping workspace import')

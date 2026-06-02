@@ -1,0 +1,12 @@
+{
+  "version": "xxx",
+  "description": "Manage AI providers",
+  "imageUrl": null,
+  "iconName": "ai",
+  "displayName": "OneCX AI Provider",
+  "basePath": "/ai",
+  "provider": "OneCX Team",
+  "classifications": ["Tool"],
+  "multitenancy": true,
+  "undeployed": false
+}

@@ -1,7 +1,14 @@
 {
-    "version": "xxx",
-    "description": "OneCX tenant",
-    "basePath": "/tenant",
-    "displayName": "OneCX tenant",
-    "iconName": "lock"
+  "version": "xxx",
+  "description": "Display Tenants",
+  "imageUrl": null,
+  "iconName": "building-columns",
+  "displayName": "OneCX Tenant",
+  "basePath": "/tenant",
+  "provider": "OneCX Team",
+  "classifications": [
+    "Administration"
+  ],
+  "multitenancy": false,
+  "undeployed": false
 }

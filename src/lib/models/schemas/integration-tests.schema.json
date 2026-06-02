@@ -370,6 +370,11 @@
           "minimum": 1000,
           "default": 600000,
           "description": "Maximum wait time in milliseconds for E2E one-shot startup/finish before failing."
+        },
+        "environments": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Additional environment variables passed to the E2E container."
         }
       },
       "required": ["image", "networkAlias"]

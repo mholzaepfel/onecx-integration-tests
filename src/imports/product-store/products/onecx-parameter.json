@@ -1,7 +1,14 @@
 {
-    "version": "dev",
-    "description": "OneCX parameter",
-    "basePath": "/parameter",
-    "displayName": "OneCX parameter",
-    "iconName": "lock"
+  "version": "xxx",
+  "description": "OneCX Parameter",
+  "imageUrl": null,
+  "iconName": "sliders-h",
+  "displayName": "OneCX Parameter",
+  "basePath": "/parameter",
+  "provider": "OneCX Team",
+  "classifications": [
+    "Administration"
+  ],
+  "multitenancy": true,
+  "undeployed": false
 }

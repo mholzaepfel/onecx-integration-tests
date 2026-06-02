@@ -2,8 +2,8 @@ const DOCKER_REPO = 'ghcr.io/onecx'
 const DEFAULT_TAG = 'main-native'
 
 // External Images
-export const POSTGRES = 'docker.io/library/postgres:13.4'
-export const KEYCLOAK = 'quay.io/keycloak/keycloak:23.0.4'
+export const POSTGRES = 'docker.io/library/postgres:17.9'
+export const KEYCLOAK = 'quay.io/keycloak/keycloak:26.2.0'
 export const IMPORT_MANAGER_BASE = 'docker.io/library/node:20'
 
 export enum OnecxService {

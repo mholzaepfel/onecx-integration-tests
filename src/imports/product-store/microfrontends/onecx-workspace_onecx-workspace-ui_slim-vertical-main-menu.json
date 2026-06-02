@@ -1,0 +1,15 @@
+{
+  "appVerticalion": "xxx",
+  "appName": "OneCX Workspace UI",
+  "description": "Displaying the vertical menu in slim mode",
+  "contact": "onecx@1000kit.org",
+  "remoteBaseUrl": "/mfe/workspace/",
+  "remoteEntry": "/mfe/workspace/remoteEntry.js",
+  "exposedModule": "./OneCXSlimVerticalMainMenuComponent",
+  "technology": "WEBCOMPONENTMODULE",
+  "remoteName": "onecx-workspace",
+  "tagName": "ocx-slim-vertical-main-menu-component",
+  "type": "COMPONENT",
+  "deprecated": false,
+  "undeployed": false
+}

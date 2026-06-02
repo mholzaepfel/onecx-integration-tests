@@ -1,0 +1,15 @@
+{
+  "appVersion": "xxx",
+  "appName": "OneCX Workspace UI",
+  "description": "Displaying the user menu in slim mode",
+  "contact": "onecx@1000kit.org",
+  "remoteBaseUrl": "/mfe/workspace/",
+  "remoteEntry": "/mfe/workspace/remoteEntry.js",
+  "exposedModule": "./OneCXSlimUserMenuComponent",
+  "technology": "WEBCOMPONENTMODULE",
+  "remoteName": "onecx-workspace",
+  "tagName": "ocx-slim-user-menu-component",
+  "type": "COMPONENT",
+  "deprecated": false,
+  "undeployed": false
+}

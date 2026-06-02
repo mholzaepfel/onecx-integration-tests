@@ -4,9 +4,9 @@ on:
   workflow_call: {}
   workflow_dispatch: {}
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
   integration-tests:
@@ -16,7 +16,7 @@ jobs:
       contents: read
     env:
       CI: true
-      DEBUG: 'testcontainers*'
+      DEBUG: "testcontainers*"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +26,14 @@ jobs:
         uses: ./.github/actions/setup-environment
       - name: Run integration tests (default config)
         run: npm run integration-tests
+      - name: Upload E2E Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ github.run_id }}
+          path: e2e-results/
+          retention-days: 14
+          if-no-files-found: warn
       - name: Container logs (on failure)
         if: failure()
         run: |

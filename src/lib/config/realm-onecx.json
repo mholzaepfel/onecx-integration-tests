@@ -1,6 +1,8 @@
 {
   "id": "onecx",
   "realm": "onecx",
+  "displayName": "OneCX Realm",
+  "displayNameHtml": "",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -46,6 +48,25 @@
   "roles": {
     "realm": [
       {
+        "id": "842d03f7-6481-4d5b-b2dd-aa1a592402ce",
+        "name": "onecx-user",
+        "description": "OneCX Viewing (read access)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "onecx",
+        "attributes": {}
+      },
+      {
+        "id": "7b4629c4-abe6-48b2-a8cc-daa760b0acaa",
+        "name": "onecx-admin",
+        "description": "OneCX Administration (full access)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "onecx",
+        "attributes": {}
+      },
+      {
+        "id": "de3fbdfa-2123-4812-988a-723b537ac615",
         "name": "offline_access",
         "description": "${role_offline-access}",
         "composite": false,
@@ -54,14 +75,7 @@
         "attributes": {}
       },
       {
-        "name": "uma_authorization",
-        "description": "${role_uma_authorization}",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
+        "id": "fa32ab92-b967-4174-94e5-b6d495565ab9",
         "name": "default-roles-onecx",
         "description": "${role_default-roles}",
         "composite": true,
@@ -76,77 +90,9 @@
         "attributes": {}
       },
       {
-        "name": "onecx-portal-admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "onecx-admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "onecx-portal-user",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "onecx-portal-super-admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "tkit-apm-admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "tkit-apm-user",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "tkit-ahm-user",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "tkit-ahm-admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "portal-mgmt-admin",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "portal-mgmt-user",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "onecx",
-        "attributes": {}
-      },
-      {
-        "name": "Project_Admin",
+        "id": "9e2c24e8-0e24-420d-a580-1824378e927b",
+        "name": "uma_authorization",
+        "description": "${role_uma_authorization}",
         "composite": false,
         "clientRole": false,
         "containerId": "onecx",
@@ -154,8 +100,6 @@
       }
     ],
     "client": {
-      "announcement-help-management": [],
-      "announcement-help-management-page-ui-client": [],
       "realm-management": [
         {
           "id": "10df2e04-bbc0-489e-ba4f-90e811381f75",
@@ -363,14 +307,10 @@
           "attributes": {}
         }
       ],
-      "portal-mgmt-ui-ui-client": [],
-      "user-profile-ui-ui-client": [],
+      "onecx-shell-ui-client": [],
+      "security-admin-console": [],
+      "admin-cli": [],
       "account-console": [],
-      "portal-mf-shell-ui-client": [],
-      "portal-welcome-ui-ui-client": [],
-      "tkit-portal-server": [],
-      "apm-mgmt": [],
-      "apm-mgmt-page-ui-client": [],
       "broker": [
         {
           "id": "8ff9cdcd-b6fe-44e3-9c15-2b8b12261bae",
@@ -382,7 +322,6 @@
           "attributes": {}
         }
       ],
-      "admin-cli": [],
       "account": [
         {
           "id": "85720816-4690-4183-aedc-623a10a6c250",
@@ -440,6 +379,15 @@
           "attributes": {}
         },
         {
+          "id": "9612691a-e736-4ae3-9f0b-b9dda2722735",
+          "name": "view-groups",
+          "description": "${role_view-groups}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "8e1a6990-4912-410c-905d-14a9a38b5cd3",
+          "attributes": {}
+        },
+        {
           "id": "ae89f910-a2d9-4418-b05a-cefdc04d4b78",
           "name": "view-profile",
           "description": "${role_view-profile}",
@@ -476,7 +424,9 @@
   "otpPolicyDigits": 6,
   "otpPolicyLookAheadWindow": 1,
   "otpPolicyPeriod": 30,
-  "otpSupportedApplications": ["FreeOTP", "Google Authenticator"],
+  "otpPolicyCodeReusable": false,
+  "otpSupportedApplications": ["totpAppFreeOTPName", "totpAppGoogleName", "totpAppMicrosoftAuthenticatorName"],
+  "localizationTexts": {},
   "webAuthnPolicyRpEntityName": "keycloak",
   "webAuthnPolicySignatureAlgorithms": ["ES256"],
   "webAuthnPolicyRpId": "",
@@ -487,6 +437,7 @@
   "webAuthnPolicyCreateTimeout": 0,
   "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyAcceptableAaguids": [],
+  "webAuthnPolicyExtraOrigins": [],
   "webAuthnPolicyPasswordlessRpEntityName": "keycloak",
   "webAuthnPolicyPasswordlessSignatureAlgorithms": ["ES256"],
   "webAuthnPolicyPasswordlessRpId": "",
@@ -497,147 +448,131 @@
   "webAuthnPolicyPasswordlessCreateTimeout": 0,
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
-  "clientProfiles": {
-    "profiles": []
-  },
-
-  "clientPolicies": {
-    "policies": [
-      {
-        "name": "builtin-default-policy",
-        "builtin": true,
-        "enable": false
-      }
-    ]
-  },
+  "webAuthnPolicyPasswordlessExtraOrigins": [],
   "users": [
     {
-      "username": "onecxadmin",
-      "email": "onecx@gm.com",
-      "firstName": "Admin",
-      "lastName": "Onecx",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "onecx"
-        }
-      ],
-      "realmRoles": [
-        "onecx-portal-admin",
-        "onecx-admin",
-        "onecx-portal-user",
-        "tkit-apm-admin",
-        "tkit-apm-user",
-        "portal-mgmt-admin",
-        "portal-mgmt-user",
-        "tkit-ahm-user",
-        "tkit-ahm-admin"
-      ],
-      "attributes": {
-        "orgId": ["onecx"]
-      }
-    },
-    {
+      "id": "f994b031-8316-47fe-8ebf-c76803b071d6",
+      "createdTimestamp": 1760416629430,
       "username": "onecx",
-      "email": "onecx-onecx@gm.com",
-      "firstName": "Normal",
-      "lastName": "onecx",
       "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "OneCX",
+      "lastName": "Admin",
+      "email": "onecx_admin@1000kit.org",
+      "attributes": {},
       "credentials": [
         {
           "type": "password",
           "value": "onecx"
         }
       ],
-      "realmRoles": [
-        "onecx-portal-user",
-        "onecx-admin",
-        "tkit-apm-user",
-        "portal-mgmt-user",
-        "tkit-ahm-user",
-        "Project_Admin"
-      ],
-      "attributes": {
-        "orgId": ["onecx"],
-        "partyId": ["10009"]
-      }
+      "realmRoles": ["onecx-admin"]
     },
     {
-      "username": "onecx-dtag",
-      "email": "onecx-onecx-dtag@gm.com",
-      "firstName": "Normal",
-      "lastName": "onecx",
+      "id": "3248e0b4-a5a8-4091-94e2-64e4f961f268",
+      "createdTimestamp": 1760416629430,
+      "username": "onecx_user",
       "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "OneCX",
+      "lastName": "User",
+      "email": "onecx_user@1000kit.org",
+      "attributes": {},
       "credentials": [
         {
           "type": "password",
-          "value": "onecx"
+          "value": "onecx_user"
         }
       ],
-      "realmRoles": [
-        "onecx-portal-user",
-        "onecx-admin",
-        "tkit-apm-user",
-        "portal-mgmt-user",
-        "tkit-ahm-user",
-        "Project_Admin"
-      ],
-      "attributes": {
-        "orgId": ["dtag"],
-        "partyId": ["10013"]
-      }
+      "realmRoles": ["onecx-user"]
     },
     {
-      "username": "onecx-gfnw",
-      "email": "onecx-onecx-gfnw@gm.com",
-      "firstName": "Normal",
-      "lastName": "onecx",
+      "id": "9e70a802-b9bd-496c-a03f-e866c4a7f8ca",
+      "createdTimestamp": 1760416629430,
+      "username": "onecx_t1_admin",
       "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "OneCX",
+      "lastName": "T1 Admin",
+      "email": "onecx_t1_admin@1000kit.org",
+      "attributes": {
+        "orgId": ["t1"]
+      },
       "credentials": [
         {
           "type": "password",
-          "value": "onecx"
+          "value": "onecx_t1_admin"
         }
       ],
-      "realmRoles": [
-        "onecx-portal-user",
-        "onecx-admin",
-        "tkit-apm-user",
-        "portal-mgmt-user",
-        "tkit-ahm-user",
-        "Project_Admin"
-      ],
-      "attributes": {
-        "orgId": ["gfnw"],
-        "partyId": ["10002"]
-      }
+      "realmRoles": ["onecx-admin"]
     },
     {
-      "username": "onecxsuperadmin",
-      "email": "onecx-user@gm.com",
-      "firstName": "SuperAdmin",
-      "lastName": "Onecx",
+      "id": "f9d671d6-995b-49d7-9328-56d8020db58c",
+      "createdTimestamp": 1760416629430,
+      "username": "onecx_t1_user",
       "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "OneCX",
+      "lastName": "T1 User",
+      "email": "onecx_t1_user@1000kit.org",
+      "attributes": {
+        "orgId": ["t1"]
+      },
       "credentials": [
         {
           "type": "password",
-          "value": "onecx"
+          "value": "onecx_t1_user"
         }
       ],
-      "realmRoles": [
-        "onecx-portal-super-admin",
-        "onecx-portal-admin",
-        "onecx-admin",
-        "onecx-portal-user",
-        "tkit-apm-admin",
-        "tkit-apm-user",
-        "portal-mgmt-admin",
-        "portal-mgmt-user",
-        "tkit-ahm-user",
-        "tkit-ahm-admin"
+      "realmRoles": ["onecx-user"]
+    },
+    {
+      "id": "3a16329a-825b-4b8f-bcbb-4dee95c688a8",
+      "createdTimestamp": 1760416629430,
+      "username": "onecx_t2_admin",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "OneCX",
+      "lastName": "T2 Admin",
+      "email": "onecx_t2_admin@1000kit.org",
+      "attributes": {
+        "partyId": ["107"],
+        "orgId": ["t2"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "onecx_t2_admin"
+        }
       ],
-      "attributes": {}
+      "realmRoles": ["onecx-admin"]
+    },
+    {
+      "id": "58ed91c9-0444-4399-9070-ec28d6aaa00a",
+      "createdTimestamp": 1760416629430,
+      "username": "onecx_t2_user",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "OneCX",
+      "lastName": "T2 User",
+      "email": "onecx_t2_user@1000kit.org",
+      "attributes": {
+        "partyId": ["107"],
+        "orgId": ["t2"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "onecx_t2_user"
+        }
+      ],
+      "realmRoles": ["onecx-user"]
     }
   ],
   "scopeMappings": [
@@ -650,7 +585,7 @@
     "account": [
       {
         "client": "account-console",
-        "roles": ["manage-account"]
+        "roles": ["manage-account", "view-groups"]
       }
     ]
   },
@@ -780,53 +715,9 @@
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
-      "clientId": "portal-mf-shell-ui-client",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.multivalued.roles": "false",
-        "saml.force.post.binding": "false",
-        "saml.encrypt": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "use.refresh.tokens": "true",
-        "exclude.session.state.from.auth.response": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "saml.artifact.binding": "false",
-        "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "saml.authnstatement": "false",
-        "display.on.consent.screen": "false",
-        "saml.onetimeuse.condition": "false"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email", "partyId", "orgId"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
-    },
-    {
       "clientId": "onecx-shell-ui-client",
+      "name": "onecx-shell-ui-client",
+      "description": "Client for OneCX Shell authorization",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
@@ -868,237 +759,144 @@
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email", "partyId", "orgId"],
+      "defaultClientScopes": ["web-origins", "roles", "profile", "email", "partyId", "Organization_ID"],
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
-      "clientId": "portal-mgmt-ui-ui-client",
+      "id": "8c947402-1f5f-4cfe-ace6-cab68509465c",
+      "clientId": "onecx-local-env-client-id",
+      "name": "onecx-local-env-client",
+      "description": "Client for OneCX",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
+      "secret": "t4LXKbpxedZoHn9mynwSih9Cz9W1VbS8u9vaDz5A",
+      "redirectUris": [],
+      "webOrigins": [],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
-      "standardFlowEnabled": true,
+      "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
       "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.multivalued.roles": "false",
-        "saml.force.post.binding": "false",
-        "saml.encrypt": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "use.refresh.tokens": "true",
-        "exclude.session.state.from.auth.response": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "saml.artifact.binding": "false",
+        "realm_client": "false",
         "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "saml.authnstatement": "false",
-        "display.on.consent.screen": "false",
-        "saml.onetimeuse.condition": "false"
+        "backchannel.logout.revoke.offline.tokens": "false"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
-    },
-    {
-      "clientId": "announcement-help-management-page-ui-client",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.multivalued.roles": "false",
-        "saml.force.post.binding": "false",
-        "saml.encrypt": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "use.refresh.tokens": "true",
-        "exclude.session.state.from.auth.response": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "saml.artifact.binding": "false",
-        "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "saml.authnstatement": "false",
-        "display.on.consent.screen": "false",
-        "saml.onetimeuse.condition": "false"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
-    },
-    {
-      "clientId": "user-profile-ui-ui-client",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.multivalued.roles": "false",
-        "saml.force.post.binding": "false",
-        "saml.encrypt": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "use.refresh.tokens": "true",
-        "exclude.session.state.from.auth.response": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "saml.artifact.binding": "false",
-        "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "saml.authnstatement": "false",
-        "display.on.consent.screen": "false",
-        "saml.onetimeuse.condition": "false"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
-    },
-    {
-      "clientId": "portal-welcome-ui-ui-client",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.multivalued.roles": "false",
-        "saml.force.post.binding": "false",
-        "saml.encrypt": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "use.refresh.tokens": "true",
-        "exclude.session.state.from.auth.response": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "saml.artifact.binding": "false",
-        "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "saml.authnstatement": "false",
-        "display.on.consent.screen": "false",
-        "saml.onetimeuse.condition": "false"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
-    },
-    {
-      "clientId": "apm-mgmt-page-ui-client",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": true,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.multivalued.roles": "false",
-        "saml.force.post.binding": "false",
-        "saml.encrypt": "false",
-        "oauth2.device.authorization.grant.enabled": "false",
-        "backchannel.logout.revoke.offline.tokens": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "use.refresh.tokens": "true",
-        "exclude.session.state.from.auth.response": "false",
-        "oidc.ciba.grant.enabled": "false",
-        "saml.artifact.binding": "false",
-        "backchannel.logout.session.required": "true",
-        "client_credentials.use_refresh_token": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "tls.client.certificate.bound.access.tokens": "false",
-        "saml.authnstatement": "false",
-        "display.on.consent.screen": "false",
-        "saml.onetimeuse.condition": "false"
-      },
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
+      "protocolMappers": [
+        {
+          "id": "d10d5cef-1662-4bef-b122-34b4eb8fa1ab",
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "31324188-8875-412e-9282-cfc90ec4243d",
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "abd18fc2-23d7-4c47-8c86-ae7db271b112",
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "client_id",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "client_id",
+            "jsonType.label": "String"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
+        "Organization_ID",
+        "ocx-ai:read",
+        "ocx-ai:write",
+        "ocx-ai:delete",
+        "ocx-an:read",
+        "ocx-an:write",
+        "ocx-an:delete",
+        "ocx-bm:read",
+        "ocx-bm:write",
+        "ocx-bm:delete",
+        "ocx-chat:read",
+        "ocx-chat:write",
+        "ocx-chat:delete",
+        "ocx-fs:read",
+        "ocx-fs:write",
+        "ocx-fs:delete",
+        "ocx-hp:read",
+        "ocx-hp:write",
+        "ocx-hp:delete",
+        "ocx-no:write",
+        "ocx-pa:read",
+        "ocx-pa:write",
+        "ocx-pa:delete",
+        "ocx-pa-op:write",
+        "ocx-pa-ext:read",
+        "ocx-pm:read",
+        "ocx-pm:write",
+        "ocx-pm:delete",
+        "ocx-ps:read",
+        "ocx-ps:write",
+        "ocx-ps:delete",
+        "ocx-ps-mfe:write",
+        "ocx-ps-ms:write",
+        "ocx-ps-product:write",
+        "ocx-ps-slot:write",
+        "ocx-sc:read",
+        "ocx-sc:write",
+        "ocx-sc:delete",
+        "ocx-th:read",
+        "ocx-th:write",
+        "ocx-th:delete",
+        "ocx-tn:read",
+        "ocx-tn:write",
+        "ocx-up:read",
+        "ocx-up:write",
+        "ocx-up:delete",
+        "ocx-wc:read",
+        "ocx-wc:write",
+        "ocx-wc:delete",
+        "ocx-ws:read",
+        "ocx-ws:write",
+        "ocx-ws:delete"
+      ],
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
@@ -1174,245 +972,6 @@
         }
       ],
       "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
-    },
-    {
-      "clientId": "tkit-portal-server",
-      "name": "tkit-portal-server",
-      "description": "Client for apigw",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": [],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {},
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "protocolMappers": [
-        {
-          "id": "c13fc4f3-a370-4b51-905e-b2b08ae244f1",
-          "name": "Client ID",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usersessionmodel-note-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.session.note": "clientId",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "clientId",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "1ce77cf0-b924-4f94-a65b-a9496486d14b",
-          "name": "Client IP Address",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usersessionmodel-note-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.session.note": "clientAddress",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "clientAddress",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "9d38c513-0815-41b2-8056-d0c6796783ef",
-          "name": "Client Host",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usersessionmodel-note-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.session.note": "clientHost",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "clientHost",
-            "jsonType.label": "String"
-          }
-        }
-      ],
-      "defaultClientScopes": ["web-origins", "idm:apm:read", "profile", "roles", "email"],
-      "optionalClientScopes": []
-    },
-    {
-      "clientId": "dummy",
-      "name": "dummy",
-      "description": "Dummy client for the BFFs",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "dummy",
-      "redirectUris": [],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {},
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "protocolMappers": [
-        {
-          "id": "c13fc4f3-a370-4b51-905e-b2b08ae244f2",
-          "name": "Client ID",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usersessionmodel-note-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.session.note": "clientId",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "clientId",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "1ce77cf0-b924-4f94-a65b-a9496486d14c",
-          "name": "Client IP Address",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usersessionmodel-note-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.session.note": "clientAddress",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "clientAddress",
-            "jsonType.label": "String"
-          }
-        },
-        {
-          "id": "9d38c513-0815-41b2-8056-d0c6796783eg",
-          "name": "Client Host",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usersessionmodel-note-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.session.note": "clientHost",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "claim.name": "clientHost",
-            "jsonType.label": "String"
-          }
-        }
-      ],
-      "defaultClientScopes": ["web-origins", "idm:apm:read", "profile", "roles", "email"],
-      "optionalClientScopes": []
-    },
-    {
-      "clientId": "apm-mgmt",
-      "name": "apm-mgmt",
-      "description": "Client for apigw",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": [],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {},
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "idm:apm:read", "profile", "roles", "email"],
-      "optionalClientScopes": []
-    },
-    {
-      "clientId": "announcement-help-management",
-      "name": "announcement-help-management",
-      "description": "Client for apigw",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "alwaysDisplayInConsole": false,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": [],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {},
-      "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "defaultClientScopes": ["web-origins", "idm:apm:read", "profile", "roles", "email"],
-      "optionalClientScopes": []
-    },
-    {
-      "id": "34f47ebb-0546-4cbd-a4b1-1fb15438de3c",
-      "clientId": "data-mgmt-ui-user",
-      "adminUrl": "http://data-mgmt-ui-app/datamgmt",
-      "surrogateAuthRequired": false,
-      "enabled": true,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "1998ca5f-5851-4665-8b34-c030f3be8ddb",
-      "redirectUris": ["http://data-mgmt-ui/*", "http://data-mgmt-ui-app/*"],
-      "webOrigins": [],
-      "notBefore": 0,
-      "bearerOnly": false,
-      "consentRequired": false,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "publicClient": false,
-      "frontchannelLogout": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "saml.assertion.signature": "false",
-        "saml.force.post.binding": "false",
-        "saml.multivalued.roles": "false",
-        "saml.encrypt": "false",
-        "saml_force_name_id_format": "false",
-        "saml.client.signature": "false",
-        "saml.authnstatement": "false",
-        "saml.server.signature": "false",
-        "saml.server.signature.keyinfo.ext": "false",
-        "exclude.session.state.from.auth.response": "true",
-        "saml.onetimeuse.condition": "false"
-      },
-      "fullScopeAllowed": true,
-      "nodeReRegistrationTimeout": -1,
-      "protocolMappers": [],
-      "useTemplateConfig": false,
-      "useTemplateScope": false,
-      "useTemplateMappers": false,
-      "defaultClientScopes": ["web-origins", "roles", "profile", "email", "partyId", "orgId"],
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     }
   ],
@@ -1565,6 +1124,363 @@
       ]
     },
     {
+      "id": "ocx-ai:read",
+      "name": "ocx-ai:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ai:write",
+      "name": "ocx-ai:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ai:delete",
+      "name": "ocx-ai:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-an:read",
+      "name": "ocx-an:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-an:write",
+      "name": "ocx-an:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-an:delete",
+      "name": "ocx-an:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-bm:read",
+      "name": "ocx-bm:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-bm:write",
+      "name": "ocx-bm:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-bm:delete",
+      "name": "ocx-bm:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-chat:read",
+      "name": "ocx-chat:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-chat:write",
+      "name": "ocx-chat:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-chat:delete",
+      "name": "ocx-chat:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-fs:read",
+      "name": "ocx-fs:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-fs:delete",
+      "name": "ocx-fs:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-fs:write",
+      "name": "ocx-fs:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-hp:read",
+      "name": "ocx-hp:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-hp:write",
+      "name": "ocx-hp:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-hp:delete",
+      "name": "ocx-hp:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-no:write",
+      "name": "ocx-no:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pa:read",
+      "name": "ocx-pa:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pa:write",
+      "name": "ocx-pa:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pa:delete",
+      "name": "ocx-pa:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pa-op:write",
+      "name": "ocx-pa-op:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pa-ext:read",
+      "name": "ocx-pa-ext:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pm:read",
+      "name": "ocx-pm:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pm:write",
+      "name": "ocx-pm:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-pm:delete",
+      "name": "ocx-pm:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps:read",
+      "name": "ocx-ps:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps:write",
+      "name": "ocx-ps:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps:delete",
+      "name": "ocx-ps:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps-mfe:write",
+      "name": "ocx-ps-mfe:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps-ms:write",
+      "name": "ocx-ps-ms:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps-product:write",
+      "name": "ocx-ps-product:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ps-slot:write",
+      "name": "ocx-ps-slot:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-sc:read",
+      "name": "ocx-sc:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-sc:write",
+      "name": "ocx-sc:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-sc:delete",
+      "name": "ocx-sc:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-th:read",
+      "name": "ocx-th:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-th:write",
+      "name": "ocx-th:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-th:delete",
+      "name": "ocx-th:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-tn:read",
+      "name": "ocx-tn:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-tn:write",
+      "name": "ocx-tn:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-up:read",
+      "name": "ocx-up:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-up:write",
+      "name": "ocx-up:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-up:delete",
+      "name": "ocx-up:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-wc:read",
+      "name": "ocx-wc:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-wc:write",
+      "name": "ocx-wc:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-wc:delete",
+      "name": "ocx-wc:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ws:read",
+      "name": "ocx-ws:read",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ws:write",
+      "name": "ocx-ws:write",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
+      "id": "ocx-ws:delete",
+      "name": "ocx-ws:delete",
+      "description": "created by initial import",
+      "protocol": "openid-connect",
+      "attributes": {}
+    },
+    {
       "id": "1be5359a-b679-4766-979e-ea1011624123",
       "name": "partyId",
       "description": "party id scope",
@@ -1595,8 +1511,8 @@
     },
     {
       "id": "1be5359a-b679-4766-979e-ea1011624166",
-      "name": "orgId",
-      "description": "oranization id scope",
+      "name": "Organization_ID",
+      "description": "Tenant organization ID, mapping: orgId",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "false",
@@ -2780,16 +2696,26 @@
   "dockerAuthenticationFlow": "docker auth",
   "attributes": {
     "cibaBackchannelTokenDeliveryMode": "poll",
-    "cibaExpiresIn": "120",
     "cibaAuthRequestedUserHint": "login_hint",
-    "oauth2DeviceCodeLifespan": "600",
     "clientOfflineSessionMaxLifespan": "0",
     "oauth2DevicePollingInterval": "5",
     "clientSessionIdleTimeout": "0",
-    "clientSessionMaxLifespan": "0",
     "clientOfflineSessionIdleTimeout": "0",
-    "cibaInterval": "5"
+    "cibaInterval": "5",
+    "realmReusableOtpCode": "false",
+    "cibaExpiresIn": "120",
+    "oauth2DeviceCodeLifespan": "600",
+    "parRequestUriLifespan": "60",
+    "clientSessionMaxLifespan": "0",
+    "frontendUrl": "http://keycloak-app:8080",
+    "acr.loa.map": "{}"
   },
-  "keycloakVersion": "13.0.0",
-  "userManagedAccessAllowed": false
+  "keycloakVersion": "23.0.4",
+  "userManagedAccessAllowed": false,
+  "clientProfiles": {
+    "profiles": []
+  },
+  "clientPolicies": {
+    "policies": []
+  }
 }
