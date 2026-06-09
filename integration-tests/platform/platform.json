@@ -1,0 +1,30 @@
+{
+  "$schema": "../src/lib/models/schemas/integration-tests.schema.json",
+  "platformConfig": {
+    "importData": true,
+    "withLoggingEnabled": true,
+    "heartbeat": { "enabled": true },
+    "container": {
+      "bff": [
+        {
+          "image": "ghcr.io/onecx/onecx-workspace-bff:main-native",
+          "networkAlias": "onecx-workspace-bff",
+          "bffDetails": {
+            "permissionsProductName": "onecx-workspace"
+          }
+        }
+      ],
+      "ui": [
+        {
+          "image": "ghcr.io/onecx/onecx-workspace-ui:main",
+          "networkAlias": "onecx-workspace-ui",
+          "uiDetails": {
+            "appBaseHref": "/mfe/workspace/",
+            "appId": "onecx-workspace-ui",
+            "productName": "onecx-workspace"
+          }
+        }
+      ]
+    }
+  }
+}
