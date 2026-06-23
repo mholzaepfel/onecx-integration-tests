@@ -87,7 +87,7 @@ export class ImportManagerContainer extends GenericContainer {
           `npm install --no-audit --no-fund --prefer-offline ts-node typescript @types/node axios && npx ts-node ${this.importScript}`,
         ].join(' && '),
       ])
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))

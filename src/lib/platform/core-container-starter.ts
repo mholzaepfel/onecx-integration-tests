@@ -229,6 +229,7 @@ export class CoreContainerStarter {
     const container = await new ShellBffContainer(shellBffImage, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.SHELL_BFF]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.SHELL_BFF) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.SHELL_BFF, container)
   }
@@ -238,6 +239,7 @@ export class CoreContainerStarter {
     const container = await new WorkspaceBffContainer(workspaceBffImage, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.WORKSPACE_BFF]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.WORKSPACE_BFF) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.WORKSPACE_BFF, container)
   }
@@ -247,6 +249,7 @@ export class CoreContainerStarter {
     const container = await new ParameterBffContainer(parameterBffImage, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.PARAMETER_BFF]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.PARAMETER_BFF) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.PARAMETER_BFF, container)
   }
@@ -262,6 +265,7 @@ export class CoreContainerStarter {
     const container = await new ShellUiContainer(shellUiImage, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.SHELL_UI]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.SHELL_UI) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.SHELL_UI, container)
   }
@@ -277,6 +281,7 @@ export class CoreContainerStarter {
     const container = await new WorkspaceUiContainer(workspaceUiImage, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.WORKSPACE_UI]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.WORKSPACE_UI) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.WORKSPACE_UI, container)
   }

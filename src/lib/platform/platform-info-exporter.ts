@@ -93,7 +93,7 @@ export class PlatformInfoExporter {
     for (const [name, container] of allContainers) {
       const exportDecision = getPlatformInfoExportDecision(container)
       if (!exportDecision.include) {
-        logger.info('CONTAINER_SKIPPED', `${name} - ${exportDecision.reason ?? 'Skipped by export policy'}`)
+        logger.info(`CONTAINER_SKIPPED: ${name} - ${exportDecision.reason ?? 'Skipped by export policy'}`)
         continue
       }
 
@@ -113,7 +113,7 @@ export class PlatformInfoExporter {
     const info = await this.getPlatformInfo()
 
     logger.info('═'.repeat(70))
-    logger.info('Platform Ready!')
+    logger.info(`Platform Ready! network=${info.network.name}`)
     logger.info('')
     logger.info('For E2E Container (inside Docker network):')
     logger.info(`  BASE_URL:     ${info.e2e.baseUrl}`)

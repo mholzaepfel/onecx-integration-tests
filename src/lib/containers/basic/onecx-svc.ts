@@ -109,7 +109,7 @@ export class SvcContainer extends GenericContainer {
       TKIT_DATAIMPORT_ENABLED: 'true',
       ONECX_TENANT_CACHE_ENABLED: 'false',
     }).withEnvironment(getCommonEnvironmentVariables(this.services.keycloakContainer))
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))

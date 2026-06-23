@@ -60,12 +60,12 @@ async function main(): Promise<number> {
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    logger.error('E2E execution failed', errorMessage)
+    logger.error(`E2E execution failed: ${errorMessage}`)
     exitCode = 1
   } finally {
     await manager.stopAllContainers().catch((stopError) => {
       const stopMessage = stopError instanceof Error ? stopError.message : String(stopError)
-      logger.warn('Failed to stop containers after E2E failure', stopMessage)
+      logger.warn(`Failed to stop containers after E2E failure: ${stopMessage}`)
     })
   }
 
@@ -95,6 +95,6 @@ main()
   })
   .catch((error) => {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    logger.error('Unexpected error', errorMessage)
+    logger.error(`Unexpected error: ${errorMessage}`)
     process.exitCode = 1
   })

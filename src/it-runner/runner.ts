@@ -41,7 +41,7 @@ export class IntegrationTestsRunner {
 
     // Create log file path provider for containers
     const logFilePathProvider: LogFilePathProvider = (containerName: string) =>
-      options.captureLogsToFile ? this.artifacts.getContainerLogPath(containerName) : undefined
+      this.artifacts.getContainerLogPath(containerName)
 
     const factory = platformFactory ?? (() => new PlatformManager(undefined, logFilePathProvider))
     this.platformRuntime = factory()

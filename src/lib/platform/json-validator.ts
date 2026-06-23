@@ -41,7 +41,7 @@ export class PlatformConfigJsonValidator {
         }
       }
 
-      logger.info(LogMessages.CONFIG_LOAD_START, configPath)
+      logger.info(`${LogMessages.CONFIG_LOAD_START}: ${configPath}`)
 
       // Read and parse config file
       const configContent = this.readConfigFile(configPath)
@@ -58,21 +58,21 @@ export class PlatformConfigJsonValidator {
 
       if (!isValid) {
         const errors = this.formatValidationErrors(validate.errors || [])
-        logger.error(LogMessages.CONFIG_LOAD_ERROR, configPath, errors)
+        logger.error(`${LogMessages.CONFIG_LOAD_ERROR}: ${configPath}`, undefined, errors)
         return {
           isValid: false,
           errors,
         }
       }
 
-      logger.success(LogMessages.CONFIG_LOAD_SUCCESS, configPath)
+      logger.success(`${LogMessages.CONFIG_LOAD_SUCCESS}: ${configPath}`)
       return {
         isValid: true,
         config: (config as { platformConfig: PlatformConfig }).platformConfig,
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown validation error'
-      logger.error(LogMessages.CONFIG_LOAD_ERROR, undefined, error)
+      logger.error(`${LogMessages.CONFIG_LOAD_ERROR}`, undefined, error)
       return {
         isValid: false,
         errors: [errorMessage],
@@ -140,12 +140,12 @@ export class PlatformConfigJsonValidator {
             configFiles.push(...this.findConfigFilesRecursively(fullPath, filePattern))
           }
         } else if (item.isFile() && filePattern.test(item.name)) {
-          logger.info(LogMessages.CONFIG_FOUND, `Found config file: ${fullPath}`)
+          logger.info(`${LogMessages.CONFIG_FOUND}: ${fullPath}`)
           configFiles.push(fullPath)
         }
       }
     } catch (error) {
-      logger.info(LogMessages.CONFIG_LOAD_START, `Error reading directory ${dir}: ${error}`)
+      logger.info(`${LogMessages.CONFIG_LOAD_START}: Error reading directory ${dir}: ${error}`)
       // Skip directories that can't be read
     }
 

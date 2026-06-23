@@ -25,12 +25,11 @@ export class HealthChecker {
         ...config,
       }
       logger.info(
-        LogMessages.HEALTH_CHECK_START,
-        `Heartbeat configured: enabled=${config.enabled}, interval=${this.heartbeatConfig.interval}ms, threshold=${this.heartbeatConfig.failureThreshold}`
+        `${LogMessages.HEALTH_CHECK_START}: Heartbeat configured enabled=${config.enabled}, interval=${this.heartbeatConfig.interval}ms, threshold=${this.heartbeatConfig.failureThreshold}`
       )
     } else {
       this.heartbeatConfig = { ...DEFAULT_HEARTBEAT_CONFIG }
-      logger.info(LogMessages.HEALTH_CHECK_START, 'Heartbeat disabled (no configuration provided)')
+      logger.info(`${LogMessages.HEALTH_CHECK_START}: Heartbeat disabled (no configuration provided)`)
     }
   }
 
@@ -62,23 +61,22 @@ export class HealthChecker {
     const executor = container.getHealthCheckExecutor()
     const metadata = executor.getExecutionMetadata()
 
-    logger.info(LogMessages.HEALTH_CHECK_CONTAINER, metadata.description)
+    logger.info(`${LogMessages.HEALTH_CHECK_CONTAINER}: ${name} (${metadata.description})`)
 
     try {
       const result = await executor.executeHealthCheck()
 
       if (result.success) {
         logger.success(
-          LogMessages.HEALTH_CHECK_SUCCESS,
-          `${name} healthy ${result.responseTime ? `(${result.responseTime}ms)` : ''}`
+          `${LogMessages.HEALTH_CHECK_SUCCESS}: ${name} ${result.responseTime ? `(${result.responseTime}ms)` : ''}`
         )
       } else {
-        logger.error(LogMessages.HEALTH_CHECK_FAILED, `${name} unhealthy: ${result.error || 'Unknown error'}`)
+        logger.error(`${LogMessages.HEALTH_CHECK_FAILED}: ${name} unhealthy: ${result.error || 'Unknown error'}`)
       }
 
       return { name, healthy: result.success }
     } catch (error) {
-      logger.error(LogMessages.HEALTH_CHECK_FAILED, `${name} health check threw exception`, error)
+      logger.error(`${LogMessages.HEALTH_CHECK_FAILED}: ${name} health check threw exception`, undefined, error)
       return { name, healthy: false }
     }
   }
@@ -88,7 +86,7 @@ export class HealthChecker {
    */
   startHeartbeat(startedContainers: Map<string, AllowedContainerTypes>): void {
     if (!this.heartbeatConfig.enabled) {
-      logger.info(LogMessages.HEALTH_CHECK_START, 'Heartbeat monitoring is disabled')
+      logger.info(`${LogMessages.HEALTH_CHECK_START}: Heartbeat monitoring is disabled`)
       return
     }
 
@@ -98,15 +96,14 @@ export class HealthChecker {
     }
 
     logger.info(
-      LogMessages.HEALTH_CHECK_START,
-      `Starting heartbeat monitoring (interval: ${this.heartbeatConfig.interval}ms)`
+      `${LogMessages.HEALTH_CHECK_START}: Starting heartbeat monitoring (interval: ${this.heartbeatConfig.interval}ms)`
     )
 
     this.heartbeatInterval = setInterval(async () => {
       try {
         await this.processHeartbeatCheck(startedContainers)
       } catch (error) {
-        logger.error(LogMessages.HEALTH_CHECK_FAILED, undefined, error)
+        logger.error(`${LogMessages.HEALTH_CHECK_FAILED}`, undefined, error)
       }
     }, this.heartbeatConfig.interval)
   }
@@ -119,7 +116,7 @@ export class HealthChecker {
       clearInterval(this.heartbeatInterval)
       this.heartbeatInterval = undefined
       this.failureCountMap.clear()
-      logger.info(LogMessages.HEALTH_CHECK_START, 'Heartbeat monitoring stopped')
+      logger.info(`${LogMessages.HEALTH_CHECK_START}: Heartbeat monitoring stopped`)
     }
   }
 
@@ -142,7 +139,7 @@ export class HealthChecker {
    */
   private async processHeartbeatCheck(startedContainers: Map<string, AllowedContainerTypes>): Promise<void> {
     const healthStatus = await this.checkAllHealthy(startedContainers)
-    logger.success(LogMessages.HEALTH_CHECK_SUCCESS, `Checked ${healthStatus.length} containers`)
+    logger.success(`${LogMessages.HEALTH_CHECK_SUCCESS}: Checked ${healthStatus.length} containers`)
 
     this.processHealthResults(healthStatus)
     this.logHealthSummary(healthStatus)
@@ -165,11 +162,10 @@ export class HealthChecker {
         const failures = this.failureCountMap.get(container.name) || 0
         if (failures >= this.heartbeatConfig.failureThreshold) {
           logger.error(
-            LogMessages.CONTAINER_UNHEALTHY,
-            `Container ${container.name} unhealthy (${failures} consecutive failures)`
+            `${LogMessages.CONTAINER_UNHEALTHY}: ${container.name} unhealthy (${failures} consecutive failures)`
           )
         } else if (failures === 1) {
-          logger.warn(LogMessages.CONTAINER_UNHEALTHY, `Container ${container.name} unhealthy (first failure)`)
+          logger.warn(`${LogMessages.CONTAINER_UNHEALTHY}: ${container.name} unhealthy (first failure)`)
         }
       }
     }
@@ -185,7 +181,7 @@ export class HealthChecker {
       const summary = `${unhealthyContainers.length} containers unhealthy: ${unhealthyContainers
         .map((c) => c.name)
         .join(', ')}`
-      logger.error(LogMessages.CONTAINER_UNHEALTHY, summary)
+      logger.error(`${LogMessages.CONTAINER_UNHEALTHY}: ${summary}`)
     }
   }
 }

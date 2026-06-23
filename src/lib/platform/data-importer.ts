@@ -55,7 +55,7 @@ export class DataImporter {
   ): Promise<void> {
     // Platform config is already set globally by PlatformManager
 
-    logger.info(LogMessages.DATA_IMPORT_START)
+    logger.info(`${LogMessages.DATA_IMPORT_START}: ${startedContainers.size} containers available for import`)
 
     try {
       // Create container info file before starting the import container
@@ -67,7 +67,7 @@ export class DataImporter {
         .withLoggingEnabled(loggingEnabled(config, [CONTAINER.IMPORT_MANAGER]))
         .start()
 
-      logger.info(LogMessages.CONTAINER_STARTED, 'Import container - monitoring import process')
+      logger.info(`${LogMessages.CONTAINER_STARTED}: Import container ${importImage} - monitoring import process`)
 
       // Monitor the import process by executing commands in the container
       await new Promise<void>((resolve, reject) => {
@@ -77,14 +77,14 @@ export class DataImporter {
 
             if (!isStillRunning) {
               clearInterval(checkInterval)
-              logger.info(LogMessages.DATA_IMPORT_PROCESS_COMPLETE)
+              logger.info(`${LogMessages.DATA_IMPORT_PROCESS_COMPLETE}: Import container finished`)
               resolve()
             } else {
-              logger.info(LogMessages.DATA_IMPORT_PROCESS_RUNNING)
+              logger.info(`${LogMessages.DATA_IMPORT_PROCESS_RUNNING}: Import container still running`)
             }
           } catch (error) {
             clearInterval(checkInterval)
-            logger.error(LogMessages.DATA_IMPORT_PROCESS_ERROR, undefined, error)
+            logger.error(`${LogMessages.DATA_IMPORT_PROCESS_ERROR}: Import container error`, undefined, error)
             resolve()
           }
         }, 2000)
@@ -95,10 +95,10 @@ export class DataImporter {
         }, 1 * 60 * 1000)
       })
 
-      logger.success(LogMessages.DATA_IMPORT_SUCCESS)
+      logger.success(`${LogMessages.DATA_IMPORT_SUCCESS}: Import completed successfully`)
       this.cleanupContainerInfo(containerInfoPath)
     } catch (error) {
-      logger.error(LogMessages.DATA_IMPORT_FAILED, undefined, error)
+      logger.error(`${LogMessages.DATA_IMPORT_FAILED}: Import failed`, undefined, error)
       throw error
     }
   }
@@ -181,7 +181,7 @@ export class DataImporter {
     for (const [containerName, container] of startedContainers) {
       // Skip E2E containers - they are test runners, not services
       if (containerName.includes('-e2e') || !('getPort' in container)) {
-        logger.info('SERVICE_SKIPPED', `${containerName} - E2E container (test runner, not a service)`)
+        logger.info(`SERVICE_SKIPPED: ${containerName} - E2E container (test runner, not a service)`)
         continue
       }
 
@@ -195,19 +195,19 @@ export class DataImporter {
         }
 
         logger.info(
-          'SERVICE_MAPPED',
-          `${containerName} -> ${serviceName} (${container.getNetworkAliases()[0]}:${container.getPort()})`
+          `SERVICE_MAPPED: ${containerName} -> ${serviceName} (${
+            container.getNetworkAliases()[0]
+          }:${container.getPort()})`
         )
       } else {
         // Log containers that don't have service mappings for debugging
         logger.info(
-          'SERVICE_SKIPPED',
-          `${containerName} - No service mapping defined (likely UI or infrastructure container)`
+          `SERVICE_SKIPPED: ${containerName} - No service mapping defined (likely UI or infrastructure container)`
         )
       }
     }
 
-    logger.info('SERVICES_DISCOVERED', `Total services mapped: ${Object.keys(services).length}`)
+    logger.info(`SERVICES_DISCOVERED: Total services mapped: ${Object.keys(services).length}`)
     return services
   }
 
@@ -240,7 +240,7 @@ export class DataImporter {
     }
 
     fs.writeFileSync(containerInfoPath, JSON.stringify(containerInfo, null, 2))
-    logger.info(LogMessages.DATA_IMPORT_FILE_CREATED, containerInfoPath)
+    logger.info(`${LogMessages.DATA_IMPORT_FILE_CREATED}: ${containerInfoPath}`)
 
     return containerInfoPath
   }
@@ -251,7 +251,7 @@ export class DataImporter {
   private cleanupContainerInfo(containerInfoPath: string): void {
     if (fs.existsSync(containerInfoPath)) {
       fs.unlinkSync(containerInfoPath)
-      logger.info(LogMessages.DATA_IMPORT_CLEANUP)
+      logger.info(`${LogMessages.DATA_IMPORT_CLEANUP}: ${containerInfoPath}`)
     }
   }
 

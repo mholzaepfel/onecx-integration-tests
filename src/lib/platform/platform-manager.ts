@@ -71,9 +71,6 @@ export class PlatformManager implements PlatformRuntime {
     // Use validated config from constructor if available, otherwise use provided config or default
     const finalConfig = config || this.validatedConfig || DEFAULT_PLATFORM_CONFIG
 
-    // Configure logger based on platform config
-    logger.setPlatformConfig(finalConfig)
-
     logger.info(LogMessages.PLATFORM_MANAGER_INIT)
     this.healthChecker = new HealthChecker()
 
@@ -116,7 +113,8 @@ export class PlatformManager implements PlatformRuntime {
         this.imageResolver,
         this.containerRegistry,
         postgres,
-        keycloak
+        keycloak,
+        this.logFilePathProvider
       )
       await this.createContainers(finalConfig)
     }
@@ -341,7 +339,8 @@ export class PlatformManager implements PlatformRuntime {
         this.imageResolver,
         this.containerRegistry,
         postgres,
-        keycloak
+        keycloak,
+        this.logFilePathProvider
       )
     }
 
@@ -358,9 +357,9 @@ export class PlatformManager implements PlatformRuntime {
 
     try {
       await this.UserDefinedContainerStarter.createAndStartContainers(config)
-      logger.info(LogMessages.CONTAINER_STARTED, 'User-defined containers created successfully')
+      logger.info(`${LogMessages.CONTAINER_STARTED}: User-defined containers created successfully`)
     } catch (error) {
-      logger.error(LogMessages.CONTAINER_FAILED, undefined, error)
+      logger.error(`${LogMessages.CONTAINER_FAILED}: User-defined containers`, undefined, error)
       throw error
     }
   }

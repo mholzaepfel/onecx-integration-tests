@@ -214,7 +214,7 @@ export class OnecxKeycloakContainer extends GenericContainer {
       KC_HTTP_PORT: `${this.onecxEnvironment.port}`,
       KC_HEALTH_ENABLED: 'true',
     })
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))

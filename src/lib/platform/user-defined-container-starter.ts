@@ -15,6 +15,7 @@ import { ImageResolver } from './image-resolver'
 import { Logger, LogMessages } from '../utils/logger'
 import { ContainerRegistry } from './container-registry'
 import { E2E_DEFAULT_TIMEOUT_MS } from '../config/e2e-constants'
+import { LogFilePathProvider } from './platform-manager'
 
 const logger = new Logger('UserDefinedContainerStarter')
 
@@ -27,7 +28,8 @@ export class UserDefinedContainerStarter {
     private imageResolver: ImageResolver,
     private containerRegistry: ContainerRegistry,
     private postgres?: StartedOnecxPostgresContainer,
-    private keycloak?: StartedOnecxKeycloakContainer
+    private keycloak?: StartedOnecxKeycloakContainer,
+    private readonly logFilePathProvider?: LogFilePathProvider
   ) {}
 
   /**
@@ -48,7 +50,8 @@ export class UserDefinedContainerStarter {
         logger.info(LogMessages.CONTAINER_STARTED, `Creating service container: ${serviceConfig.networkAlias}`)
         const svcContainer = await this.createSvcContainer(
           serviceConfig,
-          loggingEnabled(config, [serviceConfig.networkAlias])
+          loggingEnabled(config, [serviceConfig.networkAlias]),
+          this.logFilePathProvider?.(serviceConfig.networkAlias)
         )
         this.containerRegistry.addContainer(serviceConfig.networkAlias, svcContainer)
         logger.success(LogMessages.CONTAINER_STARTED, `Service container created: ${serviceConfig.networkAlias}`)
@@ -59,7 +62,11 @@ export class UserDefinedContainerStarter {
     if (config.container.bff && config.container.bff.length > 0) {
       for (const bffConfig of config.container.bff) {
         logger.info(LogMessages.CONTAINER_STARTED, `Creating BFF container: ${bffConfig.networkAlias}`)
-        const bffContainer = await this.createBffContainer(bffConfig, loggingEnabled(config, [bffConfig.networkAlias]))
+        const bffContainer = await this.createBffContainer(
+          bffConfig,
+          loggingEnabled(config, [bffConfig.networkAlias]),
+          this.logFilePathProvider?.(bffConfig.networkAlias)
+        )
         this.containerRegistry.addContainer(bffConfig.networkAlias, bffContainer)
         logger.success(LogMessages.CONTAINER_STARTED, `BFF container created: ${bffConfig.networkAlias}`)
       }
@@ -69,7 +76,11 @@ export class UserDefinedContainerStarter {
     if (config.container.ui && config.container.ui.length > 0) {
       for (const uiConfig of config.container.ui) {
         logger.info(LogMessages.CONTAINER_STARTED, `Creating UI container: ${uiConfig.networkAlias}`)
-        const uiContainer = await this.createUiContainer(uiConfig, loggingEnabled(config, [uiConfig.networkAlias]))
+        const uiContainer = await this.createUiContainer(
+          uiConfig,
+          loggingEnabled(config, [uiConfig.networkAlias]),
+          this.logFilePathProvider?.(uiConfig.networkAlias)
+        )
         this.containerRegistry.addContainer(uiConfig.networkAlias, uiContainer)
         logger.success(LogMessages.CONTAINER_STARTED, `UI container created: ${uiConfig.networkAlias}`)
       }
@@ -88,7 +99,11 @@ export class UserDefinedContainerStarter {
 
     const e2eConfig = config.container.e2e
     logger.info(LogMessages.CONTAINER_STARTED, `Starting E2E container: ${e2eConfig.networkAlias}`)
-    const e2eResult = await this.createE2eContainer(e2eConfig, loggingEnabled(config, [e2eConfig.networkAlias]))
+    const e2eResult = await this.createE2eContainer(
+      e2eConfig,
+      loggingEnabled(config, [e2eConfig.networkAlias]),
+      this.logFilePathProvider?.(e2eConfig.networkAlias)
+    )
     logger.success(LogMessages.CONTAINER_STARTED, `E2E container finished: ${e2eConfig.networkAlias}`)
     return e2eResult
   }
@@ -98,7 +113,8 @@ export class UserDefinedContainerStarter {
    */
   private async createSvcContainer(
     svcConfig: SvcContainerInterface,
-    withLoggingEnabled: boolean
+    withLoggingEnabled: boolean,
+    logFilePath?: string
   ): Promise<StartedSvcContainer> {
     if (!this.postgres || !this.keycloak) {
       throw new Error('Postgres and Keycloak containers are required for service containers')
@@ -122,6 +138,10 @@ export class UserDefinedContainerStarter {
       svcContainer.withHealthCheck(svcConfig.healthCheck)
     }
 
+    if (logFilePath) {
+      svcContainer.withLogFilePath(logFilePath)
+    }
+
     return await svcContainer.withLoggingEnabled(withLoggingEnabled).withNetwork(this.network).start()
   }
 
@@ -130,7 +150,8 @@ export class UserDefinedContainerStarter {
    */
   private async createBffContainer(
     bffConfig: BffContainerInterface,
-    withLoggingEnabled: boolean
+    withLoggingEnabled: boolean,
+    logFilePath?: string
   ): Promise<StartedBffContainer> {
     if (!this.keycloak) {
       throw new Error('Keycloak container is required for BFF containers but was not provided.')
@@ -150,6 +171,10 @@ export class UserDefinedContainerStarter {
       bffContainer.withEnvironment(bffConfig.environments)
     }
 
+    if (logFilePath) {
+      bffContainer.withLogFilePath(logFilePath)
+    }
+
     return await bffContainer.withLoggingEnabled(withLoggingEnabled).withNetwork(this.network).start()
   }
 
@@ -158,7 +183,8 @@ export class UserDefinedContainerStarter {
    */
   private async createUiContainer(
     uiConfig: UiContainerInterface,
-    withLoggingEnabled: boolean
+    withLoggingEnabled: boolean,
+    logFilePath?: string
   ): Promise<StartedUiContainer> {
     // Resolve the image through the ImageResolver
     const resolvedImage = await this.imageResolver.getImage(uiConfig.image)
@@ -181,6 +207,10 @@ export class UserDefinedContainerStarter {
       uiContainer.withEnvironment(uiConfig.environments)
     }
 
+    if (logFilePath) {
+      uiContainer.withLogFilePath(logFilePath)
+    }
+
     return await uiContainer.withLoggingEnabled(withLoggingEnabled).withNetwork(this.network).start()
   }
 
@@ -190,7 +220,11 @@ export class UserDefinedContainerStarter {
    * @param withLoggingEnabled Whether to enable container logging
    * @returns E2E execution result with exit code
    */
-  async createE2eContainer(e2eConfig: E2eContainerInterface, withLoggingEnabled: boolean): Promise<E2eResult> {
+  async createE2eContainer(
+    e2eConfig: E2eContainerInterface,
+    withLoggingEnabled: boolean,
+    logFilePath?: string
+  ): Promise<E2eResult> {
     const startTime = Date.now()
     const startupTimeoutMs = e2eConfig.timeoutMs ?? E2E_DEFAULT_TIMEOUT_MS
 
@@ -206,6 +240,10 @@ export class UserDefinedContainerStarter {
 
     if (e2eConfig.environments) {
       e2eContainer.withEnvironment(e2eConfig.environments)
+    }
+
+    if (logFilePath) {
+      e2eContainer.withLogFilePath(logFilePath)
     }
 
     const startedContainer = await e2eContainer

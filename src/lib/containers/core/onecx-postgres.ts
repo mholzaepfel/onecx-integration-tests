@@ -99,7 +99,7 @@ export class OnecxPostgresContainer extends GenericContainer {
       POSTGRES_USER: this.onecxPostgresDetails.postgresUsername,
       POSTGRES_PASSWORD: this.onecxPostgresDetails.postgresPassword,
     })
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))

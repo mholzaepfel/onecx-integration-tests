@@ -74,7 +74,7 @@ export class E2eContainer extends GenericContainer {
     this.withWaitStrategy(Wait.forOneShotStartup())
 
     // Enable logging if configured
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))

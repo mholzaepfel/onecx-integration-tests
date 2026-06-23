@@ -71,13 +71,13 @@ export class ImageResolver {
     // In a real environment, you might want to enable strict verification
     const imageIsVerified = await this.verifyImage(imageName)
     if (imageIsVerified) {
-      logger.success(LogMessages.IMAGE_VERIFY_SUCCESS, imageName)
+      logger.success(`${LogMessages.IMAGE_VERIFY_SUCCESS}: ${imageName}`)
       return imageName
     }
 
     // Log warning but don't fail - let the container startup handle the failure
     logger.warn(LogMessages.IMAGE_VERIFY_FAILED, `Image may not be available: ${imageName}`)
-    logger.info(LogMessages.IMAGE_PULL_START, `Proceeding with unverified image: ${imageName}`)
+    logger.info(`${LogMessages.IMAGE_PULL_START}: Proceeding with unverified image ${imageName}`)
 
     return imageName
   }
@@ -97,7 +97,7 @@ export class ImageResolver {
     }
 
     // If verification fails, fall back to default image
-    logger.warn(LogMessages.IMAGE_VERIFY_FAILED, `${overrideImage} -> ${defaultImage}`)
+    logger.warn(`${LogMessages.IMAGE_VERIFY_FAILED}: ${overrideImage} -> ${defaultImage}`)
     return defaultImage
   }
 }

@@ -1,7 +1,5 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { loggingEnabled } from './logging-enable'
-import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 
 /**
  * Centralized logging messages
@@ -79,8 +77,6 @@ export interface LoggerOptions {
  * Structured logger with timestamp, class and context information
  */
 export class Logger {
-  private static loggingEnabled = true
-  private static platformConfig: PlatformConfig | undefined = undefined
   private className: string
   private writer?: fs.WriteStream
   private enableConsole: boolean
@@ -101,39 +97,6 @@ export class Logger {
     }
   }
 
-  /**
-   * Set the platform configuration for logging decisions
-   */
-  setPlatformConfig(config: PlatformConfig): void {
-    Logger.platformConfig = config
-  }
-
-  /**
-   * Get the current platform configuration
-   */
-  static getPlatformConfig(): PlatformConfig | undefined {
-    return Logger.platformConfig
-  }
-
-  /**
-   * Check if logging should be enabled for this logger instance
-   * Uses the existing loggingEnabled function with className as networkAlias
-   */
-  private loggingEnabled(): boolean {
-    // If global logging is disabled, nothing logs
-    if (!Logger.loggingEnabled) {
-      return false
-    }
-
-    // If no platform config is set, use global default
-    if (!Logger.platformConfig) {
-      return Logger.loggingEnabled
-    }
-
-    // Use the existing loggingEnabled function, treating className as networkAlias
-    return loggingEnabled(Logger.platformConfig, [this.className])
-  }
-
   private formatTimestamp(): string {
     return new Date().toISOString()
   }
@@ -144,9 +107,10 @@ export class Logger {
     return `[${level}] [${this.className}] ${message}${contextPart}`
   }
 
-  private formatTerminalMessage(level: string, message: string): string {
+  private formatTerminalMessage(level: string, message: string, context?: string): string {
     const levelPadded = level.padEnd(5)
-    return `[${levelPadded}] ${message}`
+    const contextPart = context ? ` - (${context})` : ''
+    return `[${levelPadded}] ${message}${contextPart}`
   }
 
   private writeToFile(line: string): void {
@@ -160,10 +124,8 @@ export class Logger {
   }
 
   private emit(level: LoggerLevel, message: string, context?: string, error?: unknown): void {
-    if (!this.loggingEnabled()) return
-
     const formattedMessage = this.formatMessage(level.toUpperCase(), message, context)
-    const terminalMessage = this.formatTerminalMessage(level.toUpperCase(), message)
+    const terminalMessage = this.formatTerminalMessage(level.toUpperCase(), message, context)
 
     if (this.enableConsole) {
       switch (level) {
@@ -239,9 +201,6 @@ export class Logger {
    * Log debug message - only shows on terminal if --verbose flag or config enables it
    */
   debug(message: string, context?: string): void {
-    // Debug messages go to file but not console by default
-    // Can be enabled via --verbose or config
-    if (!this.loggingEnabled()) return
     const formattedMessage = this.formatMessage('DEBUG', message, context)
     this.writeToFile(formattedMessage)
   }

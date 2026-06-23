@@ -71,7 +71,7 @@ export class UiContainer extends GenericContainer {
       PRODUCT_NAME: `${this.details.productName}`,
     })
 
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))

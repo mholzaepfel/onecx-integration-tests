@@ -23,7 +23,6 @@ describe('Logger', () => {
     logSpy.mockRestore()
     warnSpy.mockRestore()
     errorSpy.mockRestore()
-    ;(Logger as unknown as { loggingEnabled: boolean }).loggingEnabled = true
   })
 
   describe('info', () => {
@@ -94,12 +93,6 @@ describe('Logger', () => {
   })
 
   describe('error', () => {
-    it('should not log when logging is disabled', () => {
-      ;(Logger as unknown as { loggingEnabled: boolean }).loggingEnabled = false
-      logger.error(LogMessages.CONTAINER_FAILED)
-      expect(errorSpy).not.toHaveBeenCalled()
-    })
-
     it('should log error message with correct format', () => {
       logger.error(LogMessages.CONTAINER_FAILED)
       expect(errorSpy).toHaveBeenCalled()
@@ -108,6 +101,16 @@ describe('Logger', () => {
       expect(loggedMessage).toContain('[ERROR]')
       expect(loggedMessage).toContain('\x1b[31m')
       expect(loggedMessage).toContain(LogMessages.CONTAINER_FAILED)
+    })
+
+    it('should include context in terminal output', () => {
+      logger.info(LogMessages.IMAGE_PULL_START, 'docker.io/library/postgres:13.4')
+
+      expect(logSpy).toHaveBeenCalled()
+
+      const loggedMessage = logSpy.mock.calls[0][0]
+      expect(loggedMessage).toContain('docker.io/library/postgres:13.4')
+      expect(loggedMessage).toContain(' - (docker.io/library/postgres:13.4)')
     })
 
     it('should log error message with additional error object', () => {

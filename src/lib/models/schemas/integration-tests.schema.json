@@ -43,6 +43,24 @@
         },
         "container": {
           "$ref": "#/definitions/containerConfig"
+        },
+        "config": {
+          "type": "object",
+          "description": "Additional configuration settings",
+          "properties": {
+            "importsPath": {
+              "type": "string",
+              "description": "Path to the directory containing import scripts and data"
+            },
+            "realm": {
+              "type": "string",
+              "description": "Realm name for Keycloak"
+            },
+            "realmPath": {
+              "type": "string",
+              "description": "Path to the Keycloak realm JSON file"
+            }
+          }
         }
       }
     },

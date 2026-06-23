@@ -85,7 +85,7 @@ export class BffContainer extends GenericContainer {
       ONECX_PERMISSIONS_PRODUCT_NAME: this.details.permissionsProductName,
     }).withEnvironment(getCommonEnvironmentVariables(this.keycloakContainer))
 
-    if (this.loggingEnabled && this.logFilePath) {
+    if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
         stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))
