@@ -1,4 +1,5 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
+import * as fs from 'fs'
 import { HealthCheck } from 'testcontainers/build/types'
 import { BffDetails } from '../../models/interfaces/bff.interface'
 import { StartedOnecxKeycloakContainer } from '../core/onecx-keycloak'
@@ -16,6 +17,8 @@ export class BffContainer extends GenericContainer {
   private port = 8080
 
   protected loggingEnabled = false
+
+  protected logFilePath?: string
 
   constructor(image: string, private readonly keycloakContainer: StartedOnecxKeycloakContainer) {
     super(image)
@@ -53,6 +56,22 @@ export class BffContainer extends GenericContainer {
     return this
   }
 
+  withLogFilePath(filePath: string): this {
+    this.logFilePath = filePath
+    return this
+  }
+
+  protected getFormattedLogLine(line: string | Buffer): string {
+    const timestamp = new Date().toISOString()
+    const text = typeof line === 'string' ? line : line.toString()
+    return `[${timestamp}] ${text}`
+  }
+
+  protected writeLogToFile(line: string | Buffer, logFilePath: string): void {
+    const formatted = this.getFormattedLogLine(line)
+    fs.appendFileSync(logFilePath, `${formatted}\n`)
+  }
+
   override async start(): Promise<StartedBffContainer> {
     // Apply the default health check explicitly if it has not been set.
     // This ensures the healthcheck is correctly registered before container startup
@@ -66,11 +85,10 @@ export class BffContainer extends GenericContainer {
       ONECX_PERMISSIONS_PRODUCT_NAME: this.details.permissionsProductName,
     }).withEnvironment(getCommonEnvironmentVariables(this.keycloakContainer))
 
-    if (this.loggingEnabled) {
+    if (this.loggingEnabled && this.logFilePath) {
       this.withLogConsumer((stream) => {
-        stream.on('data', (line) => console.log(`${this.networkAliases[0]}: `, line))
-        stream.on('err', (line) => console.error(`${this.networkAliases[0]}: `, line))
-        stream.on('end', () => console.log(`${this.networkAliases[0]}: Stream closed`))
+        stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
+        stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))
       })
     }
 

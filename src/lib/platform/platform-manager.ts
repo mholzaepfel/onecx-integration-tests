@@ -21,11 +21,21 @@ import type { PlatformRuntime } from '../models/interfaces/platform-runtime.inte
 
 const logger = new Logger('PlatformManager')
 
+/**
+ * Type for a function that provides log file paths for containers
+ */
+export type LogFilePathProvider = (containerName: string) => string | undefined
+
 export class PlatformManager implements PlatformRuntime {
   /**
    * Container registry for managing all containers
    */
   private containerRegistry: ContainerRegistry = new ContainerRegistry()
+
+  /**
+   * Optional provider for container log file paths
+   */
+  private logFilePathProvider?: LogFilePathProvider
 
   /**
    * Needed classes for startContainers
@@ -40,9 +50,17 @@ export class PlatformManager implements PlatformRuntime {
   private validatedConfig?: PlatformConfig
   private platformInfoExporter?: PlatformInfoExporter
 
-  constructor(configFilePath?: string) {
+  constructor(configFilePath?: string, logFilePathProvider?: LogFilePathProvider) {
     this.jsonValidator = new PlatformConfigJsonValidator()
+    this.logFilePathProvider = logFilePathProvider
     this.initializeConfiguration(configFilePath)
+  }
+
+  /**
+   * Set the log file path provider
+   */
+  setLogFilePathProvider(provider: LogFilePathProvider): void {
+    this.logFilePathProvider = provider
   }
 
   /**
@@ -73,7 +91,8 @@ export class PlatformManager implements PlatformRuntime {
       this.imageResolver,
       this.network,
       this.containerRegistry,
-      finalConfig
+      finalConfig,
+      this.logFilePathProvider
     )
 
     logger.info(LogMessages.PLATFORM_START)

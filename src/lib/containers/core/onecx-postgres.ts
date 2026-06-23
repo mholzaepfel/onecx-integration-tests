@@ -1,4 +1,5 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
+import * as fs from 'fs'
 import { HealthCheck } from 'testcontainers/build/types'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
@@ -25,6 +26,8 @@ export class OnecxPostgresContainer extends GenericContainer {
   }
 
   protected loggingEnabled = false
+
+  protected logFilePath?: string
 
   constructor(image: string) {
     super(image)
@@ -66,6 +69,22 @@ export class OnecxPostgresContainer extends GenericContainer {
     return this
   }
 
+  public withLogFilePath(filePath: string): this {
+    this.logFilePath = filePath
+    return this
+  }
+
+  protected getFormattedLogLine(line: string | Buffer): string {
+    const timestamp = new Date().toISOString()
+    const text = typeof line === 'string' ? line : line.toString()
+    return `[${timestamp}] ${text}`
+  }
+
+  protected writeLogToFile(line: string | Buffer, logFilePath: string): void {
+    const formatted = this.getFormattedLogLine(line)
+    fs.appendFileSync(logFilePath, `${formatted}\n`)
+  }
+
   override async start(): Promise<StartedOnecxPostgresContainer> {
     // Re-apply the default health check explicitly if it has not been overridden.
     // This ensures the healthcheck is correctly registered before container startup
@@ -80,11 +99,10 @@ export class OnecxPostgresContainer extends GenericContainer {
       POSTGRES_USER: this.onecxPostgresDetails.postgresUsername,
       POSTGRES_PASSWORD: this.onecxPostgresDetails.postgresPassword,
     })
-    if (this.loggingEnabled) {
+    if (this.loggingEnabled && this.logFilePath) {
       this.withLogConsumer((stream) => {
-        stream.on('data', (line) => console.log(`${this.networkAliases[0]}: `, line))
-        stream.on('err', (line) => console.error(`${this.networkAliases[0]}: `, line))
-        stream.on('end', () => console.log(`${this.networkAliases[0]}: Stream closed`))
+        stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
+        stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))
       })
     }
     this.withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))

@@ -8,7 +8,7 @@ import { ContainerWithLogs } from './types/container-logs.interface'
 import { PlatformConfig } from '../lib/models/interfaces/platform-config.interface'
 import { Logger, LoggerLevel } from '../lib/utils/logger'
 import { applyRunContextEnv, resolveRunContextPaths } from '../lib/utils/run-context'
-import { PlatformManager } from '../lib/platform/platform-manager'
+import { PlatformManager, LogFilePathProvider } from '../lib/platform/platform-manager'
 import { PlatformRuntime } from '../lib/models/interfaces/platform-runtime.interface'
 
 /**
@@ -38,7 +38,12 @@ export class IntegrationTestsRunner {
     this.artifacts = new ArtifactsManager(undefined, this.runId)
     const logPath = options.captureLogsToFile ? this.artifacts.getRunnerLogPath() : undefined
     this.logger = new Logger('IntegrationTestsRunner', logPath)
-    const factory = platformFactory ?? (() => new PlatformManager())
+
+    // Create log file path provider for containers
+    const logFilePathProvider: LogFilePathProvider = (containerName: string) =>
+      options.captureLogsToFile ? this.artifacts.getContainerLogPath(containerName) : undefined
+
+    const factory = platformFactory ?? (() => new PlatformManager(undefined, logFilePathProvider))
     this.platformRuntime = factory()
     this.startTime = Date.now()
   }
@@ -109,15 +114,15 @@ export class IntegrationTestsRunner {
 
     await this.platformRuntime.exportPlatformInfo()
 
-    this.log('info', 'Waiting for health checks...')
+    this.log('info', 'Waiting for platform health checks...')
     await this.platformRuntime.checkAllHealthy()
-    this.log('success', 'Platform is ready')
+    this.log('info', 'Platform startup completed; all containers healthy')
 
     await this.startContainerLogCapture()
   }
 
   private async runE2e(): Promise<E2eExecutionResult | undefined> {
-    this.log('info', 'Running E2E tests...')
+    this.log('info', 'Starting E2E tests...')
     const result = await this.platformRuntime.startE2eContainer()
     if (!result) {
       return undefined
@@ -130,8 +135,10 @@ export class IntegrationTestsRunner {
     }
 
     this.log(
-      result.success ? 'success' : 'error',
-      `E2E ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode})`
+      result.success ? 'info' : 'error',
+      `E2E tests ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode}, ${Math.round(
+        result.duration / 1000
+      )}s)`
     )
 
     return e2eResult
@@ -193,15 +200,20 @@ export class IntegrationTestsRunner {
     this.artifacts.writeSummary(summary)
 
     console.log('')
-    console.log('============================================================')
-    console.log(`  Run ID:     ${this.runId}`)
-    console.log(`  Status:     ${status.toUpperCase()}`)
-    console.log(`  Duration:   ${Math.round(durationMs / 1000)}s`)
-    console.log(`  Exit Code:  ${exitCode}`)
-    console.log(`  Artifacts:  ${this.artifacts.getRunDir()}`)
-    console.log(`  Runner log: ${this.options.captureLogsToFile ? this.artifacts.getRunnerLogPath() : 'disabled'}`)
-    console.log(`  Container logs: ${this.containerLogPath ?? 'disabled'}`)
-    console.log('============================================================')
+    console.log('═'.repeat(65))
+    console.log(`  Test Run Summary`)
+    console.log('─'.repeat(65))
+    console.log(`  Run ID:         ${this.runId}`)
+    console.log(`  Status:         ${status.toUpperCase()}`)
+    console.log(`  Duration:       ${Math.round(durationMs / 1000)}s`)
+    console.log(`  Exit Code:      ${exitCode}`)
+    console.log('─'.repeat(65))
+    console.log(`  Artifacts Dir:  ${this.artifacts.getRunDir()}`)
+    if (this.options.captureLogsToFile) {
+      console.log(`  Runner Log:     ${this.artifacts.getRunnerLogPath()}`)
+      console.log(`  Container Logs: ${path.join(this.artifacts.getLogsDir(), 'containers/')}`)
+    }
+    console.log('═'.repeat(65))
 
     return exitCode
   }

@@ -1,4 +1,5 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
+import * as fs from 'fs'
 import * as path from 'path'
 import { StartedOnecxPostgresContainer } from './onecx-postgres'
 import { HealthCheck } from 'testcontainers/build/types'
@@ -39,6 +40,8 @@ export class OnecxKeycloakContainer extends GenericContainer {
   private initRealmPath = 'src/lib/config'
 
   protected loggingEnabled = false
+
+  protected logFilePath?: string
 
   constructor(
     image: string,
@@ -123,6 +126,22 @@ export class OnecxKeycloakContainer extends GenericContainer {
     return this
   }
 
+  withLogFilePath(filePath: string): this {
+    this.logFilePath = filePath
+    return this
+  }
+
+  protected getFormattedLogLine(line: string | Buffer): string {
+    const timestamp = new Date().toISOString()
+    const text = typeof line === 'string' ? line : line.toString()
+    return `[${timestamp}] ${text}`
+  }
+
+  protected writeLogToFile(line: string | Buffer, logFilePath: string): void {
+    const formatted = this.getFormattedLogLine(line)
+    fs.appendFileSync(logFilePath, `${formatted}\n`)
+  }
+
   getRealm(): string {
     return this.onecxEnvironment.realm
   }
@@ -195,11 +214,10 @@ export class OnecxKeycloakContainer extends GenericContainer {
       KC_HTTP_PORT: `${this.onecxEnvironment.port}`,
       KC_HEALTH_ENABLED: 'true',
     })
-    if (this.loggingEnabled) {
+    if (this.loggingEnabled && this.logFilePath) {
       this.withLogConsumer((stream) => {
-        stream.on('data', (line) => console.log(`${this.networkAliases[0]}: `, line))
-        stream.on('err', (line) => console.error(`${this.networkAliases[0]}: `, line))
-        stream.on('end', () => console.log(`${this.networkAliases[0]}: Stream closed`))
+        stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
+        stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))
       })
     }
     this.withInitPath(this.initRealmPath)

@@ -22,6 +22,7 @@ import { OnecxService, OnecxBff, OnecxUi } from '../config/env'
 import { loggingEnabled } from '../utils/logging-enable'
 import { Logger, LogMessages } from '../utils/logger'
 import { ContainerRegistry } from './container-registry'
+import { LogFilePathProvider } from './platform-manager'
 
 const logger = new Logger('CoreContainerStarter')
 
@@ -30,7 +31,8 @@ export class CoreContainerStarter {
     private imageResolver: ImageResolver,
     private network: StartedNetwork,
     private containerRegistry: ContainerRegistry,
-    private readonly config: PlatformConfig
+    private readonly config: PlatformConfig,
+    private readonly logFilePathProvider?: LogFilePathProvider
   ) {
     // Platform config will be set globally by PlatformManager
   }
@@ -95,6 +97,7 @@ export class CoreContainerStarter {
     return await new OnecxPostgresContainer(postgresImage)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.POSTGRES]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.POSTGRES) || '')
       .start()
   }
 
@@ -105,6 +108,7 @@ export class CoreContainerStarter {
     return await new OnecxKeycloakContainer(keycloakImage, postgres, this.config)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.KEYCLOAK]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.KEYCLOAK) || '')
       .start()
   }
 
@@ -113,6 +117,7 @@ export class CoreContainerStarter {
     const container = await new IamKcContainer(iamKcImage, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.IAMKC_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.IAMKC_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.IAMKC_SVC, container)
   }
@@ -125,6 +130,7 @@ export class CoreContainerStarter {
     const container = await new WorkspaceSvcContainer(workspaceImage, postgres, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.WORKSPACE_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.WORKSPACE_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.WORKSPACE_SVC, container)
   }
@@ -137,6 +143,7 @@ export class CoreContainerStarter {
     const container = await new ParameterSvcContainer(parameterImage, postgres, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.PARAMETER_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.PARAMETER_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.PARAMETER_SVC, container)
   }
@@ -149,6 +156,7 @@ export class CoreContainerStarter {
     const container = await new UserProfileSvcContainer(userProfileImage, postgres, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.USER_PROFILE_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.USER_PROFILE_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.USER_PROFILE_SVC, container)
   }
@@ -161,6 +169,7 @@ export class CoreContainerStarter {
     const container = await new ThemeSvcContainer(themeImage, postgres, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.THEME_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.THEME_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.THEME_SVC, container)
   }
@@ -173,6 +182,7 @@ export class CoreContainerStarter {
     const container = await new TenantSvcContainer(tenantImage, postgres, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.TENANT_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.TENANT_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.TENANT_SVC, container)
   }
@@ -185,6 +195,7 @@ export class CoreContainerStarter {
     const container = await new ProductStoreSvcContainer(productStoreImage, postgres, keycloak)
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.PRODUCT_STORE_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.PRODUCT_STORE_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.PRODUCT_STORE_SVC, container)
   }
@@ -208,6 +219,7 @@ export class CoreContainerStarter {
     )
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.PERMISSION_SVC]))
+      .withLogFilePath(this.logFilePathProvider?.(CONTAINER.PERMISSION_SVC) || '')
       .start()
     this.containerRegistry.addContainer(CONTAINER.PERMISSION_SVC, container)
   }

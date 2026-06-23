@@ -1,4 +1,5 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
+import * as fs from 'fs'
 import { HealthCheck } from 'testcontainers/build/types'
 import { SvcDetails, SvcContainerServices } from '../../models/interfaces/svc.interface'
 import { getCommonEnvironmentVariables } from '../../utils/common-env.utils'
@@ -16,6 +17,8 @@ export class SvcContainer extends GenericContainer {
   protected shouldCreateDatabase = true
 
   protected loggingEnabled = false
+
+  protected logFilePath?: string
 
   private port = 8080
 
@@ -65,6 +68,22 @@ export class SvcContainer extends GenericContainer {
     return this
   }
 
+  withLogFilePath(filePath: string): this {
+    this.logFilePath = filePath
+    return this
+  }
+
+  protected getFormattedLogLine(line: string | Buffer): string {
+    const timestamp = new Date().toISOString()
+    const text = typeof line === 'string' ? line : line.toString()
+    return `[${timestamp}] ${text}`
+  }
+
+  protected writeLogToFile(line: string | Buffer, logFilePath: string): void {
+    const formatted = this.getFormattedLogLine(line)
+    fs.appendFileSync(logFilePath, `${formatted}\n`)
+  }
+
   override async start(): Promise<StartedSvcContainer> {
     if (this.shouldCreateDatabase) {
       this.validateDatabaseCredentials()
@@ -90,11 +109,10 @@ export class SvcContainer extends GenericContainer {
       TKIT_DATAIMPORT_ENABLED: 'true',
       ONECX_TENANT_CACHE_ENABLED: 'false',
     }).withEnvironment(getCommonEnvironmentVariables(this.services.keycloakContainer))
-    if (this.loggingEnabled) {
+    if (this.loggingEnabled && this.logFilePath) {
       this.withLogConsumer((stream) => {
-        stream.on('data', (line) => console.log(`${this.networkAliases[0]}: `, line))
-        stream.on('err', (line) => console.error(`${this.networkAliases[0]}: `, line))
-        stream.on('end', () => console.log(`${this.networkAliases[0]}: Stream closed`))
+        stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
+        stream.on('err', (line) => this.writeLogToFile(line, this.logFilePath!))
       })
     }
 

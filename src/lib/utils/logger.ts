@@ -141,7 +141,12 @@ export class Logger {
   private formatMessage(level: string, message: string, context?: string): string {
     const timestamp = this.formatTimestamp()
     const contextPart = context ? ` - (${context})` : ''
-    return `${this.className}: ${timestamp} [${level}] ${this.className} ${message}${contextPart}`
+    return `[${level}] [${this.className}] ${message}${contextPart}`
+  }
+
+  private formatTerminalMessage(level: string, message: string): string {
+    const levelPadded = level.padEnd(5)
+    return `[${levelPadded}] ${message}`
   }
 
   private writeToFile(line: string): void {
@@ -158,25 +163,26 @@ export class Logger {
     if (!this.loggingEnabled()) return
 
     const formattedMessage = this.formatMessage(level.toUpperCase(), message, context)
+    const terminalMessage = this.formatTerminalMessage(level.toUpperCase(), message)
 
     if (this.enableConsole) {
       switch (level) {
         case 'success':
-          console.log(`\x1b[32m${formattedMessage}\x1b[0m`)
+          console.log(`\x1b[32m${terminalMessage}\x1b[0m`)
           break
         case 'warn':
-          console.warn(`\x1b[33m${formattedMessage}\x1b[0m`)
+          console.warn(`\x1b[33m${terminalMessage}\x1b[0m`)
           break
         case 'error':
           if (error) {
-            console.error(`\x1b[31m${formattedMessage}\x1b[0m`, error)
+            console.error(`\x1b[31m${terminalMessage}\x1b[0m`, error)
           } else {
-            console.error(`\x1b[31m${formattedMessage}\x1b[0m`)
+            console.error(`\x1b[31m${terminalMessage}\x1b[0m`)
           }
           break
         case 'info':
         default:
-          console.log(formattedMessage)
+          console.log(terminalMessage)
           break
       }
     }
@@ -227,6 +233,17 @@ export class Logger {
    */
   warn(message: string, context?: string): void {
     this.emit('warn', message, context)
+  }
+
+  /**
+   * Log debug message - only shows on terminal if --verbose flag or config enables it
+   */
+  debug(message: string, context?: string): void {
+    // Debug messages go to file but not console by default
+    // Can be enabled via --verbose or config
+    if (!this.loggingEnabled()) return
+    const formattedMessage = this.formatMessage('DEBUG', message, context)
+    this.writeToFile(formattedMessage)
   }
 
   /**
