@@ -1,6 +1,6 @@
 {
   "name": "@onecx/integration-tests",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "contributors": [
     "OneCX Development Team <onecx_dev@1000kit.org>"
@@ -25,6 +25,9 @@
     "start": "nx serve",
     "build": "npm run build:package",
     "build:package": "tsc -p tsconfig.build.json && node ./scripts/copy-dist-assets.js",
+    "release": "node ./scripts/release.js",
+    "release:minor": "node ./scripts/release.js minor",
+    "release:major": "node ./scripts/release.js major",
     "prepare": "npm run build:package",
     "format": "nx format:write --uncommitted",
     "lint": "nx lint",
