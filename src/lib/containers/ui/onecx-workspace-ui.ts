@@ -17,7 +17,7 @@ export class WorkspaceUiContainer extends UiContainer {
     })
       .withEnvironment(getCommonEnvironmentVariables(this.keycloakContainer))
       .withNetworkAliases('onecx-workspace-ui')
-      .withAppBaseHref('/onecx-workspace/')
+      .withAppBaseHref('/')
       .withAppId('onecx-workspace-ui')
       .withProductName('onecx-workspace')
   }
