@@ -34,7 +34,9 @@ export class StartedWorkspaceUiContainer extends StartedUiContainer {
       startedUiContainer.getStartedTestContainer(),
       startedUiContainer.getDetails(),
       startedUiContainer.getNetworkAliases(),
-      startedUiContainer.getPort()
+      startedUiContainer.getPort(),
+      startedUiContainer.getCommandHealthCheck(),
+      startedUiContainer.getHealthCheckConfigs()
     )
   }
 

@@ -134,8 +134,11 @@ export class UserDefinedContainerStarter {
         .withDatabaseUsername(svcConfig.svcDetails.databaseUsername)
         .withDatabasePassword(svcConfig.svcDetails.databasePassword)
     }
-    if (svcConfig.healthCheck) {
-      svcContainer.withHealthCheck(svcConfig.healthCheck)
+    if (svcConfig.commandHealthCheck) {
+      svcContainer.withCommandHealthCheck(svcConfig.commandHealthCheck)
+    }
+    if (svcConfig.healthChecks?.length) {
+      svcContainer.withHealthChecks(svcConfig.healthChecks)
     }
 
     if (logFilePath) {
@@ -164,8 +167,11 @@ export class UserDefinedContainerStarter {
     if (bffConfig.bffDetails.permissionsProductName) {
       bffContainer.withPermissionsProductName(bffConfig.bffDetails.permissionsProductName)
     }
-    if (bffConfig.healthCheck) {
-      bffContainer.withHealthCheck(bffConfig.healthCheck)
+    if (bffConfig.commandHealthCheck) {
+      bffContainer.withCommandHealthCheck(bffConfig.commandHealthCheck)
+    }
+    if (bffConfig.healthChecks?.length) {
+      bffContainer.withHealthChecks(bffConfig.healthChecks)
     }
     if (bffConfig.environments) {
       bffContainer.withEnvironment(bffConfig.environments)
@@ -205,6 +211,13 @@ export class UserDefinedContainerStarter {
 
     if (uiConfig.environments) {
       uiContainer.withEnvironment(uiConfig.environments)
+    }
+
+    if (uiConfig.commandHealthCheck) {
+      uiContainer.withCommandHealthCheck(uiConfig.commandHealthCheck)
+    }
+    if (uiConfig.healthChecks?.length) {
+      uiContainer.withHealthChecks(uiConfig.healthChecks)
     }
 
     if (logFilePath) {

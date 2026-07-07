@@ -1,4 +1,5 @@
 export * from './bff.interface'
+export * from './testcontainers-health-check.adapter'
 export * from './e2e.interface'
 export * from './health-check-executor.interface'
 export * from './health-checkable-container.interface'

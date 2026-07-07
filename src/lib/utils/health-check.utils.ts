@@ -1,38 +1,25 @@
-import { HealthCheck } from 'testcontainers/build/types'
+import { CommandHealthCheckConfig } from '../models/interfaces/testcontainers-health-check.adapter'
 
 /**
- * Build complete health check URL with mapped port from health check configuration
- * Extracts protocol, host and path from health check command and replaces the port
+ * Build complete health check URL with mapped port from command health check configuration.
+ * Extracts protocol, host and path from the health check command and replaces the port
  * with the Docker-mapped port for external access.
  *
  * @example
  * ```typescript
- * // Health check from container configuration
- * const healthCheck = {
+ * const config = {
  *   test: ['CMD-SHELL', 'curl --head -fsS http://localhost:8080/q/health']
  * }
- * const mappedPort = 32768 // Docker mapped port
- *
- * const url = buildHealthCheckUrl(mappedPort, healthCheck)
+ * const url = buildHealthCheckUrl(32768, config)
  * // Returns: "http://localhost:32768/q/health"
  * ```
  *
- * @example
- * ```typescript
- * // TCP health check (no URL) - returns null
- * const healthCheck = {
- *   test: ['CMD-SHELL', 'timeout 5 bash -c "cat < /dev/null > /dev/tcp/localhost/8080"']
- * }
- * const url = buildHealthCheckUrl(32768, healthCheck)
- * // Returns: null (no HTTP URL found)
- * ```
- *
  * @param mappedPort The Docker-mapped port to use for external access
- * @param healthCheck The health check configuration (required)
+ * @param config The command health check configuration
  * @returns Complete health check URL or null if no URL can be extracted
  */
-export function buildHealthCheckUrl(mappedPort: number, healthCheck: HealthCheck): string | null {
-  const extractedUrl = extractUrlFromHealthCheck(healthCheck)
+export function buildHealthCheckUrl(mappedPort: number, config: CommandHealthCheckConfig): string | null {
+  const extractedUrl = extractUrlFromHealthCheck(config)
 
   if (!extractedUrl) {
     return null
@@ -45,24 +32,22 @@ export function buildHealthCheckUrl(mappedPort: number, healthCheck: HealthCheck
   }
 
   const baseUrlWithMappedPort = replacePortInBaseUrl(baseUrl, mappedPort)
-  const extractedPath = extractHealthCheckPath(healthCheck)
+  const extractedPath = extractHealthCheckPath(config)
   const path = extractedPath || ''
 
   return combineUrlWithPath(baseUrlWithMappedPort, path)
 }
 
 /**
- * Extract URL from health check test command
- * @param healthCheck The health check configuration containing the test command
- * @returns The extracted URL or null if no URL found
+ * Extract URL from command health check test command
  */
-function extractUrlFromHealthCheck(healthCheck: HealthCheck | undefined): string | null {
-  if (!healthCheck?.test || !Array.isArray(healthCheck.test)) {
+function extractUrlFromHealthCheck(config: CommandHealthCheckConfig | undefined): string | null {
+  if (!config?.test || !Array.isArray(config.test)) {
     return null
   }
 
   // Join all test command parts into a single string
-  const testCommand = healthCheck.test.join(' ')
+  const testCommand = config.test.join(' ')
 
   // Look for HTTP/HTTPS URLs - more flexible pattern that supports various hostnames
   const urlRegex = /https?:\/\/[^\s"']+/
@@ -72,12 +57,10 @@ function extractUrlFromHealthCheck(healthCheck: HealthCheck | undefined): string
 }
 
 /**
- * Extract health check path from health check test command
- * @param healthCheck The health check configuration
- * @returns The extracted path or null if not found
+ * Extract health check path from command health check test command
  */
-function extractHealthCheckPath(healthCheck: HealthCheck | undefined): string | null {
-  const url = extractUrlFromHealthCheck(healthCheck)
+function extractHealthCheckPath(config: CommandHealthCheckConfig | undefined): string | null {
+  const url = extractUrlFromHealthCheck(config)
 
   if (!url) {
     return null

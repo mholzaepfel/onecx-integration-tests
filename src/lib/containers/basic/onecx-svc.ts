@@ -1,12 +1,23 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
 import * as fs from 'fs'
-import { HealthCheck } from 'testcontainers/build/types'
 import { SvcDetails, SvcContainerServices } from '../../models/interfaces/svc.interface'
 import { getCommonEnvironmentVariables } from '../../utils/common-env.utils'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { buildHealthCheckUrl } from '../../utils/health-check.utils'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
+import {
+  CommandHealthCheckConfig,
+  HealthCheckConfig,
+} from '../../models/interfaces/testcontainers-health-check.adapter'
+import { buildWaitStrategies, toTestcontainersHealthCheck } from '../../utils/wait-strategy.utils'
+
+const DEFAULT_COMMAND_HEALTH_CHECK: CommandHealthCheckConfig = {
+  test: ['CMD-SHELL', 'curl --head -fsS http://localhost:8080/q/health'],
+  interval: 10_000,
+  timeout: 5_000,
+  retries: 3,
+}
 
 export class SvcContainer extends GenericContainer {
   protected details: SvcDetails = {
@@ -22,16 +33,11 @@ export class SvcContainer extends GenericContainer {
 
   private port = 8080
 
-  private defaultHealthCheck: HealthCheck = {
-    test: ['CMD-SHELL', `curl --head -fsS http://localhost:${this.port}/q/health`],
-    interval: 10_000,
-    timeout: 5_000,
-    retries: 3,
-  }
+  private commandHealthCheckConfig?: CommandHealthCheckConfig
+  private healthCheckConfigs: HealthCheckConfig[] = []
 
   constructor(image: string, private services: SvcContainerServices) {
     super(image)
-    this.withHealthCheck(this.defaultHealthCheck)
     this.withExposedPorts(this.port)
   }
 
@@ -42,6 +48,16 @@ export class SvcContainer extends GenericContainer {
 
   withDatabasePassword(databasePassword: string): this {
     this.details.databasePassword = databasePassword
+    return this
+  }
+
+  withCommandHealthCheck(config: CommandHealthCheckConfig): this {
+    this.commandHealthCheckConfig = config
+    return this
+  }
+
+  withHealthChecks(configs: HealthCheckConfig[]): this {
+    this.healthCheckConfigs = configs
     return this
   }
 
@@ -92,13 +108,20 @@ export class SvcContainer extends GenericContainer {
         this.details.databasePassword
       )
     }
-    // Re-apply the default health check explicitly if it has not been overridden.
-    // This ensures the healthcheck is correctly registered before container startup
-    if (JSON.stringify(this.healthCheck) === JSON.stringify(this.defaultHealthCheck)) {
-      this.withHealthCheck(this.defaultHealthCheck)
+
+    const hasCustomConfig = this.commandHealthCheckConfig !== undefined || this.healthCheckConfigs.length > 0
+
+    // Use the provided commandHealthCheck, or fall back to the default when nothing is configured
+    const effectiveCommandHC =
+      this.commandHealthCheckConfig ?? (hasCustomConfig ? undefined : DEFAULT_COMMAND_HEALTH_CHECK)
+
+    if (effectiveCommandHC) {
+      this.withHealthCheck(toTestcontainersHealthCheck(effectiveCommandHC))
     }
-    // Spread existing environment variables to preserve previously set values.
-    // This ensures that calling withEnvironment() does not override earlier configurations.
+
+    const waitStrategies = buildWaitStrategies(effectiveCommandHC, this.healthCheckConfigs)
+    this.withWaitStrategy(Wait.forAll([...waitStrategies, Wait.forListeningPorts()]))
+
     this.withEnvironment({
       ...this.environment,
       QUARKUS_DATASOURCE_USERNAME: this.details.databaseUsername,
@@ -109,6 +132,7 @@ export class SvcContainer extends GenericContainer {
       TKIT_DATAIMPORT_ENABLED: 'true',
       ONECX_TENANT_CACHE_ENABLED: 'false',
     }).withEnvironment(getCommonEnvironmentVariables(this.services.keycloakContainer))
+
     if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
@@ -116,13 +140,13 @@ export class SvcContainer extends GenericContainer {
       })
     }
 
-    this.withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))
     return new StartedSvcContainer(
       await super.start(),
       this.details,
       this.networkAliases,
       this.port,
-      this.healthCheck || this.defaultHealthCheck
+      effectiveCommandHC,
+      this.healthCheckConfigs
     )
   }
 }
@@ -133,20 +157,20 @@ export class StartedSvcContainer extends AbstractStartedContainer implements Hea
     private readonly details: SvcDetails,
     private readonly networkAliases: string[],
     private readonly port: number,
-    private readonly healthCheck: HealthCheck
+    private readonly commandHealthCheck: CommandHealthCheckConfig | undefined,
+    private readonly healthCheckConfigs: HealthCheckConfig[]
   ) {
     super(startedTestContainer)
   }
 
-  /**
-   * Creates Quarkus-specific health check strategy
-   * Uses URL from health check or falls back to default
-   */
   getHealthCheckExecutor(): HealthCheckExecutor {
+    if (!this.commandHealthCheck) {
+      return new SkipHealthCheckExecutor('No command health check configured')
+    }
     const mappedPort = this.getMappedPort(this.port)
 
     // Build URL from health check configuration
-    const endpoint = buildHealthCheckUrl(mappedPort, this.healthCheck)
+    const endpoint = buildHealthCheckUrl(mappedPort, this.commandHealthCheck)
 
     // If no valid URL can be extracted, skip health check
     if (!endpoint) {
@@ -154,7 +178,7 @@ export class StartedSvcContainer extends AbstractStartedContainer implements Hea
     }
 
     // Use timeout from health check if available, otherwise default
-    const timeout = this.healthCheck?.timeout || 8000
+    const timeout = this.commandHealthCheck?.timeout || 8000
 
     return new HttpHealthCheckExecutor(endpoint, timeout, [200, 503])
   }

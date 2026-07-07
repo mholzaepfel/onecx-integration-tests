@@ -33,7 +33,9 @@ export class StartedShellUiContainer extends StartedUiContainer {
       startedUiContainer.getStartedTestContainer(),
       startedUiContainer.getDetails(),
       startedUiContainer.getNetworkAliases(),
-      startedUiContainer.getPort()
+      startedUiContainer.getPort(),
+      startedUiContainer.getCommandHealthCheck(),
+      startedUiContainer.getHealthCheckConfigs()
     )
   }
 
