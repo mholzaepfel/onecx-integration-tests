@@ -50,6 +50,11 @@ const distImportsScriptsDir = path.join(distDir, 'imports-scripts')
 
 copyDirectory(importsDir, distImportsDir)
 copyDirectory(importsScriptsDir, distImportsScriptsDir)
+
+const assetsDir = path.join(root, 'assets')
+const distAssetsDir = path.join(distDir, 'assets')
+copyDirectory(assetsDir, distAssetsDir)
+
 copyJsonFilesRecursively(srcDir, distDir)
 
 const rootPackageJsonPath = path.join(root, 'package.json')
