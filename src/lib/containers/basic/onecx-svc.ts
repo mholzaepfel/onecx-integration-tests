@@ -120,7 +120,7 @@ export class SvcContainer extends GenericContainer {
     }
 
     const waitStrategies = buildWaitStrategies(effectiveCommandHC, this.healthCheckConfigs)
-    this.withWaitStrategy(Wait.forAll([...waitStrategies, Wait.forListeningPorts()]))
+    this.withWaitStrategy(Wait.forAll([...waitStrategies]))
 
     this.withEnvironment({
       ...this.environment,

@@ -97,7 +97,7 @@ export function buildWaitStrategies(
   healthChecks: HealthCheckConfig[]
 ): WaitStrategy[] {
   const strategies: WaitStrategy[] = []
-
+  let shouldIncludeListeningPorts = true
   if (commandHealthCheck) {
     strategies.push(Wait.forHealthCheck())
   }
@@ -105,10 +105,13 @@ export function buildWaitStrategies(
   for (const check of healthChecks) {
     if (isHttpHealthCheck(check)) {
       strategies.push(buildHttpWaitStrategy(check))
+      shouldIncludeListeningPorts = false
     } else if (isLogHealthCheck(check)) {
       strategies.push(buildLogWaitStrategy(check))
     }
   }
+
+  if (shouldIncludeListeningPorts) strategies.push(Wait.forListeningPorts())
 
   return strategies
 }

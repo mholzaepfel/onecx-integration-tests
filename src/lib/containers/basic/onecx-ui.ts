@@ -3,12 +3,10 @@ import * as fs from 'fs'
 import { UiDetails } from '../../models/interfaces/ui.interface'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
-import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
+import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import {
   CommandHealthCheckConfig,
   HealthCheckConfig,
-  isHttpHealthCheck,
-  isLogHealthCheck,
 } from '../../models/interfaces/testcontainers-health-check.adapter'
 import { buildWaitStrategies, toTestcontainersHealthCheck } from '../../utils/wait-strategy.utils'
 

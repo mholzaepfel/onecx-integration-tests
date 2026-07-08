@@ -35,6 +35,8 @@ export interface OnePassHealthCheckConfig {
  * HTTP-based wait strategy — maps to testcontainers Wait.forHttp(path, port).
  */
 export interface HttpHealthCheckConfig extends OnePassHealthCheckConfig {
+  /** Discriminator for HTTP health check strategy */
+  type: 'http'
   /** Path to probe, e.g. "/q/health" */
   path: string
   /** Container-internal port to probe */
@@ -42,7 +44,7 @@ export interface HttpHealthCheckConfig extends OnePassHealthCheckConfig {
   /** Abort wait if container exits before the check passes */
   abortOnContainerExit?: boolean
   /** Expected HTTP status code */
-  statusCode?: number
+  statusCode?: number 
   /** Expected response body substring */
   body?: string
   /** Use TLS (HTTPS) */
@@ -61,6 +63,8 @@ export interface HttpHealthCheckConfig extends OnePassHealthCheckConfig {
  * Log-based wait strategy — maps to testcontainers Wait.forLogMessage(message, times).
  */
 export interface LogHealthCheckConfig extends OnePassHealthCheckConfig {
+  /** Discriminator for log health check strategy */
+  type: 'log'
   /** Log message string or regex pattern (as string) to wait for */
   messageOrRegex: string
   /** Number of times the message must appear before the strategy passes, defaults to 1 */
@@ -72,10 +76,10 @@ export type HealthCheckConfig = HttpHealthCheckConfig | LogHealthCheckConfig
 
 /** Type guard: narrows HealthCheckConfig to HttpHealthCheckConfig */
 export function isHttpHealthCheck(c: HealthCheckConfig): c is HttpHealthCheckConfig {
-  return 'path' in c
+  return c.type === 'http'
 }
 
 /** Type guard: narrows HealthCheckConfig to LogHealthCheckConfig */
 export function isLogHealthCheck(c: HealthCheckConfig): c is LogHealthCheckConfig {
-  return 'messageOrRegex' in c
+  return c.type === 'log'
 }
