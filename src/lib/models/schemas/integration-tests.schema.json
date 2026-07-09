@@ -253,37 +253,155 @@
         "networkAlias": {
           "$ref": "#/definitions/networkAlias"
         },
-        "healthCheck": {
-          "$ref": "#/definitions/healthCheck"
+        "commandHealthCheck": {
+          "$ref": "#/definitions/commandHealthCheck"
+        },
+        "healthChecks": {
+          "type": "array",
+          "description": "One-pass wait strategies evaluated at container startup (http and/or log based)",
+          "items": {
+            "$ref": "#/definitions/healthCheckStrategy"
+          }
         }
       },
       "required": ["image", "networkAlias"]
     },
-    "healthCheck": {
+    "commandHealthCheck": {
       "type": "object",
-      "description": "Container health check configuration",
+      "description": "Docker-level command health check — maps to withHealthCheck() + Wait.forHealthCheck(). Only one allowed per container.",
       "properties": {
         "test": {
           "type": "array",
-          "description": "Health check command",
+          "description": "Health check command, e.g. [\"CMD-SHELL\", \"curl -f http://localhost:8080/q/health\"]",
           "items": {
             "type": "string"
           }
         },
         "interval": {
           "type": "number",
-          "description": "Check interval in milliseconds"
+          "description": "Interval between checks in milliseconds"
         },
         "timeout": {
           "type": "number",
-          "description": "Timeout in milliseconds"
+          "description": "Timeout per check in milliseconds"
         },
         "retries": {
           "type": "number",
-          "description": "Number of retries"
+          "description": "Number of retries before marking unhealthy"
         }
       },
       "required": ["test"]
+    },
+    "healthCheckStrategy": {
+      "description": "One-pass wait strategy evaluated at container startup",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/httpHealthCheck"
+        },
+        {
+          "$ref": "#/definitions/logHealthCheck"
+        }
+      ]
+    },
+    "onePassHealthCheckBase": {
+      "type": "object",
+      "properties": {
+        "startupTimeout": {
+          "type": "number",
+          "description": "Maximum time in milliseconds to wait for this strategy to pass during startup"
+        }
+      }
+    },
+    "httpHealthCheck": {
+      "description": "HTTP-based wait strategy — maps to testcontainers Wait.forHttp(path, port)",
+      "allOf": [
+        {
+          "$ref": "#/definitions/onePassHealthCheckBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "http",
+              "description": "Discriminator for HTTP health check strategy"
+            },
+            "path": {
+              "type": "string",
+              "description": "Path to probe, e.g. \"/q/health\""
+            },
+            "port": {
+              "type": "number",
+              "description": "Container-internal port to probe"
+            },
+            "abortOnContainerExit": {
+              "type": "boolean",
+              "description": "Abort wait if container exits before the check passes"
+            },
+            "statusCode": {
+              "type": "number",
+              "description": "Expected HTTP status code"
+            },
+            "body": {
+              "type": "string",
+              "description": "Expected response body substring"
+            },
+            "tls": {
+              "type": "boolean",
+              "description": "Use TLS (HTTPS)"
+            },
+            "method": {
+              "type": "string",
+              "description": "HTTP method, defaults to GET"
+            },
+            "headers": {
+              "type": "object",
+              "description": "Additional request headers",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "username": {
+              "type": "string",
+              "description": "Basic auth username"
+            },
+            "password": {
+              "type": "string",
+              "description": "Basic auth password"
+            }
+          },
+          "required": ["type", "path", "port"]
+        }
+      ]
+    },
+    "logHealthCheck": {
+      "description": "Log-based wait strategy — maps to testcontainers Wait.forLogMessage(message, times)",
+      "allOf": [
+        {
+          "$ref": "#/definitions/onePassHealthCheckBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "log",
+              "description": "Discriminator for log health check strategy"
+            },
+            "messageOrRegex": {
+              "type": "string",
+              "description": "Log message string or regex pattern (as string) to wait for"
+            },
+            "numberOfEntries": {
+              "type": "number",
+              "description": "Number of times the message must appear before the strategy passes",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          "required": ["type", "messageOrRegex"]
+        }
+      ]
     },
     "svcDetails": {
       "type": "object",

@@ -37,7 +37,7 @@ export class OnecxKeycloakContainer extends GenericContainer {
 
   private initDefaultRealms: string[] = []
 
-  private initRealmPath = path.resolve(__dirname, '../../../assets/realms');
+  private initRealmPath = path.resolve(__dirname, '../../../assets/keycloak')
 
   protected loggingEnabled = false
 

@@ -1,6 +1,5 @@
 import { AbstractStartedContainer, GenericContainer, StartedTestContainer, Wait } from 'testcontainers'
 import * as fs from 'fs'
-import { HealthCheck } from 'testcontainers/build/types'
 import { BffDetails } from '../../models/interfaces/bff.interface'
 import { StartedOnecxKeycloakContainer } from '../core/onecx-keycloak'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
@@ -8,6 +7,18 @@ import { HealthCheckExecutor } from '../../models/interfaces/health-check-execut
 import { buildHealthCheckUrl } from '../../utils/health-check.utils'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { getCommonEnvironmentVariables } from '../../utils/common-env.utils'
+import {
+  CommandHealthCheckConfig,
+  HealthCheckConfig,
+} from '../../models/interfaces/testcontainers-health-check.adapter'
+import { buildWaitStrategies, toTestcontainersHealthCheck } from '../../utils/wait-strategy.utils'
+
+const DEFAULT_COMMAND_HEALTH_CHECK = (port: number): CommandHealthCheckConfig => ({
+  test: ['CMD-SHELL', `curl --head -fsS http://localhost:${port}/q/health`],
+  interval: 10_000,
+  timeout: 5_000,
+  retries: 3,
+})
 
 export class BffContainer extends GenericContainer {
   private details: BffDetails = {
@@ -20,17 +31,11 @@ export class BffContainer extends GenericContainer {
 
   protected logFilePath?: string
 
+  private commandHealthCheckConfig?: CommandHealthCheckConfig
+  private healthCheckConfigs: HealthCheckConfig[] = []
+
   constructor(image: string, private readonly keycloakContainer: StartedOnecxKeycloakContainer) {
     super(image)
-  }
-
-  private setDefaultHealthCheck(port: number): HealthCheck {
-    return {
-      test: ['CMD-SHELL', `curl --head -fsS http://localhost:${port}/q/health`],
-      interval: 10_000,
-      timeout: 5_000,
-      retries: 3,
-    }
   }
 
   withPermissionsProductName(permissionsProductName: string): this {
@@ -40,6 +45,16 @@ export class BffContainer extends GenericContainer {
 
   withPort(port: number): this {
     this.port = port
+    return this
+  }
+
+  withCommandHealthCheck(config: CommandHealthCheckConfig): this {
+    this.commandHealthCheckConfig = config
+    return this
+  }
+
+  withHealthChecks(configs: HealthCheckConfig[]): this {
+    this.healthCheckConfigs = configs
     return this
   }
 
@@ -73,12 +88,17 @@ export class BffContainer extends GenericContainer {
   }
 
   override async start(): Promise<StartedBffContainer> {
-    // Apply the default health check explicitly if it has not been set.
-    // This ensures the healthcheck is correctly registered before container startup
-    if (!this.healthCheck) {
-      const defaultHealthCheck: HealthCheck = this.setDefaultHealthCheck(this.port)
-      this.withHealthCheck(defaultHealthCheck)
+    const hasCustomConfig = this.commandHealthCheckConfig !== undefined || this.healthCheckConfigs.length > 0
+
+    // Use the provided commandHealthCheck, or fall back to the default when nothing is configured
+    const effectiveCommandHC =
+      this.commandHealthCheckConfig ?? (hasCustomConfig ? undefined : DEFAULT_COMMAND_HEALTH_CHECK(this.port))
+
+    if (effectiveCommandHC) {
+      this.withHealthCheck(toTestcontainersHealthCheck(effectiveCommandHC))
     }
+
+    const waitStrategies = buildWaitStrategies(effectiveCommandHC, this.healthCheckConfigs)
 
     this.withEnvironment({
       ...this.environment,
@@ -92,13 +112,15 @@ export class BffContainer extends GenericContainer {
       })
     }
 
-    this.withExposedPorts(this.port).withWaitStrategy(Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()]))
+    this.withExposedPorts(this.port).withWaitStrategy(Wait.forAll([...waitStrategies, Wait.forListeningPorts()]))
+
     return new StartedBffContainer(
       await super.start(),
       this.details,
       this.networkAliases,
       this.port,
-      this.healthCheck || this.setDefaultHealthCheck(this.port)
+      effectiveCommandHC,
+      this.healthCheckConfigs
     )
   }
 }
@@ -109,20 +131,20 @@ export class StartedBffContainer extends AbstractStartedContainer implements Hea
     private readonly details: BffDetails,
     private readonly networkAliases: string[],
     private readonly port: number,
-    private readonly healthCheck: HealthCheck
+    private readonly commandHealthCheck: CommandHealthCheckConfig | undefined,
+    private readonly healthCheckConfigs: HealthCheckConfig[]
   ) {
     super(startedTestContainer)
   }
 
-  /**
-   * Creates Quarkus-specific health check strategy
-   * Uses URL from health check or falls back to default
-   */
   getHealthCheckExecutor(): HealthCheckExecutor {
+    if (!this.commandHealthCheck) {
+      return new SkipHealthCheckExecutor('No command health check configured')
+    }
     const mappedPort = this.getMappedPort(this.port)
 
     // Build URL from health check configuration
-    const endpoint = buildHealthCheckUrl(mappedPort, this.healthCheck)
+    const endpoint = buildHealthCheckUrl(mappedPort, this.commandHealthCheck)
 
     // If no valid URL can be extracted, skip health check
     if (!endpoint) {
@@ -130,7 +152,7 @@ export class StartedBffContainer extends AbstractStartedContainer implements Hea
     }
 
     // Use timeout from health check if available, otherwise default
-    const timeout = this.healthCheck?.timeout || 8000
+    const timeout = this.commandHealthCheck?.timeout || 8000
 
     return new HttpHealthCheckExecutor(endpoint, timeout, [200, 503])
   }

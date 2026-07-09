@@ -1,6 +1,7 @@
 import { StartedOnecxPostgresContainer } from '../../containers/core/onecx-postgres'
-import { Environment, HealthCheck } from 'testcontainers/build/types'
+import { Environment } from 'testcontainers/build/types'
 import { StartedOnecxKeycloakContainer } from '../../containers/core/onecx-keycloak'
+import { CommandHealthCheckConfig, HealthCheckConfig } from './testcontainers-health-check.adapter'
 
 export interface SvcDetails {
   databaseUsername: string
@@ -16,6 +17,9 @@ export interface SvcContainerInterface {
   image: string
   environments?: Environment
   networkAlias: string
-  healthCheck?: HealthCheck
+  /** Docker-level command health check — maps to withHealthCheck() + Wait.forHealthCheck() */
+  commandHealthCheck?: CommandHealthCheckConfig
+  /** One-pass wait strategies evaluated at startup — http and/or log based */
+  healthChecks?: HealthCheckConfig[]
   svcDetails: SvcDetails
 }

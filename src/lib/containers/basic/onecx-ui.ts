@@ -4,6 +4,13 @@ import { UiDetails } from '../../models/interfaces/ui.interface'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
+import {
+  CommandHealthCheckConfig,
+  HealthCheckConfig,
+} from '../../models/interfaces/testcontainers-health-check.adapter'
+import { buildWaitStrategies, toTestcontainersHealthCheck } from '../../utils/wait-strategy.utils'
+
+const DEFAULT_LOG_WAIT_MESSAGE = /start worker process/
 
 export class UiContainer extends GenericContainer {
   private details: UiDetails = {
@@ -17,6 +24,9 @@ export class UiContainer extends GenericContainer {
   protected loggingEnabled = false
 
   protected logFilePath?: string
+
+  private commandHealthCheckConfig?: CommandHealthCheckConfig
+  private healthCheckConfigs: HealthCheckConfig[] = []
 
   constructor(image: string) {
     super(image)
@@ -39,6 +49,16 @@ export class UiContainer extends GenericContainer {
 
   withPort(port: number): this {
     this.port = port
+    return this
+  }
+
+  withCommandHealthCheck(config: CommandHealthCheckConfig): this {
+    this.commandHealthCheckConfig = config
+    return this
+  }
+
+  withHealthChecks(configs: HealthCheckConfig[]): this {
+    this.healthCheckConfigs = configs
     return this
   }
 
@@ -80,9 +100,28 @@ export class UiContainer extends GenericContainer {
 
     this.withExposedPorts(this.port)
 
-    this.withWaitStrategy(Wait.forLogMessage(/start worker process/)).withStartupTimeout(120_000) // 2 minutes timeout for UI startup
+    const hasCustomConfig = this.commandHealthCheckConfig !== undefined || this.healthCheckConfigs.length > 0
 
-    return new StartedUiContainer(await super.start(), this.details, this.networkAliases, this.port)
+    if (this.commandHealthCheckConfig) {
+      this.withHealthCheck(toTestcontainersHealthCheck(this.commandHealthCheckConfig))
+    }
+
+    if (hasCustomConfig) {
+      const waitStrategies = buildWaitStrategies(this.commandHealthCheckConfig, this.healthCheckConfigs)
+      this.withWaitStrategy(Wait.forAll(waitStrategies))
+    } else {
+      // Default: wait for nginx worker process log message
+      this.withWaitStrategy(Wait.forLogMessage(DEFAULT_LOG_WAIT_MESSAGE)).withStartupTimeout(120_000)
+    }
+
+    return new StartedUiContainer(
+      await super.start(),
+      this.details,
+      this.networkAliases,
+      this.port,
+      this.commandHealthCheckConfig,
+      this.healthCheckConfigs
+    )
   }
 }
 
@@ -91,14 +130,13 @@ export class StartedUiContainer extends AbstractStartedContainer implements Heal
     startedTestContainer: StartedTestContainer,
     private readonly details: UiDetails,
     private readonly networkAliases: string[],
-    private readonly port: number
+    private readonly port: number,
+    private readonly commandHealthCheck: CommandHealthCheckConfig | undefined,
+    private readonly healthCheckConfigs: HealthCheckConfig[]
   ) {
     super(startedTestContainer)
   }
 
-  /**
-   * UI containers don't have health endpoints - skip health check
-   */
   getHealthCheckExecutor(): HealthCheckExecutor {
     return new SkipHealthCheckExecutor('UI Container')
   }
@@ -121,6 +159,14 @@ export class StartedUiContainer extends AbstractStartedContainer implements Heal
 
   getPort(): number {
     return this.port
+  }
+
+  getCommandHealthCheck(): CommandHealthCheckConfig | undefined {
+    return this.commandHealthCheck
+  }
+
+  getHealthCheckConfigs(): HealthCheckConfig[] {
+    return this.healthCheckConfigs
   }
 
   getStartedTestContainer(): StartedTestContainer {
