@@ -83,7 +83,8 @@ export class ImportManagerContainer extends GenericContainer {
           'cd ./workspace',
           'ls -a',
           'cd ..',
-          `npm install --no-audit --no-fund --prefer-offline ts-node typescript @types/node axios && npx ts-node ${this.importScript}`,
+          `npm install --no-audit --no-fund --prefer-offline ts-node@10.9.2 typescript@5.7.3 @types/node@20 axios`,
+          `npx ts-node ${this.importScript}`,
         ].join(' && '),
       ])
     if (this.logFilePath) {
