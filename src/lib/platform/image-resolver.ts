@@ -97,7 +97,7 @@ export class ImageResolver {
     }
 
     // If verification fails, fall back to default image
-    logger.warn(`${LogMessages.IMAGE_VERIFY_FAILED}: ${overrideImage} -> ${defaultImage}`)
+    logger.warn(LogMessages.IMAGE_VERIFY_FAILED, `${overrideImage} -> ${defaultImage}`)
     return defaultImage
   }
 }

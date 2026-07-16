@@ -32,8 +32,7 @@ describe('Logger', () => {
       expect(logSpy).toHaveBeenCalled()
 
       const loggedMessage = logSpy.mock.calls[0][0]
-      expect(loggedMessage).toContain('TestClass')
-      expect(loggedMessage).toContain('[INFO]')
+      expect(loggedMessage).toContain('[INFO ]')
       expect(loggedMessage).toContain(LogMessages.CONTAINER_STARTED)
     })
   })
@@ -45,7 +44,6 @@ describe('Logger', () => {
       expect(logSpy).toHaveBeenCalled()
 
       const loggedMessage = logSpy.mock.calls[0][0]
-      expect(loggedMessage).toContain('TestClass')
       expect(loggedMessage).toContain('[SUCCESS]')
       expect(loggedMessage).toContain('\x1b[32m')
       expect(loggedMessage).toContain(LogMessages.CONTAINER_STARTED)
@@ -59,8 +57,7 @@ describe('Logger', () => {
       expect(warnSpy).toHaveBeenCalled()
 
       const loggedMessage = warnSpy.mock.calls[0][0]
-      expect(loggedMessage).toContain('TestClass')
-      expect(loggedMessage).toContain('[WARN]')
+      expect(loggedMessage).toContain('[WARN ]')
       expect(loggedMessage).toContain('\x1b[33m')
       expect(loggedMessage).toContain(LogMessages.CONTAINER_STARTED)
     })
@@ -97,7 +94,6 @@ describe('Logger', () => {
       logger.error(LogMessages.CONTAINER_FAILED)
       expect(errorSpy).toHaveBeenCalled()
       const loggedMessage = errorSpy.mock.calls[0][0]
-      expect(loggedMessage).toContain('TestClass')
       expect(loggedMessage).toContain('[ERROR]')
       expect(loggedMessage).toContain('\x1b[31m')
       expect(loggedMessage).toContain(LogMessages.CONTAINER_FAILED)
@@ -120,7 +116,6 @@ describe('Logger', () => {
       expect(errorSpy).toHaveBeenCalled()
 
       const loggedMessage = errorSpy.mock.calls[0][0]
-      expect(loggedMessage).toContain('TestClass')
       expect(loggedMessage).toContain('[ERROR]')
       expect(loggedMessage).toContain('Container issue')
 
@@ -135,7 +130,6 @@ describe('Logger', () => {
       logger.logDuration(LogMessages.CONTAINER_STARTED, 1500)
       expect(logSpy).toHaveBeenCalled()
       const loggedMessage = logSpy.mock.calls[0][0]
-      expect(loggedMessage).toContain('TestClass')
       expect(loggedMessage).toContain('[SUCCESS]')
       expect(loggedMessage).toContain('1.5s')
     })

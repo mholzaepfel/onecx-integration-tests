@@ -71,76 +71,91 @@ describe('CoreContainerStarter', () => {
     ;(OnecxPostgresContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedPostgres),
     }))
     ;(OnecxKeycloakContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedKeycloak),
     }))
     ;(ShellBffContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedShellBff),
     }))
     ;(ParameterBffContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedParameterBff),
     }))
     ;(WorkspaceBffContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedWorkspaceBff),
     }))
     ;(ShellUiContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedShellUi),
     }))
     ;(WorkspaceUiContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedWorkspaceUi),
     }))
     ;(IamKcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedIamKc),
     }))
     ;(ParameterSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedParameter),
     }))
     ;(WorkspaceSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedWorkspace),
     }))
     ;(UserProfileSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedUserProfile),
     }))
     ;(ThemeSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedTheme),
     }))
     ;(TenantSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedTenant),
     }))
     ;(ProductStoreSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedProductStore),
     }))
     ;(PermissionSvcContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
+      withLogFilePath: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedPermission),
     }))
 
