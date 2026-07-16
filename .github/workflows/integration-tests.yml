@@ -1,41 +1,418 @@
 name: Integration Tests
 
 on:
-  workflow_call: {}
-  workflow_dispatch: {}
-  schedule:
-    - cron: "0 2 * * *"
-  pull_request:
-    types: [ opened, synchronize, reopened, ready_for_review ]
+  workflow_call:
+    inputs:
+      e2eDockerfilePath:
+        description: Path to E2E Dockerfile
+        required: false
+        default: integration-tests/e2e-tests/playwright/workspace.Dockerfile
+        type: string
+      e2eBuildContext:
+        description: Docker build context for E2E image
+        required: false
+        default: .
+        type: string
+      verbose:
+        description: Enable verbose integration-test logs
+        required: false
+        default: false
+        type: boolean
+      capture_logs:
+        description: Capture integration-test logs to artifacts
+        required: false
+        default: true
+        type: boolean
+      strict:
+        description: Fail workflow on normal E2E test failures
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 60
     permissions:
       contents: read
+      packages: read
     env:
       CI: true
-      DEBUG: "testcontainers*"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup Environment
-        uses: ./.github/actions/setup-environment
-      - name: Run integration tests (default config)
-        run: npm run integration-tests
+
+      - name: Resolve workflow configuration
+        id: resolve_config
+        shell: bash
+        env:
+          INPUT_E2E_DOCKERFILE_PATH: ${{ inputs.e2eDockerfilePath }}
+          INPUT_E2E_BUILD_CONTEXT: ${{ inputs.e2eBuildContext }}
+          INPUT_VERBOSE: ${{ inputs.verbose }}
+          INPUT_CAPTURE_LOGS: ${{ inputs.capture_logs }}
+          INPUT_STRICT: ${{ inputs.strict }}
+        run: |
+          set -euo pipefail
+
+          integration_root="integration-tests"
+          platform_config_path="integration-tests/platform/platform.json"
+          e2e_dir="integration-tests/e2e"
+          e2e_dockerfile_path="${INPUT_E2E_DOCKERFILE_PATH:-}"
+          e2e_build_context="${INPUT_E2E_BUILD_CONTEXT:-}"
+          [[ -z "${e2e_dockerfile_path}" ]] && e2e_dockerfile_path="integration-tests/e2e-tests/playwright/workspace.Dockerfile"
+          [[ -z "${e2e_build_context}" ]] && e2e_build_context="."
+
+          artifacts_dir="integration-tests/artifacts"
+          artifact_name="integration-test-artifacts-${GITHUB_RUN_ID}"
+
+          case "${INPUT_VERBOSE:-}" in
+            true|false) it_verbose="${INPUT_VERBOSE}" ;;
+            *) it_verbose="false" ;;
+          esac
+          case "${INPUT_CAPTURE_LOGS:-}" in
+            true|false) it_capture_logs="${INPUT_CAPTURE_LOGS}" ;;
+            *) it_capture_logs="true" ;;
+          esac
+
+          case "${INPUT_STRICT:-}" in
+            true|false) strict_mode="${INPUT_STRICT}" ;;
+            *) strict_mode="true" ;;
+          esac
+
+          {
+            echo "INTEGRATION_ROOT=${integration_root}"
+            echo "PLATFORM_CONFIG_PATH=${platform_config_path}"
+            echo "E2E_DIR=${e2e_dir}"
+            echo "E2E_DOCKERFILE_PATH=${e2e_dockerfile_path}"
+            echo "E2E_BUILD_CONTEXT=${e2e_build_context}"
+            echo "ARTIFACTS_DIR=${artifacts_dir}"
+            echo "ARTIFACT_NAME=${artifact_name}"
+            echo "IT_VERBOSE=${it_verbose}"
+            echo "IT_CAPTURE_LOGS=${it_capture_logs}"
+            echo "WORKFLOW_STRICT_MODE=${strict_mode}"
+          } >> "$GITHUB_ENV"
+
+          {
+            echo "integration_root=${integration_root}"
+            echo "platform_config_path=${platform_config_path}"
+            echo "e2e_dir=${e2e_dir}"
+            echo "e2e_dockerfile_path=${e2e_dockerfile_path}"
+            echo "e2e_build_context=${e2e_build_context}"
+            echo "artifacts_dir=${artifacts_dir}"
+            echo "artifact_name=${artifact_name}"
+            echo "strict_mode=${strict_mode}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Show resolved non-secret configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Event: ${GITHUB_EVENT_NAME}"
+          echo "Ref: ${GITHUB_REF}"
+          echo "Integration root: ${INTEGRATION_ROOT}"
+          echo "Platform config path: ${PLATFORM_CONFIG_PATH}"
+          echo "E2E directory: ${E2E_DIR}"
+          echo "E2E Dockerfile path: ${E2E_DOCKERFILE_PATH}"
+          echo "E2E build context: ${E2E_BUILD_CONTEXT}"
+          echo "Artifacts directory: ${ARTIFACTS_DIR}"
+          echo "Artifact name: ${ARTIFACT_NAME}"
+          echo "IT_VERBOSE: ${IT_VERBOSE}"
+          echo "IT_CAPTURE_LOGS: ${IT_CAPTURE_LOGS}"
+          echo "Strict mode: ${WORKFLOW_STRICT_MODE}"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Validate required assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          errors=0
+          has_package_json="false"
+
+          if [[ ! -d "${INTEGRATION_ROOT}" ]]; then
+            echo "::error::Integration root does not exist: ${INTEGRATION_ROOT}"
+            errors=1
+          fi
+
+          if [[ ! -f "${PLATFORM_CONFIG_PATH}" ]]; then
+            echo "::error::Platform config does not exist: ${PLATFORM_CONFIG_PATH}"
+            errors=1
+          fi
+
+          if [[ ! -d "${E2E_DIR}" ]]; then
+            echo "::error::E2E directory does not exist: ${E2E_DIR}"
+            errors=1
+          fi
+
+          if [[ ! -f "${E2E_DOCKERFILE_PATH}" ]]; then
+            echo "::error::E2E Dockerfile does not exist: ${E2E_DOCKERFILE_PATH}"
+            errors=1
+          fi
+
+          if [[ ! -d "${E2E_BUILD_CONTEXT}" ]]; then
+            echo "::error::E2E build context directory does not exist: ${E2E_BUILD_CONTEXT}"
+            errors=1
+          fi
+
+          if [[ ! -f "package.json" ]]; then
+            echo "::error::Required package manifest is missing: package.json"
+            errors=1
+          else
+            has_package_json="true"
+          fi
+
+          if [[ ! -f "package-lock.json" ]]; then
+            echo "::error::Required lockfile is missing: package-lock.json"
+            errors=1
+          fi
+
+          if [[ "${has_package_json}" == "true" ]]; then
+            if ! node -e "const fs=require('fs');let pkg;try{pkg=JSON.parse(fs.readFileSync('package.json','utf8'));}catch(err){console.error('::error::Failed to parse caller package.json: '+String(err));process.exit(1);}if(!pkg||typeof pkg!=='object'){console.error('::error::Caller package.json must contain a JSON object at the root.');process.exit(1);}if(!pkg.scripts||typeof pkg.scripts!=='object'||Array.isArray(pkg.scripts)){console.error('::error::Caller package.json must define a scripts object.');process.exit(1);}if(typeof pkg.scripts.e2e!=='string'||pkg.scripts.e2e.trim().length===0){console.error('::error::Caller package.json does not define the required non-empty scripts.e2e value.');process.exit(1);}"; then
+            then
+              errors=1
+            fi
+          fi
+
+          if [[ ! -f "${E2E_BUILD_CONTEXT}/.dockerignore" ]]; then
+            echo "::warning::.dockerignore not found in build context: ${E2E_BUILD_CONTEXT}/.dockerignore"
+          fi
+
+          if [[ ${errors} -ne 0 ]]; then
+            exit 1
+          fi
+
+      - name: Install caller dependencies
+        id: install_deps
+        shell: bash
+        run: |
+          set -euo pipefail
+          install_start=$(date +%s)
+          npm ci
+          install_end=$(date +%s)
+          echo "duration_seconds=$(( install_end - install_start ))" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate Docker to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start E2E image build timer
+        id: build_timer_start
+        shell: bash
+        run: echo "ts=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Build E2E image with BuildKit cache
+        id: build_e2e_image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.resolve_config.outputs.e2e_build_context }}
+          file: ${{ steps.resolve_config.outputs.e2e_dockerfile_path }}
+          push: false
+          load: true
+          tags: |
+            onecx-workspace-e2e:latest
+            onecx-workspace-e2e:${{ github.sha }}
+          cache-from: type=gha,scope=onecx-workspace-e2e
+          cache-to: type=gha,mode=max,scope=onecx-workspace-e2e
+
+      - name: Capture E2E image build duration
+        id: build_duration
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          start_epoch='${{ steps.build_timer_start.outputs.ts }}'
+          finish_epoch=$(date +%s)
+          duration=0
+          if [[ -n "$start_epoch" ]]; then
+            duration=$(( finish_epoch - start_epoch ))
+          fi
+          echo "seconds=${duration}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker diagnostics (before test execution)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Docker images (repository:tag, size, age) ==="
+          docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedSince}}'
+          echo
+          echo "=== Docker disk usage ==="
+          docker system df
+
+      - name: Run integration tests
+        id: run_integration_tests
+        continue-on-error: true
+        shell: bash
+        env:
+          CONFIG_PATH: ${{ steps.resolve_config.outputs.platform_config_path }}
+          IT_VERBOSE: ${{ env.IT_VERBOSE }}
+          IT_CAPTURE_LOGS: ${{ env.IT_CAPTURE_LOGS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test_start=$(date +%s)
+          echo "start_epoch=${test_start}" >> "$GITHUB_OUTPUT"
+          set +e
+          if [[ "${IT_VERBOSE}" == "true" ]]; then
+            DEBUG="testcontainers*" npm run e2e
+          else
+            npm run e2e
+          fi
+          test_exit_code=$?
+          set -e
+          test_end=$(date +%s)
+          test_duration=$(( test_end - test_start ))
+          echo "exit_code=${test_exit_code}" >> "$GITHUB_OUTPUT"
+          echo "duration_seconds=${test_duration}" >> "$GITHUB_OUTPUT"
+          if [[ ${test_exit_code} -ne 0 ]]; then
+            exit "${test_exit_code}"
+          fi
+
+      - name: Docker diagnostics (after test execution)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Docker images (repository:tag, size, age) ==="
+          docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedSince}}'
+          echo
+          echo "=== Docker disk usage ==="
+          docker system df
+          echo
+          echo "=== Remaining containers (all states) ==="
+          docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
+
+      - name: Resolve summary.json
+        id: resolve_summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -d "${ARTIFACTS_DIR}" ]]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          run_start_epoch='${{ steps.run_integration_tests.outputs.start_epoch }}'
+          summary_path=$(find "${ARTIFACTS_DIR}" -type f -name 'summary.json' -printf '%T@ %p\n' \
+            | awk -v start="${run_start_epoch:-0}" '$1 >= start {print}' \
+            | sort -n \
+            | tail -n 1 \
+            | cut -d' ' -f2- || true)
+
+          if [[ -n "${summary_path}" ]]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "path=${summary_path}" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "path=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Parse summary.json
+        id: parse_summary
+        if: always() && steps.resolve_summary.outputs.exists == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - "${{ steps.resolve_summary.outputs.path }}" >> "$GITHUB_OUTPUT" <<'NODE'
+          const fs = require('fs')
+          const summaryPath = process.argv[2]
+          const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'))
+
+          const validStatus = new Set(['success', 'failure', 'timeout', 'error'])
+          const validMode = new Set(['e2e', 'platform-only'])
+
+          if (
+            !summary ||
+            typeof summary !== 'object' ||
+            typeof summary.runId !== 'string' ||
+            summary.runId.length === 0 ||
+            typeof summary.status !== 'string' ||
+            !validStatus.has(summary.status) ||
+            typeof summary.mode !== 'string' ||
+            !validMode.has(summary.mode) ||
+            typeof summary.durationMs !== 'number' ||
+            typeof summary.exitCode !== 'number'
+          ) {
+            throw new Error('summary.json is missing required fields')
+          }
+
+          const e2eResult = summary.e2eResult && typeof summary.e2eResult === 'object' ? summary.e2eResult : undefined
+          console.log('parse_ok=true')
+          console.log(`run_id=${summary.runId ?? ''}`)
+          console.log(`status=${summary.status ?? ''}`)
+          console.log(`mode=${summary.mode ?? ''}`)
+          console.log(`duration_ms=${summary.durationMs ?? ''}`)
+          console.log(`exit_code=${summary.exitCode ?? ''}`)
+          console.log(`e2e_exit_code=${e2eResult?.exitCode ?? ''}`)
+          console.log(`e2e_success=${e2eResult?.success ?? ''}`)
+          NODE
+
+      - name: Write workflow summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## Integration Tests"
+            echo "- Strict policy: ${WORKFLOW_STRICT_MODE}"
+            echo "- Workflow run ID: ${GITHUB_RUN_ID}"
+            echo "- Artifacts directory: ${ARTIFACTS_DIR}"
+            echo "- Uploaded artifact name: ${ARTIFACT_NAME}"
+            echo "- Dependency installation duration: ${{ steps.install_deps.outputs.duration_seconds }}s"
+            echo "- E2E image build duration: ${{ steps.build_duration.outputs.seconds }}s"
+            echo "- E2E image build outcome: ${{ steps.build_e2e_image.outcome }}"
+            echo "- Integration-test step outcome: ${{ steps.run_integration_tests.outcome }}"
+            echo "- Integration-test process exit code: ${{ steps.run_integration_tests.outputs.exit_code }}"
+            echo "- Integration-test duration: ${{ steps.run_integration_tests.outputs.duration_seconds }}s"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "${{ steps.resolve_summary.outputs.exists }}" == "true" && "${{ steps.parse_summary.outputs.parse_ok }}" == "true" ]]; then
+            {
+              echo "- summary.json: found at ${{ steps.resolve_summary.outputs.path }}"
+              echo "- summary.runId: ${{ steps.parse_summary.outputs.run_id }}"
+              echo "- summary.status: ${{ steps.parse_summary.outputs.status }}"
+              echo "- summary.mode: ${{ steps.parse_summary.outputs.mode }}"
+              echo "- summary.durationMs: ${{ steps.parse_summary.outputs.duration_ms }}"
+              echo "- summary.exitCode: ${{ steps.parse_summary.outputs.exit_code }}"
+              echo "- summary.e2eResult.exitCode: ${{ steps.parse_summary.outputs.e2e_exit_code }}"
+              echo "- summary.e2eResult.success: ${{ steps.parse_summary.outputs.e2e_success }}"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "- summary.json: missing or invalid"
+              echo "- note: missing or invalid summary is treated as infrastructure/reporting failure"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload E2E Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-${{ github.run_id }}
-          path: e2e-results/
+          name: ${{ steps.resolve_config.outputs.artifact_name }}
+          path: ${{ steps.resolve_config.outputs.artifacts_dir }}
           retention-days: 14
           if-no-files-found: warn
+
       - name: Container logs (on failure)
-        if: failure()
+        if: always() && steps.run_integration_tests.outputs.exit_code != '0'
+        shell: bash
         run: |
           echo "=== last logs from all containers ==="
           for c in $(docker ps -aq); do
@@ -43,3 +420,55 @@ jobs:
             echo "----- logs for $CONTAINER_INFO (ID: $c) -----"
             docker logs --tail=200 "$c" || true
           done
+
+      - name: Enforce integration-test failure policy
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test_outcome='${{ steps.run_integration_tests.outcome }}'
+          test_exit='${{ steps.run_integration_tests.outputs.exit_code }}'
+          strict_mode='${{ steps.resolve_config.outputs.strict_mode }}'
+          summary_exists='${{ steps.resolve_summary.outputs.exists }}'
+          parse_outcome='${{ steps.parse_summary.outcome }}'
+          summary_parse_ok='${{ steps.parse_summary.outputs.parse_ok }}'
+          summary_status='${{ steps.parse_summary.outputs.status }}'
+          summary_mode='${{ steps.parse_summary.outputs.mode }}'
+          summary_exit='${{ steps.parse_summary.outputs.exit_code }}'
+
+          if [[ "${test_outcome}" == "skipped" || -z "${test_exit}" ]]; then
+            echo "::error::Integration-test step did not complete normally (likely configuration or infrastructure failure)."
+            exit 1
+          fi
+
+          if [[ "${summary_exists}" != "true" ]]; then
+            echo "::error::No summary.json produced. Treating this as infrastructure/reporting failure."
+            exit 1
+          fi
+
+          if [[ "${parse_outcome}" != "success" || "${summary_parse_ok}" != "true" ]]; then
+            echo "::error::summary.json is invalid or missing required fields. Treating this as infrastructure/reporting failure."
+            exit 1
+          fi
+
+          if [[ "${test_exit}" == "0" ]]; then
+            if [[ "${summary_status}" != "success" || "${summary_exit}" != "0" ]]; then
+              echo "::error::E2E process exited successfully but summary indicates non-success (status=${summary_status}, exitCode=${summary_exit})."
+              exit 1
+            fi
+            echo "Integration tests succeeded."
+            exit 0
+          fi
+
+          if [[ "${summary_mode}" == "e2e" && "${summary_status}" == "failure" ]]; then
+            if [[ "${strict_mode}" == "false" ]]; then
+              echo "::warning::Integration tests failed in lenient mode (exit ${test_exit}); job remains green."
+              exit 0
+            fi
+            echo "::error::Integration tests failed in strict mode (exit ${test_exit})."
+            exit 1
+          fi
+
+          echo "::error::Integration tests did not finish in a normal test-failure shape (status=${summary_status}, mode=${summary_mode}). Treating as infrastructure failure."
+          exit 1
