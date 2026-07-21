@@ -27,7 +27,6 @@
     "build:package": "tsc -p tsconfig.build.json && node ./scripts/copy-dist-assets.js",
     "release": "node ./scripts/release.js",
     "release:minor": "node ./scripts/release.js minor",
-    "prepare": "npm run build:package",
     "format": "nx format:write --uncommitted",
     "lint": "nx lint",
     "lint:fix": "nx lint --fix",
