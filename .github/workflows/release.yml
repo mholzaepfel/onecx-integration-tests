@@ -1,0 +1,24 @@
+name: Create Release
+
+on:
+    workflow_dispatch:
+
+permissions:
+    id-token: write
+    contents: read
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: "24"
+                  registry-url: "https://registry.npmjs.org"
+                  package-manager-cache: false # never use caching in release builds
+            - run: npm ci
+            - run: npm lint
+            - run: npm test
+            - run: npm run release:minor
