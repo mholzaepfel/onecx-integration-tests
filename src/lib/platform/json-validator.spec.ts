@@ -198,6 +198,117 @@ describe('PlatformConfigJsonValidator', () => {
           expect(result.isValid).toBe(false)
           expect(result.errors).toContain('/platformConfig/heartbeat/interval: must be >= 1000')
         })
+
+        it('should fail when e2e contains duplicate networkAlias values', () => {
+          const mockConfigPath = 'platform.json'
+          const configWithDuplicateAliases = {
+            platformConfig: {
+              container: {
+                e2e: [
+                  { image: 'img-a', networkAlias: 'suite-a' },
+                  { image: 'img-b', networkAlias: 'suite-a' },
+                ],
+              },
+            },
+          }
+
+          const mockSchema = {
+            type: 'object',
+            properties: {
+              platformConfig: {
+                type: 'object',
+                properties: {
+                  container: {
+                    type: 'object',
+                    properties: {
+                      e2e: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            image: { type: 'string' },
+                            networkAlias: { type: 'string' },
+                          },
+                          required: ['image', 'networkAlias'],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }
+
+          ;(fs.existsSync as jest.Mock).mockReturnValue(true)
+          ;(fs.readFileSync as jest.Mock).mockImplementation((filePath: string) => {
+            if (filePath === mockConfigPath) {
+              return JSON.stringify(configWithDuplicateAliases)
+            }
+            if (filePath.endsWith('integration-tests.schema.json')) {
+              return JSON.stringify(mockSchema)
+            }
+            return ''
+          })
+
+          const result = validator.validateConfigFile(mockConfigPath)
+
+          expect(result.isValid).toBe(false)
+          expect(result.errors?.[0]).toContain("duplicate networkAlias 'suite-a'")
+        })
+
+        it('should fail when e2e networkAlias is unsafe for path segment usage', () => {
+          const mockConfigPath = 'platform.json'
+          const configWithUnsafeAlias = {
+            platformConfig: {
+              container: {
+                e2e: [{ image: 'img-a', networkAlias: '../suite-a' }],
+              },
+            },
+          }
+
+          const mockSchema = {
+            type: 'object',
+            properties: {
+              platformConfig: {
+                type: 'object',
+                properties: {
+                  container: {
+                    type: 'object',
+                    properties: {
+                      e2e: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            image: { type: 'string' },
+                            networkAlias: { type: 'string' },
+                          },
+                          required: ['image', 'networkAlias'],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }
+
+          ;(fs.existsSync as jest.Mock).mockReturnValue(true)
+          ;(fs.readFileSync as jest.Mock).mockImplementation((filePath: string) => {
+            if (filePath === mockConfigPath) {
+              return JSON.stringify(configWithUnsafeAlias)
+            }
+            if (filePath.endsWith('integration-tests.schema.json')) {
+              return JSON.stringify(mockSchema)
+            }
+            return ''
+          })
+
+          const result = validator.validateConfigFile(mockConfigPath)
+
+          expect(result.isValid).toBe(false)
+          expect(result.errors?.[0]).toContain('must be a safe single path segment')
+        })
       })
 
       describe('system and parsing errors', () => {

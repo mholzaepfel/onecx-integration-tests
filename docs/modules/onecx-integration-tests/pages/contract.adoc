@@ -76,10 +76,12 @@ Example with heartbeat and E2E:
 			"failureThreshold": 3
 		},
 		"container": {
-			"e2e": {
-				"image": "e2e-example:latest",
-				"networkAlias": "e2e-example"
-			}
+			"e2e": [
+				{
+					"image": "e2e-example:latest",
+					"networkAlias": "e2e-example"
+				}
+			]
 		}
 	}
 }
@@ -162,7 +164,13 @@ Optional fields:
 
 == E2E Container
 
-The E2E container is optional and runs after platform startup and health checks.
+The E2E container list is optional and runs after platform startup and health checks.
+
+Execution behavior:
+
+* `container.e2e` is an array.
+* Entries are executed sequentially in array order.
+* Each entry must have a unique `networkAlias`.
 
 Required fields:
 
@@ -180,11 +188,13 @@ Example:
 {
 	"platformConfig": {
 		"container": {
-			"e2e": {
-				"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
-				"networkAlias": "shell-e2e",
-				"baseUrl": "http://onecx-shell-ui:8080",
-			}
+			"e2e": [
+				{
+					"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
+					"networkAlias": "shell-e2e",
+					"baseUrl": "http://onecx-shell-ui:8080"
+				}
+			]
 		}
 	}
 }

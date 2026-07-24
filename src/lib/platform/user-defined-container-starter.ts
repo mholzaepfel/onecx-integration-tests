@@ -1,6 +1,6 @@
 import { StartedNetwork } from 'testcontainers'
 import { PlatformConfig } from '../models/interfaces/platform-config.interface'
-import { E2eContainerInterface, E2eResult } from '../models/interfaces/e2e.interface'
+import { E2eContainerInterface, E2eExecutionRecord, E2eExecutionStatus } from '../models/interfaces/e2e.interface'
 import { SvcContainerInterface } from '../models/interfaces/svc.interface'
 import { BffContainerInterface } from '../models/interfaces/bff.interface'
 import { UiContainerInterface } from '../models/interfaces/ui.interface'
@@ -88,24 +88,58 @@ export class UserDefinedContainerStarter {
   }
 
   /**
-   * Run E2E tests - called separately after all containers are healthy
-   * @param config Platform configuration containing E2E container definition
-   * @returns E2E execution result with exit code, or undefined if no E2E configured
+   * Run E2E tests in configured order after the platform is healthy.
+   * @param config Platform configuration containing E2E container definitions
+   * @returns Ordered E2E execution records, or undefined if no E2E is configured
    */
-  async startE2eContainer(config: PlatformConfig): Promise<E2eResult | undefined> {
-    if (!config.container?.e2e) {
+  async startE2eContainers(
+    config: PlatformConfig,
+    shouldContinue: () => boolean = () => true
+  ): Promise<E2eExecutionRecord[] | undefined> {
+    const e2eConfigs = config.container?.e2e
+    if (!e2eConfigs) {
       return undefined
     }
 
-    const e2eConfig = config.container.e2e
-    logger.info(LogMessages.CONTAINER_STARTED, `Starting E2E container: ${e2eConfig.networkAlias}`)
-    const e2eResult = await this.createE2eContainer(
-      e2eConfig,
-      loggingEnabled(config, [e2eConfig.networkAlias]),
-      this.logFilePathProvider?.(e2eConfig.networkAlias)
-    )
-    logger.success(LogMessages.CONTAINER_STARTED, `E2E container finished: ${e2eConfig.networkAlias}`)
-    return e2eResult
+    if (e2eConfigs.length === 0) {
+      logger.warn(LogMessages.CONTAINER_STARTED, 'E2E configuration is present but empty; skipping E2E execution')
+      return []
+    }
+
+    const total = e2eConfigs.length
+    const results: E2eExecutionRecord[] = []
+
+    for (let index = 0; index < total; index++) {
+      if (!shouldContinue()) {
+        logger.warn(LogMessages.CONTAINER_STARTED, 'E2E execution interrupted before starting next container')
+        break
+      }
+
+      const e2eConfig = e2eConfigs[index]
+      logger.info(
+        LogMessages.CONTAINER_STARTED,
+        `Starting E2E container ${index + 1}/${total}: ${e2eConfig.networkAlias}`
+      )
+      const e2eResult = await this.createE2eContainer(
+        e2eConfig,
+        loggingEnabled(config, [e2eConfig.networkAlias]),
+        this.logFilePathProvider?.(e2eConfig.networkAlias),
+        index + 1,
+        total
+      )
+      results.push(e2eResult)
+
+      const statusMessage = `E2E container finished ${index + 1}/${total}: ${e2eConfig.networkAlias} [${
+        e2eResult.status
+      }]`
+      if (e2eResult.success) {
+        logger.success(LogMessages.CONTAINER_STARTED, statusMessage)
+      } else {
+        logger.error(LogMessages.CONTAINER_FAILED, statusMessage)
+      }
+    }
+
+    return results
   }
 
   /**
@@ -231,56 +265,124 @@ export class UserDefinedContainerStarter {
    * Start E2E test container and wait for it to complete
    * @param e2eConfig E2E container configuration
    * @param withLoggingEnabled Whether to enable container logging
-   * @returns E2E execution result with exit code
+   * @returns E2E execution result for one configured container
    */
   async createE2eContainer(
     e2eConfig: E2eContainerInterface,
     withLoggingEnabled: boolean,
-    logFilePath?: string
-  ): Promise<E2eResult> {
+    logFilePath: string | undefined,
+    sequence: number,
+    total: number
+  ): Promise<E2eExecutionRecord> {
+    const startedAt = new Date().toISOString()
     const startTime = Date.now()
     const startupTimeoutMs = e2eConfig.timeoutMs ?? E2E_DEFAULT_TIMEOUT_MS
 
-    // Resolve image (may need to pull from registry)
-    const resolvedImage = await this.imageResolver.getImage(e2eConfig.image)
+    try {
+      // Resolve image (may need to pull from registry)
+      const resolvedImage = await this.imageResolver.getImage(e2eConfig.image)
 
-    // Create E2E container with resolved image and config
-    const e2eContainer = new E2eContainer(resolvedImage).withNetworkAliases(e2eConfig.networkAlias)
+      // Create E2E container with resolved image and config
+      const e2eContainer = new E2eContainer(resolvedImage)
+        .withNetworkAliases(e2eConfig.networkAlias)
+        .withOutputAlias(e2eConfig.networkAlias)
 
-    if (e2eConfig.baseUrl) {
-      e2eContainer.withBaseUrl(e2eConfig.baseUrl)
+      if (e2eConfig.baseUrl) {
+        e2eContainer.withBaseUrl(e2eConfig.baseUrl)
+      }
+
+      if (e2eConfig.environments) {
+        e2eContainer.withEnvironment(e2eConfig.environments)
+      }
+
+      if (logFilePath) {
+        e2eContainer.withLogFilePath(logFilePath)
+      }
+
+      const startedContainer = await e2eContainer
+        .withLoggingEnabled(withLoggingEnabled)
+        .withNetwork(this.network)
+        .withStartupTimeout(startupTimeoutMs)
+        .start()
+
+      // With the E2E one-shot completion strategy, start() resolves after container exit.
+      // We then inspect and report the real exit code when available.
+      logger.info(LogMessages.CONTAINER_STARTED, 'E2E container finished, retrieving exit code...')
+      const exitCode = await startedContainer.getExitCode()
+      const duration = Date.now() - startTime
+      const finishedAt = new Date().toISOString()
+
+      if (exitCode === 0) {
+        return {
+          networkAlias: e2eConfig.networkAlias,
+          sequence,
+          total,
+          status: 'passed',
+          success: true,
+          exitCode,
+          startedAt,
+          finishedAt,
+          duration,
+        }
+      }
+
+      if (typeof exitCode === 'number') {
+        return {
+          networkAlias: e2eConfig.networkAlias,
+          sequence,
+          total,
+          status: 'failed_exit_code',
+          success: false,
+          exitCode,
+          startedAt,
+          finishedAt,
+          duration,
+        }
+      }
+
+      return {
+        networkAlias: e2eConfig.networkAlias,
+        sequence,
+        total,
+        status: 'failed_wait',
+        success: false,
+        errorMessage: 'E2E container finished without an inspectable exit code',
+        startedAt,
+        finishedAt,
+        duration,
+      }
+    } catch (error) {
+      const duration = Date.now() - startTime
+      const finishedAt = new Date().toISOString()
+      const status = this.classifyExecutionError(error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
+      return {
+        networkAlias: e2eConfig.networkAlias,
+        sequence,
+        total,
+        status,
+        success: false,
+        errorMessage,
+        startedAt,
+        finishedAt,
+        duration,
+      }
+    }
+  }
+
+  private classifyExecutionError(error: unknown): E2eExecutionStatus {
+    const message = (error instanceof Error ? error.message : String(error)).toLowerCase()
+    if (message.includes('timeout') || message.includes('timed out')) {
+      return 'failed_timeout'
+    }
+    if (message.includes('wait')) {
+      return 'failed_wait'
+    }
+    if (message.includes('start') || message.includes('startup')) {
+      return 'failed_startup'
     }
 
-    if (e2eConfig.environments) {
-      e2eContainer.withEnvironment(e2eConfig.environments)
-    }
-
-    if (logFilePath) {
-      e2eContainer.withLogFilePath(logFilePath)
-    }
-
-    const startedContainer = await e2eContainer
-      .withLoggingEnabled(withLoggingEnabled)
-      .withNetwork(this.network)
-      .withStartupTimeout(startupTimeoutMs)
-      .start()
-
-    // With the E2E one-shot completion strategy, start() resolves after container exit.
-    // We then inspect and report the real exit code.
-    logger.info(LogMessages.CONTAINER_STARTED, 'E2E container finished, retrieving exit code...')
-    const exitCode = await startedContainer.getExitCode()
-    const duration = Date.now() - startTime
-    const success = exitCode === 0
-
-    if (success) {
-      logger.success(
-        LogMessages.CONTAINER_STARTED,
-        `E2E tests completed successfully in ${Math.round(duration / 1000)}s`
-      )
-    } else {
-      logger.error(LogMessages.CONTAINER_FAILED, `E2E tests failed with exit code ${exitCode}`)
-    }
-
-    return { exitCode, success, duration }
+    return 'failed_unexpected'
   }
 }

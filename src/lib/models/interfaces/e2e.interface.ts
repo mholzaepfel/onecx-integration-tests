@@ -17,10 +17,38 @@ export interface E2eContainerInterface {
 }
 
 /**
- * Result of E2E container execution
+ * Execution status for one E2E container run.
  */
-export interface E2eResult {
-  exitCode: number
+export type E2eExecutionStatus =
+  | 'passed'
+  | 'failed_exit_code'
+  | 'failed_startup'
+  | 'failed_wait'
+  | 'failed_timeout'
+  | 'failed_unexpected'
+
+/**
+ * Result of one E2E container execution.
+ */
+export interface E2eExecutionRecord {
+  networkAlias: string
+  sequence: number
+  total: number
+  status: E2eExecutionStatus
   success: boolean
+  exitCode?: number
+  errorMessage?: string
+  startedAt: string
+  finishedAt: string
   duration: number
+}
+
+/**
+ * Aggregated execution outcome across all configured E2E containers.
+ */
+export interface E2eExecutionSummary {
+  total: number
+  succeeded: number
+  failed: number
+  finalStatus: 'success' | 'failure'
 }

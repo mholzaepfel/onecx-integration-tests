@@ -107,6 +107,7 @@ integration-tests/artifacts/<run-id>/
 	reports/
 	e2e/
 		platform-info.json
+		e2e-executions.json
 	e2e-results/
 ----
 
@@ -119,7 +120,8 @@ integration-tests/artifacts/<run-id>/
 * `exitCode`
 * `status`
 * `mode`
-* `e2eResult`
+* `e2eExecutions`
+* `e2eAggregate`
 
 == Troubleshooting Quick Checks
 

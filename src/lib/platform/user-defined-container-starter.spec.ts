@@ -10,6 +10,7 @@ import { BffContainer } from '../containers/basic/onecx-bff'
 import { UiContainer } from '../containers/basic/onecx-ui'
 import { E2eContainer } from '../containers/e2e/onecx-e2e'
 import { E2E_DEFAULT_TIMEOUT_MS } from '../config/e2e-constants'
+import { E2eExecutionRecord } from '../models/interfaces/e2e.interface'
 
 jest.mock('../containers/basic/onecx-svc')
 jest.mock('../containers/basic/onecx-bff')
@@ -53,6 +54,7 @@ describe('UserDefinedContainerStarter', () => {
         withAppId: jest.fn().mockReturnThis(),
         withProductName: jest.fn().mockReturnThis(),
         withBaseUrl: jest.fn().mockReturnThis(),
+        withOutputAlias: jest.fn().mockReturnThis(),
         withLoggingEnabled: jest.fn().mockReturnThis(),
         withNetwork: jest.fn().mockReturnThis(),
         withStartupTimeout: jest.fn().mockReturnThis(),
@@ -184,7 +186,10 @@ describe('UserDefinedContainerStarter', () => {
         image: 'e2e-image',
         networkAlias: 'e2e-runner',
       },
-      false
+      false,
+      undefined,
+      1,
+      1
     )
 
     const e2eInstance = (E2eContainer as unknown as jest.Mock).mock.results[0].value
@@ -200,10 +205,206 @@ describe('UserDefinedContainerStarter', () => {
         networkAlias: 'e2e-runner',
         timeoutMs: 2_400_000,
       },
-      false
+      false,
+      undefined,
+      1,
+      1
     )
 
     const e2eInstance = (E2eContainer as unknown as jest.Mock).mock.results[0].value
     expect(e2eInstance.withStartupTimeout).toHaveBeenCalledWith(2_400_000)
+  })
+
+  it('should execute e2e containers sequentially in configured order', async () => {
+    const records: E2eExecutionRecord[] = [
+      {
+        networkAlias: 'suite-a',
+        sequence: 1,
+        total: 2,
+        status: 'passed',
+        success: true,
+        exitCode: 0,
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        duration: 100,
+      },
+      {
+        networkAlias: 'suite-b',
+        sequence: 2,
+        total: 2,
+        status: 'passed',
+        success: true,
+        exitCode: 0,
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        duration: 120,
+      },
+    ]
+
+    const spy = jest.spyOn(starter, 'createE2eContainer')
+    spy.mockResolvedValueOnce(records[0]).mockResolvedValueOnce(records[1])
+
+    const config: PlatformConfig = {
+      container: {
+        e2e: [
+          { image: 'img-a', networkAlias: 'suite-a' },
+          { image: 'img-b', networkAlias: 'suite-b' },
+        ],
+      },
+    }
+
+    const result = await starter.startE2eContainers(config)
+
+    expect(result).toEqual(records)
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenNthCalledWith(1, config.container!.e2e![0], false, undefined, 1, 2)
+    expect(spy).toHaveBeenNthCalledWith(2, config.container!.e2e![1], false, undefined, 2, 2)
+  })
+
+  it('should continue with next e2e container when one execution fails', async () => {
+    const spy = jest.spyOn(starter, 'createE2eContainer')
+    spy
+      .mockResolvedValueOnce({
+        networkAlias: 'suite-a',
+        sequence: 1,
+        total: 2,
+        status: 'failed_timeout',
+        success: false,
+        errorMessage: 'startup timeout',
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        duration: 100,
+      })
+      .mockResolvedValueOnce({
+        networkAlias: 'suite-b',
+        sequence: 2,
+        total: 2,
+        status: 'passed',
+        success: true,
+        exitCode: 0,
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        duration: 90,
+      })
+
+    const config: PlatformConfig = {
+      container: {
+        e2e: [
+          { image: 'img-a', networkAlias: 'suite-a' },
+          { image: 'img-b', networkAlias: 'suite-b' },
+        ],
+      },
+    }
+
+    const result = await starter.startE2eContainers(config)
+
+    expect(result).toHaveLength(2)
+    expect(result?.[0].success).toBe(false)
+    expect(result?.[1].success).toBe(true)
+  })
+
+  it('should return empty list when e2e array is empty', async () => {
+    const config: PlatformConfig = {
+      container: {
+        e2e: [],
+      },
+    }
+
+    const result = await starter.startE2eContainers(config)
+    expect(result).toEqual([])
+  })
+
+  it('should not start next e2e container when shouldContinue returns false', async () => {
+    const spy = jest.spyOn(starter, 'createE2eContainer')
+    spy.mockResolvedValueOnce({
+      networkAlias: 'suite-a',
+      sequence: 1,
+      total: 2,
+      status: 'passed',
+      success: true,
+      exitCode: 0,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      duration: 90,
+    })
+
+    const config: PlatformConfig = {
+      container: {
+        e2e: [
+          { image: 'img-a', networkAlias: 'suite-a' },
+          { image: 'img-b', networkAlias: 'suite-b' },
+        ],
+      },
+    }
+
+    let invocation = 0
+    const shouldContinue = () => {
+      invocation += 1
+      return invocation <= 1
+    }
+
+    const result = await starter.startE2eContainers(config, shouldContinue)
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(result).toHaveLength(1)
+    expect(result?.[0].networkAlias).toBe('suite-a')
+  })
+
+  it('should mark execution as failed_exit_code when container exits non-zero', async () => {
+    mockImageResolver.getImage.mockResolvedValue('resolved-e2e-image')
+    ;(E2eContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetworkAliases: jest.fn().mockReturnThis(),
+      withOutputAlias: jest.fn().mockReturnThis(),
+      withEnvironment: jest.fn().mockReturnThis(),
+      withBaseUrl: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      withNetwork: jest.fn().mockReturnThis(),
+      withStartupTimeout: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue({ getExitCode: jest.fn().mockResolvedValue(7) }),
+    }))
+
+    const result = await starter.createE2eContainer(
+      {
+        image: 'e2e-image',
+        networkAlias: 'e2e-runner',
+      },
+      false,
+      undefined,
+      1,
+      1
+    )
+
+    expect(result.status).toBe('failed_exit_code')
+    expect(result.exitCode).toBe(7)
+    expect(result.success).toBe(false)
+  })
+
+  it('should mark execution as failed_wait when exit code is unavailable', async () => {
+    mockImageResolver.getImage.mockResolvedValue('resolved-e2e-image')
+    ;(E2eContainer as unknown as jest.Mock).mockImplementation(() => ({
+      withNetworkAliases: jest.fn().mockReturnThis(),
+      withOutputAlias: jest.fn().mockReturnThis(),
+      withEnvironment: jest.fn().mockReturnThis(),
+      withBaseUrl: jest.fn().mockReturnThis(),
+      withLoggingEnabled: jest.fn().mockReturnThis(),
+      withNetwork: jest.fn().mockReturnThis(),
+      withStartupTimeout: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue({ getExitCode: jest.fn().mockResolvedValue(undefined) }),
+    }))
+
+    const result = await starter.createE2eContainer(
+      {
+        image: 'e2e-image',
+        networkAlias: 'e2e-runner',
+      },
+      false,
+      undefined,
+      1,
+      1
+    )
+
+    expect(result.status).toBe('failed_wait')
+    expect(result.exitCode).toBeUndefined()
+    expect(result.success).toBe(false)
   })
 })

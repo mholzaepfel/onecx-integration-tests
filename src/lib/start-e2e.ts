@@ -25,8 +25,8 @@ async function main(): Promise<number> {
 
   // Validate E2E is configured
   if (!manager.hasE2eConfig()) {
-    logger.error('No E2E container configured in the platform configuration')
-    return 1
+    logger.warn('No E2E containers configured in the platform configuration')
+    return 0
   }
 
   let exitCode = 1
@@ -46,17 +46,21 @@ async function main(): Promise<number> {
 
     // Run E2E (last container)
     logger.info('Starting E2E tests...')
-    const result = await manager.startE2eContainer()
+    const results = await manager.startE2eContainers()
 
-    if (result) {
+    if (results) {
+      const succeeded = results.filter((entry) => entry.success).length
+      const failed = results.length - succeeded
+
       logger.info('═'.repeat(70))
-      logger.info(`E2E Tests: ${result.success ? '✅ PASSED' : '❌ FAILED'}`)
-      logger.info(`Exit Code: ${result.exitCode}`)
-      logger.info(`Duration:  ${Math.round(result.duration / 1000)}s`)
+      logger.info(`E2E Total:      ${results.length}`)
+      logger.info(`E2E Succeeded:  ${succeeded}`)
+      logger.info(`E2E Failed:     ${failed}`)
       logger.info('═'.repeat(70))
-      exitCode = result.exitCode
+
+      exitCode = failed > 0 ? 1 : 0
     } else {
-      exitCode = 1
+      exitCode = 0
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)

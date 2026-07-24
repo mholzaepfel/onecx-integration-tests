@@ -28,6 +28,7 @@ const mockHealthChecker = {
 
 const mockUserStarter = {
   createAndStartContainers: jest.fn(),
+  startE2eContainers: jest.fn(),
 }
 
 jest.mock('./json-validator', () => ({
@@ -170,6 +171,49 @@ describe('PlatformManager', () => {
       await expect(platformManager.checkAllHealthy()).rejects.toThrow(
         'HealthChecker not initialized. Call startContainers first.'
       )
+    })
+  })
+
+  describe('e2e configuration and execution', () => {
+    it('should return false for hasE2eConfig when e2e array is empty', () => {
+      mockValidator.validateConfigFile.mockReturnValue({
+        isValid: true,
+        config: { container: { e2e: [] } } as unknown as PlatformConfig,
+      })
+
+      platformManager = new PlatformManager()
+      expect(platformManager.hasE2eConfig()).toBe(false)
+    })
+
+    it('should delegate startE2eContainers to UserDefinedContainerStarter', async () => {
+      const executionRecords = [
+        {
+          networkAlias: 'suite-a',
+          sequence: 1,
+          total: 1,
+          status: 'passed',
+          success: true,
+          exitCode: 0,
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+          duration: 10,
+        },
+      ]
+
+      mockValidator.validateConfigFile.mockReturnValue({
+        isValid: true,
+        config: {
+          container: { e2e: [{ image: 'suite-image', networkAlias: 'suite-a' }] },
+        } as unknown as PlatformConfig,
+      })
+
+      mockUserStarter.startE2eContainers.mockResolvedValue(executionRecords)
+      platformManager = new PlatformManager()
+      await platformManager.startContainers()
+
+      const result = await platformManager.startE2eContainers()
+      expect(mockUserStarter.startE2eContainers).toHaveBeenCalled()
+      expect(result).toEqual(executionRecords)
     })
   })
 })

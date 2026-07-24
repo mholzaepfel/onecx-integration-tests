@@ -3,7 +3,7 @@ import * as path from 'path'
 import { ArtifactsManager } from './artifacts/artifacts-manager'
 import { CliOptions } from './types/cli-options.interface'
 import { RunSummary } from './types/run-summary.interface'
-import { E2eExecutionResult } from './types/results.interface'
+import { E2eAggregateResult, E2eExecutionReport, E2eExecutionResult } from './types/results.interface'
 import { ContainerWithLogs } from './types/container-logs.interface'
 import { PlatformConfig } from '../lib/models/interfaces/platform-config.interface'
 import { Logger, LoggerLevel } from '../lib/utils/logger'
@@ -31,6 +31,9 @@ export class IntegrationTestsRunner {
   private containerLogWriter?: fs.WriteStream
   private containerLogStreams: NodeJS.ReadableStream[] = []
   private restoreTerminalStreams?: () => void
+  private interruptedSignal?: string
+  private sigintHandler?: () => void
+  private sigtermHandler?: () => void
 
   constructor(options: CliOptions, platformFactory?: () => PlatformRuntime) {
     this.options = options
@@ -71,17 +74,25 @@ export class IntegrationTestsRunner {
       }
 
       await this.executePlatformFlow()
-      const e2eResult = await this.runE2e()
+      const e2eReport = await this.runE2eSequence()
+      if (e2eReport) {
+        this.artifacts.writeE2eExecutions(e2eReport)
+      }
 
       this.log('info', 'Collecting artifacts...')
       this.artifacts.copyE2eResults()
 
       await this.cleanup()
-      return this.finalizeByE2eResult(e2eResult)
+      return this.finalizeByE2eResult(e2eReport)
     } catch (error) {
       this.log('error', `Error: ${error}`)
       await this.cleanup()
-      return this.finalize(IntegrationTestsRunner.EXIT_FAILURE, 'error')
+      return this.finalize(
+        IntegrationTestsRunner.EXIT_FAILURE,
+        this.interruptedSignal ? 'failure' : 'error',
+        undefined,
+        this.interruptedSignal
+      )
     }
   }
 
@@ -110,9 +121,12 @@ export class IntegrationTestsRunner {
   }
 
   private async executePlatformFlow(): Promise<void> {
+    this.throwIfInterrupted()
+
     this.log('info', 'Starting platform...')
     await this.platformRuntime.startContainers()
 
+    this.throwIfInterrupted()
     await this.platformRuntime.exportPlatformInfo()
 
     this.log('info', 'Waiting for platform health checks...')
@@ -122,33 +136,58 @@ export class IntegrationTestsRunner {
     await this.startContainerLogCapture()
   }
 
-  private async runE2e(): Promise<E2eExecutionResult | undefined> {
+  private async runE2eSequence(): Promise<E2eExecutionReport | undefined> {
+    this.throwIfInterrupted()
+
     this.log('info', 'Starting E2E tests...')
-    const result = await this.platformRuntime.startE2eContainer()
-    if (!result) {
+    const results = await this.platformRuntime.startE2eContainers(() => !this.interruptedSignal)
+    if (!results) {
       return undefined
     }
 
-    const e2eResult: E2eExecutionResult = {
-      exitCode: result.exitCode,
-      success: result.success,
-      durationMs: result.duration,
+    const e2eExecutions: E2eExecutionResult[] = results.map((record) => ({
+      networkAlias: record.networkAlias,
+      sequence: record.sequence,
+      total: record.total,
+      status: record.status,
+      success: record.success,
+      exitCode: record.exitCode,
+      errorMessage: record.errorMessage,
+      startedAt: record.startedAt,
+      finishedAt: record.finishedAt,
+      durationMs: record.duration,
+    }))
+
+    for (const record of e2eExecutions) {
+      const prefix = `E2E ${record.sequence}/${record.total} (${record.networkAlias})`
+      const detail = record.exitCode !== undefined ? `exit=${record.exitCode}` : record.errorMessage ?? 'no-exit-code'
+      const message = `${prefix} -> ${record.status} (${detail})`
+      this.log(record.success ? 'info' : 'error', message)
+    }
+
+    const succeeded = e2eExecutions.filter((entry) => entry.success).length
+    const aggregate: E2eAggregateResult = {
+      total: e2eExecutions.length,
+      succeeded,
+      failed: e2eExecutions.length - succeeded,
+      finalStatus: e2eExecutions.length - succeeded > 0 ? 'failure' : 'success',
     }
 
     this.log(
-      result.success ? 'info' : 'error',
-      `E2E tests ${result.success ? 'passed' : 'failed'} (exit ${result.exitCode}, ${Math.round(
-        result.duration / 1000
-      )}s)`
+      aggregate.failed > 0 ? 'error' : 'info',
+      `E2E summary: total=${aggregate.total}, succeeded=${aggregate.succeeded}, failed=${aggregate.failed}`
     )
 
-    return e2eResult
+    return {
+      records: e2eExecutions,
+      aggregate,
+    }
   }
 
-  private finalizeByE2eResult(e2eResult?: E2eExecutionResult): number {
-    const successfulRun = e2eResult?.success !== false
+  private finalizeByE2eResult(e2eReport?: E2eExecutionReport): number {
+    const successfulRun = (e2eReport?.aggregate.failed ?? 0) === 0 && !this.interruptedSignal
     const exitCode = successfulRun ? IntegrationTestsRunner.EXIT_SUCCESS : IntegrationTestsRunner.EXIT_FAILURE
-    return this.finalize(exitCode, successfulRun ? 'success' : 'failure', e2eResult)
+    return this.finalize(exitCode, successfulRun ? 'success' : 'failure', e2eReport, this.interruptedSignal)
   }
 
   private loadConfig(): PlatformConfig | undefined {
@@ -179,12 +218,14 @@ export class IntegrationTestsRunner {
 
     await this.logger.close()
     await Logger.closeGlobalWriter()
+    this.removeSignalHandlers()
   }
 
   private finalize(
     exitCode: number,
     status: 'success' | 'failure' | 'timeout' | 'error',
-    e2eResult?: E2eExecutionResult
+    e2eReport?: E2eExecutionReport,
+    interruptedBy?: string
   ): number {
     const durationMs = Date.now() - this.startTime
 
@@ -196,7 +237,9 @@ export class IntegrationTestsRunner {
       exitCode,
       status,
       mode: 'e2e',
-      e2eResult,
+      e2eExecutions: e2eReport?.records,
+      e2eAggregate: e2eReport?.aggregate,
+      interruptedBy: interruptedBy === 'SIGINT' || interruptedBy === 'SIGTERM' ? interruptedBy : undefined,
     }
 
     this.artifacts.writeSummary(summary)
@@ -209,6 +252,14 @@ export class IntegrationTestsRunner {
     console.log(`  Status:         ${status.toUpperCase()}`)
     console.log(`  Duration:       ${Math.round(durationMs / 1000)}s`)
     console.log(`  Exit Code:      ${exitCode}`)
+    if (e2eReport?.aggregate) {
+      console.log(`  E2E Total:      ${e2eReport.aggregate.total}`)
+      console.log(`  E2E Succeeded:  ${e2eReport.aggregate.succeeded}`)
+      console.log(`  E2E Failed:     ${e2eReport.aggregate.failed}`)
+    }
+    if (interruptedBy) {
+      console.log(`  Interrupted By: ${interruptedBy}`)
+    }
     console.log('─'.repeat(65))
     console.log(`  Artifacts Dir:  ${this.artifacts.getRunDir()}`)
     if (this.options.captureLogsToFile) {
@@ -217,18 +268,40 @@ export class IntegrationTestsRunner {
     }
     console.log('═'.repeat(65))
 
+    this.removeSignalHandlers()
+
     return exitCode
   }
 
   private setupSignalHandlers(): void {
-    const handler = async (signal: string) => {
-      this.log('info', `Received ${signal}, shutting down...`)
-      await this.cleanup()
-      process.exit(IntegrationTestsRunner.EXIT_SUCCESS)
+    const handler = (signal: 'SIGINT' | 'SIGTERM') => {
+      this.interruptedSignal = signal
+      this.log('warn', `Received ${signal}; runner will stop after current step and finalize safely`)
     }
 
-    process.on('SIGINT', () => handler('SIGINT'))
-    process.on('SIGTERM', () => handler('SIGTERM'))
+    this.sigintHandler = () => handler('SIGINT')
+    this.sigtermHandler = () => handler('SIGTERM')
+
+    process.on('SIGINT', this.sigintHandler)
+    process.on('SIGTERM', this.sigtermHandler)
+  }
+
+  private throwIfInterrupted(): void {
+    if (this.interruptedSignal) {
+      throw new Error(`Interrupted by ${this.interruptedSignal}`)
+    }
+  }
+
+  private removeSignalHandlers(): void {
+    if (this.sigintHandler) {
+      process.off('SIGINT', this.sigintHandler)
+      this.sigintHandler = undefined
+    }
+
+    if (this.sigtermHandler) {
+      process.off('SIGTERM', this.sigtermHandler)
+      this.sigtermHandler = undefined
+    }
   }
 
   private log(level: LoggerLevel, message: string): void {

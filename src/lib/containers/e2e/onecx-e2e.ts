@@ -4,7 +4,7 @@ import Dockerode from 'dockerode'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
-import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
+import { getE2eOutputPath, getE2eOutputPathForAlias, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
 
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
@@ -17,6 +17,7 @@ export class E2eContainer extends GenericContainer {
   protected logFilePath?: string
 
   private baseUrl = ''
+  private outputAlias?: string
 
   /**
    * Create an E2E container
@@ -53,6 +54,11 @@ export class E2eContainer extends GenericContainer {
     return this
   }
 
+  withOutputAlias(networkAlias: string): this {
+    this.outputAlias = networkAlias
+    return this
+  }
+
   override async start(): Promise<StartedE2eContainer> {
     // Pass BASE_URL environment variable if configured
     if (this.baseUrl) {
@@ -60,7 +66,8 @@ export class E2eContainer extends GenericContainer {
     }
 
     // Mount resolved output directory for E2E results
-    const outputPath = getE2eOutputPath()
+    const outputPath = this.outputAlias ? getE2eOutputPathForAlias(this.outputAlias) : getE2eOutputPath()
+    fs.mkdirSync(outputPath, { recursive: true })
     this.withBindMounts([
       {
         source: outputPath,
@@ -109,14 +116,14 @@ export class StartedE2eContainer extends AbstractStartedContainer implements Hea
    * Get the exit code from the stopped container
    * Since we use Wait.forOneShotStartup(), the container has already exited when start() completes
    */
-  async getExitCode(): Promise<number> {
+  async getExitCode(): Promise<number | undefined> {
     try {
       const dockerode = new Dockerode()
       const dockerContainer = dockerode.getContainer(this.getId())
       const inspectData = await dockerContainer.inspect()
       return inspectData.State.ExitCode
     } catch {
-      return 1 // Return error code if inspection fails
+      return undefined
     }
   }
 }

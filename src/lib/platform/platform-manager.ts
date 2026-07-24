@@ -2,7 +2,7 @@ import { Network, StartedNetwork } from 'testcontainers'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import { CONTAINER } from '../models/enums/container.enum'
 import { PlatformConfig } from '../models/interfaces/platform-config.interface'
-import { E2eResult } from '../models/interfaces/e2e.interface'
+import { E2eExecutionRecord } from '../models/interfaces/e2e.interface'
 import { ImageResolver } from './image-resolver'
 import { HealthChecker } from './health-checker'
 import { CoreContainerStarter } from './core-container-starter'
@@ -311,16 +311,15 @@ export class PlatformManager implements PlatformRuntime {
    */
   hasE2eConfig(): boolean {
     const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
-    return !!config.container?.e2e
+    return (config.container?.e2e?.length ?? 0) > 0
   }
 
   /**
    * Run E2E tests if configured
    * This should be called after all containers are healthy
-   * The E2E container will be started as the last container
-   * @returns E2E result with exit code, or undefined if no E2E configured
+   * @returns Ordered E2E execution records, or undefined if no E2E configured
    */
-  async startE2eContainer(): Promise<E2eResult | undefined> {
+  async startE2eContainers(shouldContinue: () => boolean = () => true): Promise<E2eExecutionRecord[] | undefined> {
     const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
 
     if (!config.container?.e2e) {
@@ -344,7 +343,7 @@ export class PlatformManager implements PlatformRuntime {
       )
     }
 
-    return await this.UserDefinedContainerStarter.startE2eContainer(config)
+    return await this.UserDefinedContainerStarter.startE2eContainers(config, shouldContinue)
   }
 
   /**

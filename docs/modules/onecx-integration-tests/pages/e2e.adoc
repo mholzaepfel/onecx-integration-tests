@@ -10,9 +10,9 @@ This page explains how to configure and trigger E2E test execution, what platfor
 
 E2E execution is configuration-driven.
 
-When `platformConfig.container.e2e` exists, the runner starts the platform, waits for health checks, starts the E2E container, collects results, and shuts down all resources.
+When `platformConfig.container.e2e` contains entries, the runner starts the platform, waits for health checks, executes E2E containers sequentially in array order, collects all results, and then shuts down all resources.
 
-The E2E container is executed after the platform is ready.
+Only one E2E container runs at a time.
 
 == Prerequisites
 
@@ -30,10 +30,12 @@ Minimal E2E configuration:
 {
 	"platformConfig": {
 		"container": {
-			"e2e": {
-				"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
-				"networkAlias": "shell-e2e"
-			}
+			"e2e": [
+				{
+					"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
+					"networkAlias": "shell-e2e"
+				}
+			]
 		}
 	}
 }
@@ -87,11 +89,12 @@ Key paths:
 
 * `summary.json`
 * `e2e/platform-info.json`
+* `e2e/e2e-executions.json`
 * `e2e-results/`
 * `logs/runner-output.log`
 * `logs/containers.log` when `--capture-logs` is enabled
 
-Use `summary.json` as the first source for pass or fail state and exit code.
+Use `summary.json` as the first source for pass/fail state and aggregate E2E result counters.
 
 == Troubleshooting
 
