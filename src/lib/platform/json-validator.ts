@@ -218,6 +218,7 @@ export class PlatformConfigJsonValidator {
 
     e2eEntries.forEach((entry, index) => {
       const alias = entry.networkAlias
+
       const indices = aliasToIndices.get(alias) ?? []
       indices.push(index)
       aliasToIndices.set(alias, indices)
