@@ -65,10 +65,20 @@ export class PlatformConfigJsonValidator {
         }
       }
 
+      const platformConfig = (config as { platformConfig: PlatformConfig }).platformConfig
+      const semanticErrors = this.validateE2eAliases(platformConfig)
+      if (semanticErrors.length > 0) {
+        logger.error(`${LogMessages.CONFIG_LOAD_ERROR}: ${configPath}`, undefined, semanticErrors)
+        return {
+          isValid: false,
+          errors: semanticErrors,
+        }
+      }
+
       logger.success(`${LogMessages.CONFIG_LOAD_SUCCESS}: ${configPath}`)
       return {
         isValid: true,
-        config: (config as { platformConfig: PlatformConfig }).platformConfig,
+        config: platformConfig,
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown validation error'
@@ -190,6 +200,38 @@ export class PlatformConfigJsonValidator {
 
       return `${instancePath}: ${message}${allowedValues}`
     })
+  }
+
+  /**
+   * Check for duplicate E2E network aliases.
+   * We deliberately scope this to E2E entries to avoid unintentionally changing
+   * validation behavior for service/bff/ui aliases that share the same schema definition.
+   */
+  private validateE2eAliases(config: PlatformConfig): string[] {
+    const e2eEntries = config.container?.e2e
+    if (!e2eEntries || e2eEntries.length === 0) {
+      return []
+    }
+
+    const errors: string[] = []
+    const aliasToIndices = new Map<string, number[]>()
+
+    e2eEntries.forEach((entry, index) => {
+      const alias = entry.networkAlias
+      const indices = aliasToIndices.get(alias) ?? []
+      indices.push(index)
+      aliasToIndices.set(alias, indices)
+    })
+
+    for (const [alias, indices] of aliasToIndices.entries()) {
+      if (indices.length > 1) {
+        errors.push(
+          `/platformConfig/container/e2e: duplicate networkAlias '${alias}' at indices [${indices.join(', ')}]`
+        )
+      }
+    }
+
+    return errors
   }
 
   /**

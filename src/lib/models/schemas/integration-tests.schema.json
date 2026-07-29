@@ -131,7 +131,10 @@
           }
         },
         "e2e": {
-          "$ref": "#/definitions/e2eContainer",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/e2eContainer"
+          },
           "description": "E2E test container (e.g., Playwright)"
         }
       }

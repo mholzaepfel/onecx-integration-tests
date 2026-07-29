@@ -54,7 +54,7 @@ npm run it:run -- --help
 
 ## Runner behavior
 
-- **E2E mode**: If `platformConfig.container.e2e` exists, the runner starts the platform, waits for health checks, runs E2E, then shuts down.
+- **E2E mode**: If `platformConfig.container.e2e` contains entries, the runner starts the platform, waits for health checks, runs E2E containers sequentially in array order, then shuts down.
 - **Platform-only mode**: If no E2E container is configured, the runner starts and validates the platform, collects artifacts, then shuts down.
 - **Dry-run mode** (`--dry-run`): Validates and resolves configuration, determines run mode, creates run artifact directories, and exits without starting containers.
 
@@ -89,11 +89,12 @@ Each run creates a directory under:
 
 Typical output:
 
-- `summary.json` – run metadata (status, duration, mode, exit code)
+- `summary.json` – run metadata (status, duration, mode, exit code, `e2eExecutions`, `e2eAggregate`)
 - `logs/runner-output.log` – runner logs (with `--capture-logs`)
 - `logs/containers.log` – captured stdout/stderr and container streams (written when `--capture-logs` is enabled)
 - `reports/` – generated reports
 - `e2e/` – runtime metadata (for example `platform-info.json`)
+- `e2e/e2e-executions.json` – ordered E2E execution records plus aggregate counters
 - `e2e-results/` – E2E result files
 
 Additional generated runtime metadata may be exported by the platform runtime to the same run artifacts directory.
