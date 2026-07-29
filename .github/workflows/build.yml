@@ -17,4 +17,4 @@ jobs:
 
       - name: Run Build
         run: |
-          npx nx build
+          npm run build

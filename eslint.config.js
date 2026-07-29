@@ -1,15 +1,28 @@
-const nx = require('@nx/eslint-plugin')
+const js = require('@eslint/js')
+const tseslint = require('typescript-eslint')
+const eslintConfigPrettier = require('eslint-config-prettier')
 
 module.exports = [
-  ...nx.configs['flat/base'],
-  ...nx.configs['flat/typescript'],
-  ...nx.configs['flat/javascript'],
   {
-    ignores: ['**/dist', 'node_modules', 'src/app/shared/generated'],
+    ignores: ['**/dist', '**/coverage', '**/reports', 'node_modules', 'src/app/shared/generated'],
   },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    // Override or add rules here
-    rules: {},
+    files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        require: 'readonly',
+        module: 'readonly',
+        __dirname: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
   },
+  eslintConfigPrettier,
 ]

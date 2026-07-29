@@ -150,7 +150,7 @@ export class Logger {
   private formatMessage(level: string, message: string, context?: string): string {
     const timestamp = this.formatTimestamp()
     const contextPart = context ? ` - (${context})` : ''
-    return `[${level}] [${this.className}] ${message}${contextPart}`
+    return `[${timestamp}] [${level}] [${this.className}] ${message}${contextPart}`
   }
 
   private formatTerminalMessage(level: string, message: string, context?: string): string {
