@@ -1,13 +1,8 @@
 /**
  * Normalized execution status for one E2E container run.
+ * Re-exported from lib to avoid a second independent definition.
  */
-export type E2eExecutionStatus =
-  | 'passed'
-  | 'failed_exit_code'
-  | 'failed_startup'
-  | 'failed_wait'
-  | 'failed_timeout'
-  | 'failed_unexpected'
+export type { E2eExecutionStatus } from '../../lib/models/interfaces/e2e.interface'
 
 export interface E2eExecutionResult {
   networkAlias: string

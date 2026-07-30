@@ -20,7 +20,7 @@ Before running E2E:
 
 * Install Node.js, npm, and Docker
 * Provide a valid `platform.json`
-* Configure `platformConfig.container.e2e.image` and `platformConfig.container.e2e.networkAlias`
+* Configure at least one entry in `platformConfig.container.e2e` with `image` and `networkAlias`
 * Ensure the E2E image can access Shell UI and Keycloak over the Docker network
 
 Minimal E2E configuration:

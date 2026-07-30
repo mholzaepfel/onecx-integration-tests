@@ -122,7 +122,7 @@ export class E2eExecutionHandler {
     if (message.includes('wait')) {
       return 'failed_wait'
     }
-    if (message.includes('start') || message.includes('startup')) {
+    if (message.includes('start')) {
       return 'failed_startup'
     }
 

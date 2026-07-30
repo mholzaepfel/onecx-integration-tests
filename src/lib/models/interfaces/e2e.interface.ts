@@ -43,12 +43,3 @@ export interface E2eExecutionRecord {
   duration: number
 }
 
-/**
- * Aggregated execution outcome across all configured E2E containers.
- */
-export interface E2eExecutionSummary {
-  total: number
-  succeeded: number
-  failed: number
-  finalStatus: 'success' | 'failure'
-}

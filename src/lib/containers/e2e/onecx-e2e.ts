@@ -62,6 +62,9 @@ export class E2eContainer extends GenericContainer {
     // Mount output directory for E2E results
     // Use networkAlias as subdirectory name
     const networkAlias = this.networkAliases[0]
+    if (!networkAlias) {
+      throw new Error('E2E container requires at least one network alias')
+    }
     const outputPath = path.resolve(getE2eOutputPath(), networkAlias)
     fs.mkdirSync(outputPath, { recursive: true })
     this.withBindMounts([

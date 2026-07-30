@@ -135,7 +135,7 @@
           "items": {
             "$ref": "#/definitions/e2eContainer"
           },
-          "description": "E2E test container (e.g., Playwright)"
+          "description": "Array of E2E test containers (e.g., Playwright)"
         }
       }
     },
