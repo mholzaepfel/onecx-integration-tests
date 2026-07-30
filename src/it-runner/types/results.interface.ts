@@ -1,8 +1,9 @@
+import { E2eExecutionStatus } from '../../lib/models/interfaces/e2e.interface'
+
 /**
  * Normalized execution status for one E2E container run.
  * Re-exported from lib to avoid a second independent definition.
  */
-export type { E2eExecutionStatus } from '../../lib/models/interfaces/e2e.interface'
 
 export interface E2eExecutionResult {
   networkAlias: string
