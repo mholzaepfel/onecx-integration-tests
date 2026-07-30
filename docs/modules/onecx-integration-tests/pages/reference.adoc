@@ -84,9 +84,6 @@ npm run it:run -- --verbose --capture-logs
 
 | `ARTIFACTS_ROOT`
 | Runtime artifact root set by run context
-
-| `CONFIG_PATH`
-| Optional config path used by `start-e2e.ts`
 |===
 
 == Run Artifacts

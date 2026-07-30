@@ -57,13 +57,6 @@ Use dry-run to validate setup without starting containers:
 npm run it:run -- --dry-run
 ----
 
-The standalone entry point also supports `--config` and `CONFIG_PATH`:
-
-[source,bash]
-----
-CONFIG_PATH=integration-tests/platform/platform.json npx tsx src/lib/start-e2e.ts
-----
-
 == Platform Metadata for E2E
 
 During startup, the runtime exports platform metadata to:
@@ -100,7 +93,7 @@ Use `summary.json` as the first source for pass/fail state and aggregate E2E res
 
 Common checks:
 
-* Verify `platformConfig.container.e2e` exists
+* Verify `platformConfig.container.e2e` contains at least one entry
 * Confirm the E2E image is available in your registry
 * Check `e2e/platform-info.json` for expected URLs
 * Review `logs/containers.log` for startup and health-check failures
