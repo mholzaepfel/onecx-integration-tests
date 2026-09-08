@@ -56,6 +56,6 @@ export interface PlatformConfig {
     service?: SvcContainerInterface[]
     bff?: BffContainerInterface[]
     ui?: UiContainerInterface[]
-    e2e?: E2eContainerInterface
+    e2e?: E2eContainerInterface[]
   }
 }

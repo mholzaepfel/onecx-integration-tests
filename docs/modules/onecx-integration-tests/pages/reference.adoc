@@ -84,9 +84,6 @@ npm run it:run -- --verbose --capture-logs
 
 | `ARTIFACTS_ROOT`
 | Runtime artifact root set by run context
-
-| `CONFIG_PATH`
-| Optional config path used by `start-e2e.ts`
 |===
 
 == Run Artifacts
@@ -107,6 +104,7 @@ integration-tests/artifacts/<run-id>/
 	reports/
 	e2e/
 		platform-info.json
+		e2e-executions.json
 	e2e-results/
 ----
 
@@ -119,7 +117,11 @@ integration-tests/artifacts/<run-id>/
 * `exitCode`
 * `status`
 * `mode`
-* `e2eResult`
+* `e2eExecutions`
+* `e2eAggregate`
+* `interruptedBy` when the runner stopped after `SIGINT` or `SIGTERM`
+
+The `e2eExecutions` and `e2eAggregate` fields replace the former singular E2E result shape. Consumers that read `summary.json` must use the new fields.
 
 == Troubleshooting Quick Checks
 

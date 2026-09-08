@@ -1,15 +1,17 @@
 import { GenericContainer, StartedTestContainer, AbstractStartedContainer, Wait } from 'testcontainers'
 import * as fs from 'fs'
+import * as path from 'path'
 import Dockerode from 'dockerode'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
+import { validateNetworkAlias } from '../../utils/network-alias.utils'
 
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
  * The container is expected to exit with code 0 (success) or 1 (failure).
- * Results are written to the resolved E2E output directory.
+ * Results are written to a subdirectory named after the container's networkAlias.
  */
 export class E2eContainer extends GenericContainer {
   protected loggingEnabled = false
@@ -21,7 +23,6 @@ export class E2eContainer extends GenericContainer {
   /**
    * Create an E2E container
    * @param image Resolved Docker image name
-   * @param config E2E container configuration (networkAlias, baseUrl)
    */
   constructor(image: string) {
     super(image)
@@ -59,8 +60,15 @@ export class E2eContainer extends GenericContainer {
       this.withEnvironment({ BASE_URL: this.baseUrl })
     }
 
-    // Mount resolved output directory for E2E results
-    const outputPath = getE2eOutputPath()
+    // Mount output directory for E2E results
+    // Use networkAlias as subdirectory name
+    const networkAlias = this.networkAliases[0]
+    if (!networkAlias) {
+      throw new Error('E2E container requires at least one network alias')
+    }
+    validateNetworkAlias(networkAlias, 'E2E container')
+    const outputPath = path.resolve(getE2eOutputPath(), networkAlias)
+    fs.mkdirSync(outputPath, { recursive: true })
     this.withBindMounts([
       {
         source: outputPath,
@@ -109,14 +117,14 @@ export class StartedE2eContainer extends AbstractStartedContainer implements Hea
    * Get the exit code from the stopped container
    * Since we use Wait.forOneShotStartup(), the container has already exited when start() completes
    */
-  async getExitCode(): Promise<number> {
+  async getExitCode(): Promise<number | undefined> {
     try {
       const dockerode = new Dockerode()
       const dockerContainer = dockerode.getContainer(this.getId())
       const inspectData = await dockerContainer.inspect()
       return inspectData.State.ExitCode
     } catch {
-      return 1 // Return error code if inspection fails
+      return undefined
     }
   }
 }

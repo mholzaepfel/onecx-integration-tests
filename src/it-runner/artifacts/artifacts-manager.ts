@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { RunSummary } from '../types/run-summary.interface'
+import { E2eExecutionReport } from '../types/results.interface'
 import { E2E_OUTPUT_DIR, getE2eOutputPath } from '../../lib/config/e2e-constants'
 import { resolveArtifactsRoot, resolveRunArtifactsDir } from '../../lib/config/artifacts'
 
@@ -98,6 +99,15 @@ export class ArtifactsManager {
   writeSummary(summary: RunSummary): void {
     const summaryPath = path.join(this.runDir, 'summary.json')
     fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2))
+  }
+
+  /**
+   * Write ordered E2E execution records and aggregate summary.
+   */
+  writeE2eExecutions(result: E2eExecutionReport): void {
+    const outputPath = path.join(this.runDir, 'e2e', 'e2e-executions.json')
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+    fs.writeFileSync(outputPath, JSON.stringify(result, null, 2))
   }
 
   /**

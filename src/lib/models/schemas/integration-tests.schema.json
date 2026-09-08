@@ -131,8 +131,12 @@
           }
         },
         "e2e": {
-          "$ref": "#/definitions/e2eContainer",
-          "description": "E2E test container (e.g., Playwright)"
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/e2eContainer"
+          },
+          "description": "Array of E2E test containers (e.g., Playwright)"
         }
       }
     },
@@ -238,6 +242,7 @@
     },
     "networkAlias": {
       "type": "string",
+      "pattern": "^(?!.*\\.\\.)[a-zA-Z0-9._-]+$",
       "description": "Network alias for the container"
     },
     "baseContainer": {

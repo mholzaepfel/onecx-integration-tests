@@ -10,9 +10,11 @@ This page explains how to configure and trigger E2E test execution, what platfor
 
 E2E execution is configuration-driven.
 
-When `platformConfig.container.e2e` exists, the runner starts the platform, waits for health checks, starts the E2E container, collects results, and shuts down all resources.
+When `platformConfig.container.e2e` contains entries, the runner starts the platform, waits for health checks, executes E2E containers sequentially in array order, collects all results, and then shuts down all resources.
 
-The E2E container is executed after the platform is ready.
+Only one E2E container runs at a time.
+
+If the process receives `SIGINT` or `SIGTERM`, the runner finishes the current container, skips remaining E2E containers, cleans up the platform, and writes the received signal to the `interruptedBy` field in `summary.json`.
 
 == Prerequisites
 
@@ -20,7 +22,7 @@ Before running E2E:
 
 * Install Node.js, npm, and Docker
 * Provide a valid `platform.json`
-* Configure `platformConfig.container.e2e.image` and `platformConfig.container.e2e.networkAlias`
+* Configure at least one entry in `platformConfig.container.e2e` with `image` and `networkAlias`
 * Ensure the E2E image can access Shell UI and Keycloak over the Docker network
 
 Minimal E2E configuration:
@@ -30,10 +32,12 @@ Minimal E2E configuration:
 {
 	"platformConfig": {
 		"container": {
-			"e2e": {
-				"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
-				"networkAlias": "shell-e2e"
-			}
+			"e2e": [
+				{
+					"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
+					"networkAlias": "shell-e2e"
+				}
+			]
 		}
 	}
 }
@@ -53,13 +57,6 @@ Use dry-run to validate setup without starting containers:
 [source,bash]
 ----
 npm run it:run -- --dry-run
-----
-
-The standalone entry point also supports `--config` and `CONFIG_PATH`:
-
-[source,bash]
-----
-CONFIG_PATH=integration-tests/platform/platform.json npx tsx src/lib/start-e2e.ts
 ----
 
 == Platform Metadata for E2E
@@ -87,17 +84,22 @@ Key paths:
 
 * `summary.json`
 * `e2e/platform-info.json`
+* `e2e/e2e-executions.json`
 * `e2e-results/`
 * `logs/runner-output.log`
 * `logs/containers.log` when `--capture-logs` is enabled
 
-Use `summary.json` as the first source for pass or fail state and exit code.
+Use `summary.json` as the first source for pass/fail state and aggregate E2E result counters.
+
+The summary uses `e2eExecutions` for the ordered per-container records and `e2eAggregate` for total, succeeded, failed, and final status counts. The same report is also written to `e2e/e2e-executions.json`.
+
+The former standalone `start-e2e` entry point and its `--config`/`CONFIG_PATH` options are removed. Configure E2E containers in `platformConfig.container.e2e` and run them through the integration test runner.
 
 == Troubleshooting
 
 Common checks:
 
-* Verify `platformConfig.container.e2e` exists
+* Verify `platformConfig.container.e2e` contains at least one entry
 * Confirm the E2E image is available in your registry
 * Check `e2e/platform-info.json` for expected URLs
 * Review `logs/containers.log` for startup and health-check failures

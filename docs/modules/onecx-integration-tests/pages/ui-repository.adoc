@@ -48,10 +48,12 @@ Recommended minimum structure:
 			"enabled": true
 		},
 		"container": {
-			"e2e": {
-				"image": "ghcr.io/onecx/your-ui-e2e:latest",
-				"networkAlias": "your-ui-e2e"
-			}
+			"e2e": [
+				{
+					"image": "ghcr.io/onecx/your-ui-e2e:latest",
+					"networkAlias": "your-ui-e2e"
+				}
+			]
 		}
 	}
 }
