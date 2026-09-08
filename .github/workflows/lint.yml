@@ -17,4 +17,4 @@ jobs:
 
       - name: Run Lint
         run: |
-          npx nx lint
+          npm run lint

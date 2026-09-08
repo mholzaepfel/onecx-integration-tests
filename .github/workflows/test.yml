@@ -18,7 +18,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          npx nx test --watch=false --browsers=ChromeHeadless --code-coverage
+          npm run test:ci
 
       # store github action pr number to file
       - name: Create sonar json file
