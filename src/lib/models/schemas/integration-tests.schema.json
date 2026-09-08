@@ -242,6 +242,7 @@
     },
     "networkAlias": {
       "type": "string",
+      "pattern": "^(?!.*\\.\\.)[a-zA-Z0-9._-]+$",
       "description": "Network alias for the container"
     },
     "baseContainer": {

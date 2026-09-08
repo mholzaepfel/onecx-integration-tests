@@ -6,6 +6,7 @@ import { HealthCheckableContainer } from '../../models/interfaces/health-checkab
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
+import { validateNetworkAlias } from '../../utils/network-alias.utils'
 
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
@@ -65,6 +66,7 @@ export class E2eContainer extends GenericContainer {
     if (!networkAlias) {
       throw new Error('E2E container requires at least one network alias')
     }
+    validateNetworkAlias(networkAlias, 'E2E container')
     const outputPath = path.resolve(getE2eOutputPath(), networkAlias)
     fs.mkdirSync(outputPath, { recursive: true })
     this.withBindMounts([

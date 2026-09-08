@@ -140,7 +140,7 @@ export class IntegrationTestsRunner {
     this.throwIfInterrupted()
 
     this.log('info', 'Starting E2E tests...')
-    const results = await this.platformRuntime.startE2eContainers()
+    const results = await this.platformRuntime.startE2eContainers(() => Boolean(this.interruptedSignal))
     if (!results) {
       return undefined
     }

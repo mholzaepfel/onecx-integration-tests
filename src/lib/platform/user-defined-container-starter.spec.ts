@@ -180,16 +180,16 @@ describe('UserDefinedContainerStarter', () => {
   it('should use default e2e startup timeout when timeoutMs is not configured', async () => {
     mockImageResolver.getImage.mockResolvedValue('resolved-e2e-image')
 
-    await starter.createE2eContainer(
-      {
+    await starter.createE2eContainer({
+      e2eConfig: {
         image: 'e2e-image',
         networkAlias: 'e2e-runner',
       },
-      false,
-      undefined,
-      1,
-      1
-    )
+      withLoggingEnabled: false,
+      logFilePath: undefined,
+      sequence: 1,
+      total: 1,
+    })
 
     const e2eInstance = (E2eContainer as unknown as jest.Mock).mock.results[0].value
     expect(e2eInstance.withStartupTimeout).toHaveBeenCalledWith(E2E_DEFAULT_TIMEOUT_MS)
@@ -198,17 +198,17 @@ describe('UserDefinedContainerStarter', () => {
   it('should use configured e2e startup timeout when timeoutMs is provided', async () => {
     mockImageResolver.getImage.mockResolvedValue('resolved-e2e-image')
 
-    await starter.createE2eContainer(
-      {
+    await starter.createE2eContainer({
+      e2eConfig: {
         image: 'e2e-image',
         networkAlias: 'e2e-runner',
         timeoutMs: 2_400_000,
       },
-      false,
-      undefined,
-      1,
-      1
-    )
+      withLoggingEnabled: false,
+      logFilePath: undefined,
+      sequence: 1,
+      total: 1,
+    })
 
     const e2eInstance = (E2eContainer as unknown as jest.Mock).mock.results[0].value
     expect(e2eInstance.withStartupTimeout).toHaveBeenCalledWith(2_400_000)
@@ -256,8 +256,20 @@ describe('UserDefinedContainerStarter', () => {
 
     expect(result).toEqual(records)
     expect(spy).toHaveBeenCalledTimes(2)
-    expect(spy).toHaveBeenNthCalledWith(1, config.container!.e2e![0], false, undefined, 1, 2)
-    expect(spy).toHaveBeenNthCalledWith(2, config.container!.e2e![1], false, undefined, 2, 2)
+    expect(spy).toHaveBeenNthCalledWith(1, {
+      e2eConfig: config.container!.e2e![0],
+      withLoggingEnabled: false,
+      logFilePath: undefined,
+      sequence: 1,
+      total: 2,
+    })
+    expect(spy).toHaveBeenNthCalledWith(2, {
+      e2eConfig: config.container!.e2e![1],
+      withLoggingEnabled: false,
+      logFilePath: undefined,
+      sequence: 2,
+      total: 2,
+    })
   })
 
   it('should continue with next e2e container when one execution fails', async () => {
@@ -302,6 +314,33 @@ describe('UserDefinedContainerStarter', () => {
     expect(result?.[1].success).toBe(true)
   })
 
+  it('should stop before the next e2e container when interrupted', async () => {
+    const spy = jest.spyOn(starter, 'createE2eContainer').mockResolvedValue({
+      networkAlias: 'suite-a',
+      sequence: 1,
+      total: 2,
+      status: 'passed',
+      success: true,
+      exitCode: 0,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      duration: 100,
+    })
+    const config: PlatformConfig = {
+      container: {
+        e2e: [
+          { image: 'img-a', networkAlias: 'suite-a' },
+          { image: 'img-b', networkAlias: 'suite-b' },
+        ],
+      },
+    }
+
+    const result = await starter.startE2eContainers(config, () => true)
+
+    expect(result).toEqual([])
+    expect(spy).not.toHaveBeenCalled()
+  })
+
   it('should return empty list when e2e array is empty', async () => {
     const config: PlatformConfig = {
       container: {
@@ -325,16 +364,16 @@ describe('UserDefinedContainerStarter', () => {
       start: jest.fn().mockResolvedValue({ getExitCode: jest.fn().mockResolvedValue(7) }),
     }))
 
-    const result = await starter.createE2eContainer(
-      {
+    const result = await starter.createE2eContainer({
+      e2eConfig: {
         image: 'e2e-image',
         networkAlias: 'e2e-runner',
       },
-      false,
-      undefined,
-      1,
-      1
-    )
+      withLoggingEnabled: false,
+      logFilePath: undefined,
+      sequence: 1,
+      total: 1,
+    })
 
     expect(result.status).toBe('failed_exit_code')
     expect(result.exitCode).toBe(7)
@@ -353,16 +392,16 @@ describe('UserDefinedContainerStarter', () => {
       start: jest.fn().mockResolvedValue({ getExitCode: jest.fn().mockResolvedValue(undefined) }),
     }))
 
-    const result = await starter.createE2eContainer(
-      {
+    const result = await starter.createE2eContainer({
+      e2eConfig: {
         image: 'e2e-image',
         networkAlias: 'e2e-runner',
       },
-      false,
-      undefined,
-      1,
-      1
-    )
+      withLoggingEnabled: false,
+      logFilePath: undefined,
+      sequence: 1,
+      total: 1,
+    })
 
     expect(result.status).toBe('failed_wait')
     expect(result.exitCode).toBeUndefined()

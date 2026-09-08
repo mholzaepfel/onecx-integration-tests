@@ -17,6 +17,17 @@ export interface E2eContainerInterface {
 }
 
 /**
+ * Shared context for one configured E2E container execution.
+ */
+export interface E2eExecutionContext {
+  e2eConfig: E2eContainerInterface
+  withLoggingEnabled: boolean
+  logFilePath?: string
+  sequence: number
+  total: number
+}
+
+/**
  * Execution status for one E2E container run.
  */
 export type E2eExecutionStatus =
@@ -42,4 +53,3 @@ export interface E2eExecutionRecord {
   finishedAt: string
   duration: number
 }
-

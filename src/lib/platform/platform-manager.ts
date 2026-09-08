@@ -320,7 +320,7 @@ export class PlatformManager implements PlatformRuntime {
    * E2E container failures are logged and execution continues.
    * @returns Ordered E2E execution records, or undefined if no E2E configured
    */
-  async startE2eContainers(): Promise<E2eExecutionRecord[] | undefined> {
+  async startE2eContainers(shouldStop?: () => boolean): Promise<E2eExecutionRecord[] | undefined> {
     const config = this.validatedConfig || DEFAULT_PLATFORM_CONFIG
 
     if (!config.container?.e2e) {
@@ -344,7 +344,7 @@ export class PlatformManager implements PlatformRuntime {
       )
     }
 
-    return await this.UserDefinedContainerStarter.startE2eContainers(config)
+    return await this.UserDefinedContainerStarter.startE2eContainers(config, shouldStop)
   }
 
   /**

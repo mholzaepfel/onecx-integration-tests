@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 import { Logger, LogMessages } from '../utils/logger'
+import { validateNetworkAlias } from '../utils/network-alias.utils'
 
 const logger = new Logger('PlatformConfigJsonValidator')
 
@@ -66,7 +67,7 @@ export class PlatformConfigJsonValidator {
       }
 
       const platformConfig = (config as { platformConfig: PlatformConfig }).platformConfig
-      const semanticErrors = this.validateE2eAliases(platformConfig)
+      const semanticErrors = this.validateNetworkAliases(platformConfig)
       if (semanticErrors.length > 0) {
         logger.error(`${LogMessages.CONFIG_LOAD_ERROR}: ${configPath}`, undefined, semanticErrors)
         return {
@@ -207,13 +208,24 @@ export class PlatformConfigJsonValidator {
    * We deliberately scope this to E2E entries to avoid unintentionally changing
    * validation behavior for service/bff/ui aliases that share the same schema definition.
    */
-  private validateE2eAliases(config: PlatformConfig): string[] {
-    const e2eEntries = config.container?.e2e
-    if (!e2eEntries || e2eEntries.length === 0) {
-      return []
+  private validateNetworkAliases(config: PlatformConfig): string[] {
+    const errors: string[] = []
+    const entries = [
+      ...(config.container?.service ?? []).map((entry) => ({ type: 'service', alias: entry.networkAlias })),
+      ...(config.container?.bff ?? []).map((entry) => ({ type: 'bff', alias: entry.networkAlias })),
+      ...(config.container?.ui ?? []).map((entry) => ({ type: 'ui', alias: entry.networkAlias })),
+      ...(config.container?.e2e ?? []).map((entry) => ({ type: 'e2e', alias: entry.networkAlias })),
+    ]
+
+    for (const entry of entries) {
+      try {
+        validateNetworkAlias(entry.alias, `${entry.type} container`)
+      } catch (error) {
+        errors.push(`/platformConfig/container/${entry.type}: ${(error as Error).message}`)
+      }
     }
 
-    const errors: string[] = []
+    const e2eEntries = config.container?.e2e ?? []
     const aliasToIndices = new Map<string, number[]>()
 
     e2eEntries.forEach((entry, index) => {

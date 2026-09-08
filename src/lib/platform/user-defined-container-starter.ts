@@ -1,7 +1,7 @@
 import { StartedNetwork } from 'testcontainers'
 import { PlatformConfig } from '../models/interfaces/platform-config.interface'
-import { E2eContainerInterface, E2eExecutionRecord } from '../models/interfaces/e2e.interface'
-import { E2eExecutionHandler } from '../utils/e2e-execution.handler'
+import { E2eContainerInterface, E2eExecutionContext, E2eExecutionRecord } from '../models/interfaces/e2e.interface'
+import { E2eExecutionError, E2eExecutionHandler } from '../utils/e2e-execution.handler'
 import { SvcContainerInterface } from '../models/interfaces/svc.interface'
 import { BffContainerInterface } from '../models/interfaces/bff.interface'
 import { UiContainerInterface } from '../models/interfaces/ui.interface'
@@ -17,6 +17,7 @@ import { Logger, LogMessages } from '../utils/logger'
 import { ContainerRegistry } from './container-registry'
 import { E2E_DEFAULT_TIMEOUT_MS } from '../config/e2e-constants'
 import { LogFilePathProvider } from './platform-manager'
+import { validateNetworkAlias } from '../utils/network-alias.utils'
 
 const logger = new Logger('UserDefinedContainerStarter')
 
@@ -50,6 +51,7 @@ export class UserDefinedContainerStarter {
     // Create service containers
     if (config.container.service && config.container.service.length > 0) {
       for (const serviceConfig of config.container.service) {
+        validateNetworkAlias(serviceConfig.networkAlias, 'Service container')
         logger.info(LogMessages.CONTAINER_STARTED, `Creating service container: ${serviceConfig.networkAlias}`)
         const svcContainer = await this.createSvcContainer(
           serviceConfig,
@@ -64,6 +66,7 @@ export class UserDefinedContainerStarter {
     // Create BFF containers
     if (config.container.bff && config.container.bff.length > 0) {
       for (const bffConfig of config.container.bff) {
+        validateNetworkAlias(bffConfig.networkAlias, 'BFF container')
         logger.info(LogMessages.CONTAINER_STARTED, `Creating BFF container: ${bffConfig.networkAlias}`)
         const bffContainer = await this.createBffContainer(
           bffConfig,
@@ -78,6 +81,7 @@ export class UserDefinedContainerStarter {
     // Create UI containers
     if (config.container.ui && config.container.ui.length > 0) {
       for (const uiConfig of config.container.ui) {
+        validateNetworkAlias(uiConfig.networkAlias, 'UI container')
         logger.info(LogMessages.CONTAINER_STARTED, `Creating UI container: ${uiConfig.networkAlias}`)
         const uiContainer = await this.createUiContainer(
           uiConfig,
@@ -96,7 +100,10 @@ export class UserDefinedContainerStarter {
    * @param config Platform configuration containing E2E container definitions
    * @returns Ordered E2E execution records, or undefined if no E2E is configured
    */
-  async startE2eContainers(config: PlatformConfig): Promise<E2eExecutionRecord[] | undefined> {
+  async startE2eContainers(
+    config: PlatformConfig,
+    shouldStop?: () => boolean
+  ): Promise<E2eExecutionRecord[] | undefined> {
     const validationResult = this.validateE2eConfig(config)
     if (validationResult === null) {
       return undefined
@@ -105,7 +112,7 @@ export class UserDefinedContainerStarter {
       return []
     }
 
-    return await this.executeE2eSequence(config, validationResult)
+    return await this.executeE2eSequence(config, validationResult, shouldStop)
   }
 
   /**
@@ -131,24 +138,30 @@ export class UserDefinedContainerStarter {
    */
   private async executeE2eSequence(
     config: PlatformConfig,
-    e2eConfigs: E2eContainerInterface[]
+    e2eConfigs: E2eContainerInterface[],
+    shouldStop?: () => boolean
   ): Promise<E2eExecutionRecord[]> {
     const total = e2eConfigs.length
     const results: E2eExecutionRecord[] = []
 
     for (let index = 0; index < total; index++) {
+      if (shouldStop?.()) {
+        logger.warn(LogMessages.CONTAINER_STARTED, 'Stopping E2E sequence after interruption')
+        break
+      }
       const e2eConfig = e2eConfigs[index]
+      validateNetworkAlias(e2eConfig.networkAlias, 'E2E container')
       logger.info(
         LogMessages.CONTAINER_STARTED,
         `Starting E2E container ${index + 1}/${total}: ${e2eConfig.networkAlias}`
       )
-      const e2eResult = await this.createE2eContainer(
+      const e2eResult = await this.createE2eContainer({
         e2eConfig,
-        loggingEnabled(config, [e2eConfig.networkAlias]),
-        this.logFilePathProvider?.(e2eConfig.networkAlias),
-        index + 1,
-        total
-      )
+        withLoggingEnabled: loggingEnabled(config, [e2eConfig.networkAlias]),
+        logFilePath: this.logFilePathProvider?.(e2eConfig.networkAlias),
+        sequence: index + 1,
+        total,
+      })
       results.push(e2eResult)
 
       this.logE2eResult(e2eResult, index, total)
@@ -295,32 +308,22 @@ export class UserDefinedContainerStarter {
    * @param withLoggingEnabled Whether to enable container logging
    * @returns E2E execution result for one configured container
    */
-  async createE2eContainer(
-    e2eConfig: E2eContainerInterface,
-    withLoggingEnabled: boolean,
-    logFilePath: string | undefined,
-    sequence: number,
-    total: number
-  ): Promise<E2eExecutionRecord> {
+  async createE2eContainer(context: E2eExecutionContext): Promise<E2eExecutionRecord> {
     const startedAt = new Date().toISOString()
     const startTime = Date.now()
 
     return await this.e2eExecutionHandler.executeWithErrorHandling(
-      () =>
-        this.runE2eContainerWithResult(
-          e2eConfig,
-          withLoggingEnabled,
-          logFilePath,
-          sequence,
-          total,
-          startedAt,
-          startTime
-        ),
-      e2eConfig,
-      sequence,
-      total,
-      startedAt,
-      startTime
+      async () => {
+        try {
+          return await this.runE2eContainerWithResult(context, startedAt, startTime)
+        } catch (error) {
+          if (error instanceof E2eExecutionError) {
+            throw error
+          }
+          throw new E2eExecutionError('failed_startup', error)
+        }
+      },
+      (error) => this.e2eExecutionHandler.createFailedRecord(context, startedAt, Date.now() - startTime, error)
     )
   }
 
@@ -328,23 +331,14 @@ export class UserDefinedContainerStarter {
    * Run E2E container and determine result from exit code
    */
   private async runE2eContainerWithResult(
-    e2eConfig: E2eContainerInterface,
-    withLoggingEnabled: boolean,
-    logFilePath: string | undefined,
-    sequence: number,
-    total: number,
+    context: E2eExecutionContext,
     startedAt: string,
     startTime: number
   ): Promise<E2eExecutionRecord> {
+    const { e2eConfig } = context
     const startupTimeoutMs = e2eConfig.timeoutMs ?? E2E_DEFAULT_TIMEOUT_MS
     const resolvedImage = await this.imageResolver.getImage(e2eConfig.image)
-    const e2eContainer = this.configureE2eContainer(
-      new E2eContainer(resolvedImage),
-      e2eConfig,
-      withLoggingEnabled,
-      logFilePath,
-      startupTimeoutMs
-    )
+    const e2eContainer = this.configureE2eContainer(new E2eContainer(resolvedImage), context, startupTimeoutMs)
 
     const startedContainer = await e2eContainer.start()
     logger.info(LogMessages.CONTAINER_STARTED, 'E2E container finished, retrieving exit code...')
@@ -354,8 +348,8 @@ export class UserDefinedContainerStarter {
 
     return this.e2eExecutionHandler.createExecutionRecord(
       e2eConfig,
-      sequence,
-      total,
+      context.sequence,
+      context.total,
       startedAt,
       finishedAt,
       duration,
@@ -368,11 +362,10 @@ export class UserDefinedContainerStarter {
    */
   private configureE2eContainer(
     e2eContainer: E2eContainer,
-    e2eConfig: E2eContainerInterface,
-    withLoggingEnabled: boolean,
-    logFilePath: string | undefined,
+    context: E2eExecutionContext,
     startupTimeoutMs: number
   ): E2eContainer {
+    const { e2eConfig, withLoggingEnabled, logFilePath } = context
     e2eContainer.withNetworkAliases(e2eConfig.networkAlias)
 
     if (e2eConfig.baseUrl) {

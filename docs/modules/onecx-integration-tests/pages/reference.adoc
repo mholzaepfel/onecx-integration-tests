@@ -119,6 +119,9 @@ integration-tests/artifacts/<run-id>/
 * `mode`
 * `e2eExecutions`
 * `e2eAggregate`
+* `interruptedBy` when the runner stopped after `SIGINT` or `SIGTERM`
+
+The `e2eExecutions` and `e2eAggregate` fields replace the former singular E2E result shape. Consumers that read `summary.json` must use the new fields.
 
 == Troubleshooting Quick Checks
 

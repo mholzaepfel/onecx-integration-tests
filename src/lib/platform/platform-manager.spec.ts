@@ -212,8 +212,26 @@ describe('PlatformManager', () => {
       await platformManager.startContainers()
 
       const result = await platformManager.startE2eContainers()
-      expect(mockUserStarter.startE2eContainers).toHaveBeenCalledWith(expect.any(Object))
+      expect(mockUserStarter.startE2eContainers).toHaveBeenCalledWith(expect.any(Object), undefined)
       expect(result).toEqual(executionRecords)
+    })
+
+    it('should forward the E2E stop predicate to UserDefinedContainerStarter', async () => {
+      const shouldStop = jest.fn().mockReturnValue(false)
+      mockValidator.validateConfigFile.mockReturnValue({
+        isValid: true,
+        config: {
+          container: { e2e: [{ image: 'suite-image', networkAlias: 'suite-a' }] },
+        } as unknown as PlatformConfig,
+      })
+      mockUserStarter.startE2eContainers.mockResolvedValue([])
+
+      platformManager = new PlatformManager()
+      await platformManager.startContainers()
+
+      await platformManager.startE2eContainers(shouldStop)
+
+      expect(mockUserStarter.startE2eContainers).toHaveBeenCalledWith(expect.any(Object), shouldStop)
     })
   })
 })

@@ -1,4 +1,16 @@
-import { E2eExecutionRecord, E2eExecutionStatus, E2eContainerInterface } from '../models/interfaces/e2e.interface'
+import {
+  E2eExecutionRecord,
+  E2eExecutionStatus,
+  E2eExecutionContext,
+  E2eContainerInterface,
+} from '../models/interfaces/e2e.interface'
+
+export class E2eExecutionError extends Error {
+  constructor(readonly status: Exclude<E2eExecutionStatus, 'passed' | 'failed_exit_code'>, cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause))
+    this.name = 'E2eExecutionError'
+  }
+}
 
 /**
  * Handles E2E container execution with error handling and recovery.
@@ -8,25 +20,17 @@ export class E2eExecutionHandler {
   /**
    * Execute E2E container with error handling.
    * @param executor Async function that executes the E2E container and returns success record
-   * @param e2eConfig E2E container configuration
-   * @param sequence Current sequence number
-   * @param total Total number of E2E containers
-   * @param startedAt ISO timestamp when execution started
-   * @param startTime Milliseconds timestamp when execution started
+   * @param onError Creates the failure record with the execution context captured by the caller
    * @returns E2E execution record (success or failure)
    */
   async executeWithErrorHandling(
     executor: () => Promise<E2eExecutionRecord>,
-    e2eConfig: E2eContainerInterface,
-    sequence: number,
-    total: number,
-    startedAt: string,
-    startTime: number
+    onError: (error: unknown) => E2eExecutionRecord
   ): Promise<E2eExecutionRecord> {
     try {
       return await executor()
     } catch (error) {
-      return this.createFailedRecord(e2eConfig, sequence, total, startedAt, Date.now() - startTime, error)
+      return onError(error)
     }
   }
 
@@ -86,10 +90,8 @@ export class E2eExecutionHandler {
   /**
    * Create failed execution record from error
    */
-  private createFailedRecord(
-    e2eConfig: E2eContainerInterface,
-    sequence: number,
-    total: number,
+  createFailedRecord(
+    context: E2eExecutionContext,
     startedAt: string,
     duration: number,
     error: unknown
@@ -99,9 +101,9 @@ export class E2eExecutionHandler {
     const finishedAt = new Date().toISOString()
 
     return {
-      networkAlias: e2eConfig.networkAlias,
-      sequence,
-      total,
+      networkAlias: context.e2eConfig.networkAlias,
+      sequence: context.sequence,
+      total: context.total,
       status,
       success: false,
       errorMessage,
@@ -115,15 +117,8 @@ export class E2eExecutionHandler {
    * Classify error to determine execution status
    */
   private classifyExecutionError(error: unknown): E2eExecutionStatus {
-    const message = (error instanceof Error ? error.message : String(error)).toLowerCase()
-    if (message.includes('timeout') || message.includes('timed out')) {
-      return 'failed_timeout'
-    }
-    if (message.includes('wait')) {
-      return 'failed_wait'
-    }
-    if (message.includes('start')) {
-      return 'failed_startup'
+    if (error instanceof E2eExecutionError) {
+      return error.status
     }
 
     return 'failed_unexpected'

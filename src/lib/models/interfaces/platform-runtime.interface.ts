@@ -11,7 +11,7 @@ export interface PlatformRuntime {
   startContainers(): Promise<void>
   exportPlatformInfo(): Promise<void>
   checkAllHealthy(): Promise<unknown>
-  startE2eContainers(): Promise<E2eExecutionRecord[] | undefined>
+  startE2eContainers(shouldStop?: () => boolean): Promise<E2eExecutionRecord[] | undefined>
   stopAllContainers(): Promise<void>
   getAllContainers(): Map<string, unknown>
 }
