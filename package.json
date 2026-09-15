@@ -16,7 +16,7 @@
     "./it-runner": "./it-runner/index.js"
   },
   "bin": {
-    "onecx-it-runner": "dist/it-runner/index.js"
+    "onecx-it-runner": "it-runner/index.js"
   },
   "files": [
     "dist"
@@ -37,12 +37,11 @@
   },
   "dependencies": {
     "ajv": "^8.17.1",
-    "commander": "^13.1.0"
-  },
-  "peerDependencies": {
     "axios": "^1.18.0",
+    "commander": "^13.1.0",
     "dockerode": "^5.0.0",
-    "testcontainers": "^10.28.0"
+    "testcontainers": "^10.28.0",
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -56,9 +55,7 @@
     "jest-sonar": "^0.2.16",
     "prettier": "^2.6.2",
     "sonarqube-scanner": "^4.3.2",
-    "testcontainers": "^10.28.0",
     "ts-jest": "^29.1.0",
-    "tslib": "^2.8.1",
     "tsx": "^4.21.0",
     "typescript": "~5.5.4",
     "typescript-eslint": "^8.0.0"

@@ -69,7 +69,7 @@ const distPackageJson = {
   types: rootPackageJson.types,
   exports: rootPackageJson.exports,
   bin: rootPackageJson.bin,
-  peerDependencies: rootPackageJson.peerDependencies || {},
+  dependencies: rootPackageJson.dependencies || {},
   publishConfig: rootPackageJson.publishConfig,
 }
 
