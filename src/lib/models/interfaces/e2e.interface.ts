@@ -31,12 +31,7 @@ export interface E2eExecutionContext {
  * Execution status for one E2E container run.
  */
 export type E2eExecutionStatus =
-  | 'passed'
-  | 'failed_exit_code'
-  | 'failed_startup'
-  | 'failed_wait'
-  | 'failed_timeout'
-  | 'failed_unexpected'
+  'passed' | 'failed_exit_code' | 'failed_startup' | 'failed_wait' | 'failed_timeout' | 'failed_unexpected'
 
 /**
  * Result of one E2E container execution.

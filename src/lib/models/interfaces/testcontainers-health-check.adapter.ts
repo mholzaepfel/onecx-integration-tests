@@ -44,7 +44,7 @@ export interface HttpHealthCheckConfig extends OnePassHealthCheckConfig {
   /** Abort wait if container exits before the check passes */
   abortOnContainerExit?: boolean
   /** Expected HTTP status code */
-  statusCode?: number 
+  statusCode?: number
   /** Expected response body substring */
   body?: string
   /** Use TLS (HTTPS) */

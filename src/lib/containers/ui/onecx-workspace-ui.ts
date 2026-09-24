@@ -5,7 +5,10 @@ import { StartedOnecxKeycloakContainer } from '../core/onecx-keycloak'
 export class WorkspaceUiContainer extends UiContainer {
   private client_user_id = 'onecx-workspace-ui-client'
 
-  constructor(image: string, private keycloakContainer: StartedOnecxKeycloakContainer) {
+  constructor(
+    image: string,
+    private keycloakContainer: StartedOnecxKeycloakContainer
+  ) {
     super(image)
     this.withEnvironment({
       ONECX_PERMISSIONS_ENABLED: 'true',
@@ -29,7 +32,10 @@ export class WorkspaceUiContainer extends UiContainer {
 }
 
 export class StartedWorkspaceUiContainer extends StartedUiContainer {
-  constructor(startedUiContainer: StartedUiContainer, private clientUserId: string) {
+  constructor(
+    startedUiContainer: StartedUiContainer,
+    private clientUserId: string
+  ) {
     super(
       startedUiContainer.getStartedTestContainer(),
       startedUiContainer.getDetails(),

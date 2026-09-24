@@ -27,7 +27,10 @@ import { IntegrationTestsRunner } from './runner'
 class StubPlatformRuntime implements PlatformRuntime {
   readonly callOrder: string[] = []
 
-  constructor(private readonly e2eRecords: E2eExecutionRecord[] | undefined, private readonly configValid = true) {}
+  constructor(
+    private readonly e2eRecords: E2eExecutionRecord[] | undefined,
+    private readonly configValid = true
+  ) {}
 
   hasValidatedConfig(): boolean {
     return this.configValid

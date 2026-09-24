@@ -87,7 +87,7 @@ export class Logger {
     this.className = className
     this.enableConsole = true
 
-    const resolvedOptions: LoggerOptions = typeof options === 'string' ? { filePath: options } : options ?? {}
+    const resolvedOptions: LoggerOptions = typeof options === 'string' ? { filePath: options } : (options ?? {})
     if (typeof resolvedOptions.enableConsole === 'boolean') {
       this.enableConsole = resolvedOptions.enableConsole
     }

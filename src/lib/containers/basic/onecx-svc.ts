@@ -36,7 +36,10 @@ export class SvcContainer extends GenericContainer {
   private commandHealthCheckConfig?: CommandHealthCheckConfig
   private healthCheckConfigs: HealthCheckConfig[] = []
 
-  constructor(image: string, private services: SvcContainerServices) {
+  constructor(
+    image: string,
+    private services: SvcContainerServices
+  ) {
     super(image)
     this.withExposedPorts(this.port)
   }

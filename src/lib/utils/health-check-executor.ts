@@ -1,5 +1,9 @@
 import axios from 'axios'
-import { HealthCheckResult, HealthCheckExecutor, HealthCheckMetadata } from '../models/interfaces/health-check-executor.interface'
+import {
+  HealthCheckResult,
+  HealthCheckExecutor,
+  HealthCheckMetadata,
+} from '../models/interfaces/health-check-executor.interface'
 
 /**
  * HTTP-based health check strategy

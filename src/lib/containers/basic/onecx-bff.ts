@@ -34,7 +34,10 @@ export class BffContainer extends GenericContainer {
   private commandHealthCheckConfig?: CommandHealthCheckConfig
   private healthCheckConfigs: HealthCheckConfig[] = []
 
-  constructor(image: string, private readonly keycloakContainer: StartedOnecxKeycloakContainer) {
+  constructor(
+    image: string,
+    private readonly keycloakContainer: StartedOnecxKeycloakContainer
+  ) {
     super(image)
   }
 

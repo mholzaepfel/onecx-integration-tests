@@ -6,7 +6,10 @@ import {
 } from '../models/interfaces/e2e.interface'
 
 export class E2eExecutionError extends Error {
-  constructor(readonly status: Exclude<E2eExecutionStatus, 'passed' | 'failed_exit_code'>, cause: unknown) {
+  constructor(
+    readonly status: Exclude<E2eExecutionStatus, 'passed' | 'failed_exit_code'>,
+    cause: unknown
+  ) {
     super(cause instanceof Error ? cause.message : String(cause))
     this.name = 'E2eExecutionError'
   }

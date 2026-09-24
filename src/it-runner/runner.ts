@@ -160,7 +160,7 @@ export class IntegrationTestsRunner {
 
     for (const record of e2eExecutions) {
       const prefix = `E2E ${record.sequence}/${record.total} (${record.networkAlias})`
-      const detail = record.exitCode !== undefined ? `exit=${record.exitCode}` : record.errorMessage ?? 'no-exit-code'
+      const detail = record.exitCode !== undefined ? `exit=${record.exitCode}` : (record.errorMessage ?? 'no-exit-code')
       const message = `${prefix} -> ${record.status} (${detail})`
       this.log(record.success ? 'info' : 'error', message)
     }

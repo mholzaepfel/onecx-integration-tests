@@ -95,7 +95,10 @@ export class E2eContainer extends GenericContainer {
 }
 
 export class StartedE2eContainer extends AbstractStartedContainer implements HealthCheckableContainer {
-  constructor(startedTestContainer: StartedTestContainer, private readonly networkAlias: string[]) {
+  constructor(
+    startedTestContainer: StartedTestContainer,
+    private readonly networkAlias: string[]
+  ) {
     super(startedTestContainer)
   }
 

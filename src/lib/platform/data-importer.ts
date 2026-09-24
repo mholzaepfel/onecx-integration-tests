@@ -103,10 +103,13 @@ export class DataImporter {
             }
           }, 2000)
 
-          setTimeout(() => {
-            clearInterval(checkInterval)
-            reject(new Error('Import timeout after 1 minutes'))
-          }, 1 * 60 * 1000)
+          setTimeout(
+            () => {
+              clearInterval(checkInterval)
+              reject(new Error('Import timeout after 1 minutes'))
+            },
+            1 * 60 * 1000
+          )
         })
       } finally {
         stopImportLogForwarding()

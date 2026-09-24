@@ -19,7 +19,10 @@ const logger = new Logger('PlatformInfoExporter')
 export class PlatformInfoExporter {
   private readonly outputDir: string
 
-  constructor(private readonly containerRegistry: ContainerRegistry, private readonly network: StartedNetwork) {
+  constructor(
+    private readonly containerRegistry: ContainerRegistry,
+    private readonly network: StartedNetwork
+  ) {
     // Resolve output path from centralized run context.
     this.outputDir = resolveRunContextPaths().e2eDir
     // Ensure directory exists
