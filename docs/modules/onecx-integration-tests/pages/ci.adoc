@@ -4,86 +4,96 @@ endif::[]
 
 = Continuous Integration with GitHub Actions
 
-This page documents the GitHub Actions reusable workflow included in this repository and its `workflow_call` interface for caller repositories. It describes the supported triggers, expected inputs, artifact outputs, and the run matrix that defines which image versions are used in each execution context.
+This page documents the GitHub Actions reusable workflow included in this repository and its `workflow_call` interface for caller repositories. It describes the v1 contract, the caller requirements, the inputs and artifacts of a run, and how the workflow signals a failed integration test run.
 
 == Overview
 
-This repository includes a GitHub Actions workflow at `.github/workflows/integration-tests.yml`.
+This repository includes a GitHub Actions workflow at `.github/workflows/e2e-tests.yml`.
 
-The workflow is designed to execute integration tests in CI and to expose a `workflow_call` entry point for reuse.
-
-Current triggers include:
-
-* `workflow_call`
-* `workflow_dispatch`
-* `schedule`
-* `pull_request`
-
-== Reusable Workflow
-
-The reusable workflow contract for OneCX integration tests is based on these principles:
-
-* Caller repository provides integration assets
-* Runner validates and consumes caller configuration
-* Runtime behavior remains reproducible across local and CI execution
-
-Caller repository requirements:
-
-* `integration/platform.json`
-* `integration/e2e/**`
-
-In reusable mode, the workflow must operate on caller-provided configuration instead of hardcoded app lists.
-
-== Inputs
-
-The target reusable workflow contract supports these input categories:
-
-* Integration paths (`integrationRoot`, `platformConfigPath`, `e2eDir`)
-* Execution mode and target (`scheduled`, `on-demand`, `pr`, `local`)
-* Version selectors and per-artifact overrides
-* Runtime limits such as node version and timeouts
+The workflow is exposed exclusively through a `workflow_call` entry point so that a consuming OneCX repository can run its own repository-owned Platform Contract with the published `@onecx/integration-tests` Runner. The reusable workflow does not define its own trigger policy: the caller repository decides when the caller workflow fires (for example through `workflow_dispatch`, `pull_request`, or `schedule`) and delegates the integration test run to this workflow.
 
 [NOTE]
 ====
-Keep input names and behavior aligned with the repository contract and avoid redefining `latest` semantics
+This page documents the consumer-facing reusable workflow at `.github/workflows/e2e-tests.yml`. The separate `.github/workflows/integration-tests.yml` workflow is this repository's own self-test CI (it runs the package's default contract on this repository's pull requests and schedule); it is not the reusable interface documented here.
 ====
 
-== Artifacts and Outputs
+== Caller Reference
 
-CI runs should publish:
+Callers reference the workflow by ref. The stable reference for the v1 contract is the moving major tag `v1`:
 
-* Human-readable run summary
-* Machine-readable JSON summary with resolved artifacts and provenance
-* E2E outputs and logs
+[source,yaml]
+----
+jobs:
+  e2e:
+    uses: onecx/onecx-integration-tests/.github/workflows/e2e-tests.yml@v1
+    with:
+      verbose: false
+      captureLogs: true
+----
 
-Standard runtime artifact layout:
+The `with` block is optional; both inputs have defaults.
 
-* `integration-tests/artifacts/<run-id>/summary.json`
-* `integration-tests/artifacts/<run-id>/logs/`
-* `integration-tests/artifacts/<run-id>/e2e/`
-* `integration-tests/artifacts/<run-id>/e2e-results/`
+== Caller Requirements
 
-== Run Matrix Expectations
+The caller repository owns everything the runner needs at run time:
 
-Use this run matrix for consistency:
+* `@onecx/integration-tests` as a dependency in `package.json` and the lock file
+* An `e2e` npm script that invokes the public `onecx-it-runner` command
+* The Platform Contract at the conventional path `integration-tests/platform/platform.json`
+* All container images referenced by the contract, including the E2E images
 
-[.stripes-even,cols="20,40,40"]
+The v1 contract requires no secrets from the caller and assumes all referenced images are publicly pullable. Private registry authentication is not part of the v1 interface.
+
+== Inputs
+
+The v1 interface accepts two optional boolean inputs:
+
+[cols="30,20,50"]
 |===
-| Context | Shell | Apps
+| Input | Default | Effect
 
-| Scheduled
-| main + latest
-| main + latest, main + main
+| `verbose`
+| `false`
+| Sets the runner's `IT_VERBOSE` environment default, enabling verbose runner output
 
-| On-demand
-| latest, specified
-| latest all, specified per app
-
-| Pull request
-| PR + latest
-| PR + latest
-
-| Local
-| local + latest
-| local + latest
+| `captureLogs`
+| `true`
+| Sets the runner's `IT_CAPTURE_LOGS` environment default, capturing runner and container logs into the run artifacts
 |===
+
+Both inputs are typed as `boolean` at the interface level, so GitHub Actions rejects non-boolean values before the workflow starts.
+
+== Execution
+
+A run executes a single `e2e` job:
+
+* Runner: `ubuntu-latest`
+* Timeout: 60 minutes
+* Node: 24 with the npm cache enabled
+* Dependencies installed with `npm ci` against the caller's lock file
+* The runner is started through the caller's `e2e` npm script with `IT_VERBOSE` and `IT_CAPTURE_LOGS` bound to the workflow inputs
+
+== Diagnostics and Failure Semantics
+
+After the runner step, two steps run with `if: always()` so they execute on every outcome, including a failed or timed-out runner invocation:
+
+* `Upload integration test artifacts` uploads one artifact, `e2e-artifacts-<run-id>-<run-attempt>`, containing the full `integration-tests/artifacts/` tree: the runner summary, E2E reports, and captured logs. The artifact retains 14 days.
+* `Finalize integration test run` writes a concise GitHub Step Summary table (status, run ID, duration, exit code, and E2E aggregate counters), then enforces the runner result.
+
+The finalize step exits the job with a failing status when:
+
+* the runner invocation did not write a `summary.json`
+* the `summary.json` is not valid JSON
+* the `summary.json` reports a status other than `success` or a non-zero exit code
+
+Because the artifact upload runs before the finalize step (and both run with `if: always()`), a red caller job always has a Step Summary and an artifact with the collected diagnostics before the job fails.
+
+== Versioning
+
+The `v1` tag tracks the current revision of the v1 contract and moves forward with compatible updates. Breaking changes to the workflow interface — new required inputs, changed input semantics, or changed caller requirements — require a new major tag (for example `v2`), and callers must switch their `uses:` ref explicitly.
+
+== Validation
+
+The workflow is checked by a dedicated test, `src/it-runner/reusable-workflow.spec.ts`, which parses the workflow as GitHub Actions would and pins the `workflow_call` interface (triggers, inputs, permissions, environment, and step ordering). It also extracts the embedded `Finalize integration test run` script and executes it verbatim against fixture `summary.json` files, pinning the Step Summary output and the success/failure exit semantics a caller observes.
+
+A recorded run from the first real Shell UI caller is the strongest validation; that caller lives in a separate repository and is not part of this one. The test above provides the equivalent coverage for this repository, and the `v1` tag is created on the revision it has validated.

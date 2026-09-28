@@ -49,14 +49,15 @@ See xref:e2e.adoc[E2E Testing] for:
 
 See xref:ci.adoc[CI and GitHub Actions] for:
 
-* Workflow triggers and expected usage
-* Artifact expectations for CI runs
-* Alignment with run-mode and version semantics
+* The `workflow_call` interface and the stable `v1` caller reference
+* Caller requirements and the `verbose` / `captureLogs` inputs
+* Step Summary, artifact expectations, and failure semantics
 
 == UI Repository
 
 See xref:ui-repository.adoc[UI Repository Integration] for:
 
-* Caller repository structure under `integration/`
+* Caller repository structure under `integration-tests/`
 * Configuration handoff between caller repository and runner
+* Running the contract in CI through the reusable workflow
 * Practical integration checklist

@@ -4,7 +4,7 @@ endif::[]
 
 = Integrating a UI Repository as a Caller
 
-UI repositories act as callers: they provide a `platform.json` configuration and an `integration/e2e/` directory containing Playwright tests, and they delegate platform bootstrap, health validation, and artifact handling to this runner. This page explains the required directory layout, the configuration the runner expects from the caller, and a pre-pull-request integration checklist.
+UI repositories act as callers: they provide a `platform.json` Platform Contract and own the E2E test sources that are packaged into their E2E image, and they delegate platform bootstrap, health validation, and artifact handling to this runner. This page explains the required directory layout, the configuration the runner expects from the caller, how to run the contract through the reusable GitHub Actions workflow, and a pre-pull-request integration checklist.
 
 == Overview
 
@@ -19,22 +19,23 @@ Create and maintain this structure inside the UI repository:
 
 [source,text]
 ----
-integration/
-	platform.json
+integration-tests/
+	platform/
+		platform.json
 	e2e/
 		... Playwright tests and support files ...
 ----
 
 Required contract inputs:
 
-* `integration/platform.json` for platform runtime configuration
-* `integration/e2e/**` for test definitions
+* `integration-tests/platform/platform.json` for platform runtime configuration
+* `integration-tests/e2e/**` for the test sources that are packaged into the repository's E2E image
+
+The runner validates the Platform Contract at the conventional path `integration-tests/platform/platform.json` and fails fast if validation fails. E2E test sources are consumed through the E2E image referenced in the contract; the runner executes `platformConfig.container.e2e` entries and does not read test files from the caller repository directly.
 
 == Platform Config
 
-The UI repository provides `integration/platform.json`.
-
-The runner validates this file against the integration schema and fails fast if validation fails.
+The UI repository provides `integration-tests/platform/platform.json`.
 
 Recommended minimum structure:
 
@@ -63,13 +64,13 @@ For field-level details, see xref:contract.adoc[Contract and Configuration].
 
 == E2E Directory
 
-Store all E2E assets under `integration/e2e/`.
+Store all E2E test sources under `integration-tests/e2e/`.
 
 Recommended layout:
 
 [source,text]
 ----
-integration/e2e/
+integration-tests/e2e/
 	playwright.config.ts
 	tests/
 	fixtures/
@@ -81,13 +82,36 @@ Implementation guidance:
 * Read runtime endpoints from exported platform metadata
 * Keep tests deterministic and environment-agnostic
 * Do not embed secrets directly in test sources
+* Package the test sources into the E2E image referenced by `platformConfig.container.e2e`
+
+== Running in CI Through the Reusable Workflow
+
+UI repositories run their Platform Contract in CI by calling the reusable workflow with `workflow_call`. The caller owns the trigger policy and provides the runner dependency, the `e2e` npm script, the conventional Platform Contract, and all referenced images:
+
+[source,yaml]
+----
+name: Integration tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    uses: onecx/onecx-integration-tests/.github/workflows/e2e-tests.yml@v1
+    with:
+      verbose: false
+      captureLogs: true
+----
+
+For the full interface — inputs, artifacts, failure semantics, and the `v1` versioning policy — see xref:ci.adoc[CI and GitHub Actions].
 
 == Integration Checklist
 
 Verify these items before opening a pull request:
 
-* `integration/platform.json` exists and validates
-* `integration/e2e/` contains runnable tests
+* `integration-tests/platform/platform.json` exists and validates
+* `integration-tests/e2e/` contains runnable tests
+* `@onecx/integration-tests` is installed and an `e2e` npm script runs `onecx-it-runner`
 * E2E image is available for CI runners
 * Run succeeds with `npm run it:run -- --verbose --capture-logs`
 * Artifacts include `summary.json` and `e2e-results/`

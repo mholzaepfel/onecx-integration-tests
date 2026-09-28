@@ -1,0 +1,148 @@
+name: E2E Integration Tests
+
+on:
+  workflow_call:
+    inputs:
+      verbose:
+        description: "Enable verbose runner output"
+        required: false
+        type: boolean
+        default: false
+      captureLogs:
+        description: "Capture runner and container logs into the run artifacts"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: E2E Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: true
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run integration tests (onecx-it-runner)
+        # `verbose` and `captureLogs` are declared as `type: boolean` inputs, so
+        # `inputs.*` resolves to "true"/"false" (or its default) and maps 1:1 to the
+        # runner's documented IT_VERBOSE / IT_CAPTURE_LOGS environment defaults.
+        run: npm run e2e
+        env:
+          IT_VERBOSE: ${{ inputs.verbose }}
+          IT_CAPTURE_LOGS: ${{ inputs.captureLogs }}
+
+      - name: Upload integration test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: integration-tests/artifacts/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Finalize integration test run
+        if: always()
+        # Runs after the artifact upload (both `if: always()`), so a failed runner invocation,
+        # an unsuccessful summary.json, or a missing summary.json still yield the Step Summary
+        # and the uploaded diagnostics before this step makes the job fail.
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          // The runner always writes to the conventional path <cwd>/integration-tests/artifacts/<runId>/.
+          const artifactsDir = path.resolve('integration-tests', 'artifacts')
+
+          // The runner creates one directory per run; pick the most recent so a new
+          // run never reads a stale summary.json from a previous invocation.
+          let runDir = null
+          if (fs.existsSync(artifactsDir)) {
+            const runs = fs
+              .readdirSync(artifactsDir, { withFileTypes: true })
+              .filter((entry) => entry.isDirectory())
+              .map((entry) => ({
+                name: entry.name,
+                mtimeMs: fs.statSync(path.join(artifactsDir, entry.name)).mtimeMs,
+              }))
+              .sort((a, b) => b.mtimeMs - a.mtimeMs)
+            if (runs.length > 0) runDir = path.join(artifactsDir, runs[0].name)
+          }
+          const summaryPath = runDir ? path.join(runDir, 'summary.json') : null
+
+          const writeLine = (line) => {
+            // appendFileSync writes the string verbatim, so terminate each line
+            // explicitly to keep the Step Summary table on separate lines.
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${line}\n`)
+            console.log(line)
+          }
+
+          let summary = null
+          let summaryFound = false
+          if (summaryPath && fs.existsSync(summaryPath)) {
+            try {
+              summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'))
+              summaryFound = true
+            } catch (error) {
+              console.error(`Invalid summary.json at ${summaryPath}: ${error.message}`)
+            }
+          }
+
+          const status = summary ? summary.status : 'missing'
+          const exitCode = summary && Number.isFinite(summary.exitCode) ? summary.exitCode : -1
+          const durationMs = summary && Number.isFinite(summary.durationMs) ? Math.round(summary.durationMs / 1000) : null
+          const e2e = summary && summary.e2eAggregate
+
+          writeLine('## Integration Test Run Summary')
+          writeLine('')
+          writeLine('| Field | Value |')
+          writeLine('| --- | --- |')
+          writeLine(`| Status | **${String(status).toUpperCase()}** |`)
+          if (summary && summary.runId) writeLine(`| Run ID | \`${summary.runId}\` |`)
+          if (durationMs !== null) writeLine(`| Duration | ${durationMs}s |`)
+          if (summary) writeLine(`| Exit Code | \`${exitCode}\` |`)
+          if (e2e)
+            writeLine(`| E2E | ${e2e.succeeded}/${e2e.total} succeeded, ${e2e.failed} failed (${e2e.finalStatus}) |`)
+          if (summary && summary.interruptedBy) writeLine(`| Interrupted By | \`${summary.interruptedBy}\` |`)
+          if (runDir) writeLine(`| Artifacts | \`${runDir}\` |`)
+          writeLine('')
+
+          if (!summaryFound) {
+            writeLine(
+              '> No valid `summary.json` was found; the runner did not complete its run lifecycle. See the uploaded artifacts for details.'
+            )
+            console.error('ERROR: missing summary.json — the runner did not complete its run lifecycle.')
+            process.exit(1)
+          }
+
+          const successful = status === 'success' && exitCode === 0
+          if (!successful) {
+            const details = e2e
+              ? `E2E aggregate: ${e2e.succeeded}/${e2e.total} succeeded, ${e2e.failed} failed`
+              : ''
+            console.error(
+              `ERROR: integration test run unsuccessful (status=${status}, exitCode=${exitCode})${
+                details ? `; ${details}` : ''
+              }. Diagnostics have been collected in the uploaded artifacts.`
+            )
+            process.exit(1)
+          }
+          console.log(
+            `Integration test run successful (runId=${summary.runId}, status=${status}, exitCode=${exitCode}).`
+          )
+          EOF

@@ -39,7 +39,7 @@ Use this reading order:
 * xref:contract.adoc[Platform Configuration Contract] for `platform.json` fields and validation
 * xref:architecture.adoc[Runtime Architecture and Container Lifecycle] for startup flow and design
 * xref:e2e.adoc[End-to-End Test Execution and Artifacts] for test execution and outputs
-* xref:ci.adoc[CI and GitHub Actions] for reusable workflow and run matrix
+* xref:ci.adoc[CI and GitHub Actions] for the reusable workflow contract and the stable `v1` caller reference
 * xref:ui-repository.adoc[Integrating a UI Repository as a Caller] for caller-repository setup
 * xref:reference.adoc[Reference: CLI, Environment Variables, and Artifacts] for all runtime controls
 

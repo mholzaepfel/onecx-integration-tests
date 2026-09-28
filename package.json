@@ -33,6 +33,7 @@
     "test:ci": "jest --ci --coverage",
     "integration-tests": "npm run it:run",
     "it:run": "tsx src/it-runner/index.ts",
+    "e2e": "tsx src/it-runner/index.ts",
     "sonar": "npx sonarqube-scanner"
   },
   "dependencies": {
@@ -58,7 +59,8 @@
     "ts-jest": "^29.1.0",
     "tsx": "^4.21.0",
     "typescript": "~5.5.4",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "yaml": "^2.9.1"
   },
   "publishConfig": {
     "access": "public"
