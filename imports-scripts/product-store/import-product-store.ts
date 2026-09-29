@@ -134,7 +134,9 @@ export async function importMicrofrontends(baseDir: string, endpointBase: string
 
     if (appid && mfeData.remoteEntry && !mfeData.remoteEntry.startsWith('http')) {
       const originalEntry = mfeData.remoteEntry
-      mfeData.remoteEntry = `http://${appid}:${port}/remoteEntry.js`
+      // Keep the declared entry file name (remoteEntry.js or mf-manifest.json), only make it absolute.
+      const entryFile = path.basename(mfeData.remoteEntry)
+      mfeData.remoteEntry = `http://${appid}:${port}/${entryFile}`
       logger.info('PROCESSING_FILE', `URL Transform - Entry: ${originalEntry} -> ${mfeData.remoteEntry}`)
     }
 
