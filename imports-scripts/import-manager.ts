@@ -29,6 +29,11 @@ export interface ContainerInfo {
     clientId: string
   }
   services: Record<string, { alias: string; port: number }>
+  /**
+   * Optional Module Federation host entries keyed by appId (matches the MFE filename `appid`),
+   * produced by the runner. Present only in newer container-info files.
+   */
+  uiEntries?: Record<string, { alias: string; port: number; entry?: string }>
 }
 
 /**
@@ -135,7 +140,8 @@ export class ImportManager {
       await importMicrofrontends(
         path.join(base, productStore),
         productStoreBase,
-        this.getServicePort('onecx-product-store-svc')
+        this.getServicePort('onecx-product-store-svc'),
+        this.containerInfo.uiEntries
       )
     } else {
       logger.info('SERVICE_UNAVAILABLE', 'onecx-product-store-svc - skipping product store imports')

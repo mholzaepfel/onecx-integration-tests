@@ -1,6 +1,7 @@
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import { StartedShellUiContainer } from '../containers/ui/onecx-shell-ui'
 import { StartedE2eContainer } from '../containers/e2e/onecx-e2e'
+import { StartedUiContainer } from '../containers/basic/onecx-ui'
 import type { AllowedContainerTypes, PortAwareContainer } from '../models/types/allowed-container.type'
 import { PlatformInfoExportDecision } from '../models/interfaces/platform-info-exporter.interface'
 
@@ -16,6 +17,21 @@ export function isKeycloakContainer(container: AllowedContainerTypes): container
 /** Type guard to check if container is a Shell UI container */
 export function isShellUiContainer(container: AllowedContainerTypes): container is StartedShellUiContainer {
   return container instanceof StartedShellUiContainer
+}
+
+/**
+ * Type guard to check if container is a UI container (a Module Federation MFE host).
+ *
+ * Duck-typed (like {@link isPortAwareContainer}) rather than `instanceof` so it can be exercised
+ * against lightweight test doubles that expose the UI surface (`getDetails()` + `getAppId()`).
+ */
+export function isUiContainer(container: AllowedContainerTypes): container is StartedUiContainer {
+  return (
+    'getDetails' in container &&
+    typeof (container as StartedUiContainer).getDetails === 'function' &&
+    'getAppId' in container &&
+    typeof (container as StartedUiContainer).getAppId === 'function'
+  )
 }
 
 /** Type guard to check if container is an E2E container */

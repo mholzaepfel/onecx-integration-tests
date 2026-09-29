@@ -84,6 +84,72 @@ describe('DataImporter', () => {
       })
     })
 
+    it('should map UI entries into uiEntries keyed by appId, only recording entry when remoteEntry is declared', () => {
+      const mockWriteFileSync = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+        return undefined
+      })
+
+      const mockKeycloak = new (StartedOnecxKeycloakContainer as unknown as { new (): StartedOnecxKeycloakContainer })()
+      jest.spyOn(mockKeycloak, 'getRealm').mockReturnValue('onecx')
+      jest.spyOn(mockKeycloak, 'getNetworkAliases').mockReturnValue(['keycloak'])
+      jest.spyOn(mockKeycloak, 'getPort').mockReturnValue(8080)
+
+      // Shell UI has no constructor-provided details (getDetails() -> undefined), so it must be skipped
+      // without throwing.
+      const mockShellUi = new (StartedShellUiContainer as unknown as { new (): StartedShellUiContainer })()
+      jest.spyOn(mockShellUi, 'getClientUserId').mockReturnValue('onecx-shell')
+      jest.spyOn(mockShellUi, 'getNetworkAliases').mockReturnValue(['shell-ui'])
+      jest.spyOn(mockShellUi, 'getPort').mockReturnValue(4200)
+
+      // A UI container that declared an explicit remoteEntry (new mf-manifest approach).
+      const uiContainerWithEntry = {
+        getDetails: jest.fn().mockReturnValue({
+          appId: 'onecx-workspace-ui',
+          remoteEntry: '/mfe/workspace/mf-manifest.json',
+        }),
+        getAppId: jest.fn().mockReturnValue('onecx-workspace-ui'),
+        getNetworkAliases: jest.fn().mockReturnValue(['workspace-ui']),
+        getPort: jest.fn().mockReturnValue(8080),
+      } as unknown as AllowedContainerTypes
+
+      // A UI container with no explicit remoteEntry (legacy remoteEntry.js at root).
+      const uiContainerWithoutEntry = {
+        getDetails: jest.fn().mockReturnValue({
+          appId: 'onecx-tenant-ui',
+        }),
+        getAppId: jest.fn().mockReturnValue('onecx-tenant-ui'),
+        getNetworkAliases: jest.fn().mockReturnValue(['tenant-ui']),
+        getPort: jest.fn().mockReturnValue(8081),
+      } as unknown as AllowedContainerTypes
+
+      const startedContainers = new Map<string, AllowedContainerTypes>()
+      startedContainers.set(CONTAINER.KEYCLOAK, mockKeycloak)
+      startedContainers.set(CONTAINER.SHELL_UI, mockShellUi)
+      startedContainers.set('onecx-workspace-ui', uiContainerWithEntry)
+      startedContainers.set('onecx-tenant-ui', uiContainerWithoutEntry)
+
+      dataImporter.createContainerInfo(startedContainers)
+
+      const writtenData = JSON.parse(mockWriteFileSync.mock.calls[0][1] as string)
+
+      // Entry recorded when remoteEntry is declared...
+      expect(writtenData.uiEntries['onecx-workspace-ui']).toEqual({
+        alias: 'workspace-ui',
+        port: 8080,
+        entry: '/mfe/workspace/mf-manifest.json',
+      })
+
+      // ...and the entry key omitted when it is not declared (not `entry: undefined`).
+      expect(writtenData.uiEntries['onecx-tenant-ui']).toEqual({
+        alias: 'tenant-ui',
+        port: 8081,
+      })
+      expect(writtenData.uiEntries['onecx-tenant-ui']).not.toHaveProperty('entry')
+
+      // Shell UI (undefined getDetails()) must not be mapped and must not throw.
+      expect(writtenData.uiEntries).not.toHaveProperty('onecx-shell')
+    })
+
     it('shoould throw error when keycloak container is missing', () => {
       const startedContainers = new Map<string, AllowedContainerTypes>()
       const mockShellUi = new (StartedShellUiContainer as unknown as { new (): StartedShellUiContainer })()

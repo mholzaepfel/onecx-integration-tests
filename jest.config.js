@@ -19,6 +19,10 @@ module.exports = {
     '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
-  testMatch: ['<rootDir>/src/lib/**/*.spec.ts', '<rootDir>/src/it-runner/**/*.spec.ts'],
+  testMatch: [
+    '<rootDir>/src/lib/**/*.spec.ts',
+    '<rootDir>/src/it-runner/**/*.spec.ts',
+    '<rootDir>/imports-scripts/**/*.spec.ts',
+  ],
   coverageDirectory: '<rootDir>/reports/coverage',
 }

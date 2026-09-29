@@ -16,5 +16,8 @@
       "product-store/*": ["./imports/product-store/*"],
       "permissions/*": ["./imports/permissions/*"]
     }
-  }
+  },
+  // This is the build config for the import container's compiled JS; test files are type-checked
+  // and run separately by jest (via tsconfig.spec.json), so they are excluded from the build.
+  "exclude": ["**/*.spec.ts", "**/*.test.ts"]
 }

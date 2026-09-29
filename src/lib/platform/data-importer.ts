@@ -10,7 +10,7 @@ import { StartedShellUiContainer } from '../containers/ui/onecx-shell-ui'
 import { PlatformConfig } from '../models/interfaces/platform-config.interface'
 import { loggingEnabled } from '../utils/logging-enable'
 import { Logger, LogMessages } from '../utils/logger'
-import { isE2eContainer, isKeycloakContainer, isShellUiContainer } from '../utils/container-utils'
+import { isE2eContainer, isKeycloakContainer, isShellUiContainer, isUiContainer } from '../utils/container-utils'
 
 type LogFilePathProvider = (containerName: string) => string | undefined
 
@@ -27,6 +27,14 @@ export interface ContainerInfo {
     clientId: string
   }
   services: Record<string, { alias: string; port: number }>
+  /**
+   * Module federation host entries, keyed by the UI container's `appId` (which matches the
+   * `appid` segment of product-store MFE data filenames). `entry` is the declared
+   * `uiDetails.remoteEntry` (relative or absolute); `alias`/`port` describe the UI container the
+   * entry is served from, so the import script can build the absolute URL when the entry is not
+   * served from the container root.
+   */
+  uiEntries: Record<string, { alias: string; port: number; entry?: string }>
 }
 
 const logger = new Logger('DataImporter')
@@ -133,6 +141,7 @@ export class DataImporter {
     const shellUiInfo = this.buildShellUiInfo(shellUiContainer)
 
     const services = this.buildServicesInfo(startedContainers)
+    const uiEntries = this.buildUiEntriesInfo(startedContainers)
 
     const containerInfo: ContainerInfo = {
       tokenValues: {
@@ -144,6 +153,7 @@ export class DataImporter {
         clientId: shellUiInfo.clientId,
       },
       services: services,
+      uiEntries: uiEntries,
     }
 
     return this.writeContainerInfoFile(containerInfo)
@@ -181,6 +191,51 @@ export class DataImporter {
     return {
       clientId: shellUiContainer.getClientUserId(),
     }
+  }
+
+  /**
+   * Build UI (Module Federation host) entries from all started containers.
+   *
+   * Each UI container is recorded under its `uiDetails.appId` — the same value used as the `appid`
+   * segment in product-store MFE data filenames — so the import script can look it up directly.
+   * The recorded `alias` is the container's resolvable network alias (not necessarily the `appId`),
+   * and `port` its internal UI port, so the absolute entry URL is correct even when the container's
+   * network alias differs from the appId.
+   *
+   * @param startedContainers Map of all started containers
+   * @returns Record of appId to its entry host info
+   */
+  private buildUiEntriesInfo(
+    startedContainers: Map<string, AllowedContainerTypes>
+  ): Record<string, { alias: string; port: number; entry?: string }> {
+    const uiEntries: Record<string, { alias: string; port: number; entry?: string }> = {}
+
+    for (const [containerName, container] of startedContainers) {
+      if (!isUiContainer(container)) {
+        continue
+      }
+
+      const details = container.getDetails()
+      const appId = details?.appId
+      if (!appId) {
+        logger.info(`UI_ENTRY_SKIPPED: ${containerName} - no appId declared, cannot map MFE entry`)
+        continue
+      }
+
+      uiEntries[appId] = {
+        alias: container.getNetworkAliases()[0],
+        port: container.getPort(),
+        ...(details?.remoteEntry ? { entry: details.remoteEntry } : {}),
+      }
+
+      logger.info(
+        `UI_ENTRY_MAPPED: ${containerName} -> ${appId} (${container.getNetworkAliases()[0]}:${container.getPort()})` +
+          (details?.remoteEntry ? ` entry=${details.remoteEntry}` : '')
+      )
+    }
+
+    logger.info(`UI_ENTRIES_DISCOVERED: Total UI entries mapped: ${Object.keys(uiEntries).length}`)
+    return uiEntries
   }
 
   /**
