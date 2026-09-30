@@ -85,20 +85,16 @@ describe('importMicrofrontends URL transform', () => {
     expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/')
   })
 
-  it('honours an explicit mf-manifest entry served under a prefix, and derives the base from its folder', async () => {
+  it('honours a nested mf-manifest entry without changing an independent root base URL', async () => {
     const uiEntries: UiEntryMap = {
       [appid]: { alias: 'workspace-ui', port: 4200, entry: '/mfe/workspace/mf-manifest.json' },
     }
-    readFileMock.mockResolvedValue(
-      JSON.stringify({ remoteEntry: '/mfe/workspace/remoteEntry.js', remoteBaseUrl: '/mfe/workspace/' })
-    )
+    readFileMock.mockResolvedValue(JSON.stringify({ remoteEntry: '/remoteEntry.js', remoteBaseUrl: '/' }))
 
     await importMicrofrontends('/data', 'http://ps:8080', productStorePort, uiEntries)
 
-    // Configured entry is authoritative: it names the served path, built against the recorded host.
     expect(putPayload().remoteEntry).toBe('http://workspace-ui:4200/mfe/workspace/mf-manifest.json')
-    // The base is the folder containing the entry, so assets stay on the same prefix and same host.
-    expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/mfe/workspace/')
+    expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/')
   })
 
   it.each([
@@ -118,7 +114,7 @@ describe('importMicrofrontends URL transform', () => {
     await importMicrofrontends('/data', 'http://ps:8080', productStorePort, uiEntries)
 
     expect(putPayload().remoteEntry).toBe(expectedEntry)
-    expect(putPayload().remoteBaseUrl).toBe(new URL('.', expectedEntry).toString())
+    expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/')
   })
 
   it('uses the recorded UI container alias/port (not the appid / product-store port) when configured', async () => {
@@ -148,7 +144,7 @@ describe('importMicrofrontends URL transform', () => {
     await importMicrofrontends('/data', 'http://ps:8080', productStorePort, uiEntries)
 
     expect(putPayload().remoteEntry).toBe('http://explicit-host:9000/mfe/workspace/mf-manifest.json')
-    expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/mfe/workspace/')
+    expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/')
   })
 
   it('leaves absolute remoteEntry and remoteBaseUrl untouched when nothing is configured', async () => {

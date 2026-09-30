@@ -203,7 +203,7 @@ During product-store import, the runner:
 * Matches `uiDetails.appId` to the application ID in each microfrontend import filename.
 * Resolves a relative `remoteEntry` against the UI container's `networkAlias` and internal port.
 * Preserves the complete path and filename, including prefixes and `mf-manifest.json`.
-* Derives a relative `remoteBaseUrl` from the directory containing `remoteEntry`.
+* Resolves a relative `remoteBaseUrl` independently to the UI container root.
 * Keeps an absolute HTTP(S) `remoteEntry` unchanged.
 
 Omit `uiDetails.remoteEntry` for legacy applications that expose the entry file at the container root. The runner keeps the filename from the microfrontend import data, such as `remoteEntry.js`, and combines it with the discovered UI container alias and port.

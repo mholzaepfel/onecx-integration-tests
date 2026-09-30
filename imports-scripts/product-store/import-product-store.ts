@@ -159,13 +159,9 @@ export async function importMicrofrontends(
 /**
  * Rewrite a relative `remoteEntry` / `remoteBaseUrl` into absolute Docker-network URLs.
  *
- * Both fields are relative to the same UI container, so they share one host. When the service
- * declared an explicit `remoteEntry` in its config (`uiEntries[appid].entry`), that value is
- * authoritative: it names the path the entry is served under and is built against the recorded UI
- * container host, and the base URL becomes the folder containing the entry so assets stay on the
- * same prefix. When no explicit entry is configured, the transform is intentionally byte-identical
- * to the legacy behaviour (entry file name at the container root on the `appid` host, base at the
- * root) so the existing product-store data is unaffected. Absolute (`http://`) values are left
+ * Both fields use the same UI container host but represent independent locations. A configured
+ * `remoteEntry` (`uiEntries[appid].entry`) overrides only the entry path. Relative base URLs retain
+ * the legacy behaviour and resolve to the container root. Absolute (`http://`) values are left
  * unchanged.
  *
  * Module-private: only called from {@link importMicrofrontends}.
@@ -200,7 +196,7 @@ function resolveRemoteUrls(
   }
 
   if (mfeData.remoteBaseUrl && !mfeData.remoteBaseUrl.startsWith('http')) {
-    const absoluteBase = resolvedEntry ? new URL('.', resolvedEntry).toString() : hostBaseUrl.toString()
+    const absoluteBase = hostBaseUrl.toString()
     logger.info('PROCESSING_FILE', `URL Transform - BaseURL: ${mfeData.remoteBaseUrl} -> ${absoluteBase}`)
     mfeData.remoteBaseUrl = absoluteBase
   }
