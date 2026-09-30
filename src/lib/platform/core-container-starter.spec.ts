@@ -62,7 +62,14 @@ describe('CoreContainerStarter', () => {
   const containerRegistry = new ContainerRegistry() as jest.Mocked<ContainerRegistry>
 
   const network = {} as StartedNetwork
-  const config = {} as PlatformConfig
+  const config = {
+    platformOverrides: {
+      ui: {
+        shell: { remoteEntry: '/onecx-shell/mf-manifest.json' },
+        workspace: { remoteEntry: '/mfe/workspace/mf-manifest.json' },
+      },
+    },
+  } as PlatformConfig
 
   let starter: CoreContainerStarter
 
@@ -102,12 +109,14 @@ describe('CoreContainerStarter', () => {
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
       withLogFilePath: jest.fn().mockReturnThis(),
+      withRemoteEntry: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedShellUi),
     }))
     ;(WorkspaceUiContainer as unknown as jest.Mock).mockImplementation(() => ({
       withNetwork: jest.fn().mockReturnThis(),
       withLoggingEnabled: jest.fn().mockReturnThis(),
       withLogFilePath: jest.fn().mockReturnThis(),
+      withRemoteEntry: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedWorkspaceUi),
     }))
     ;(IamKcContainer as unknown as jest.Mock).mockImplementation(() => ({
@@ -194,6 +203,10 @@ describe('CoreContainerStarter', () => {
 
     await starter.startUiContainers(mockStartedKeycloak)
 
+    const shellUi = (ShellUiContainer as unknown as jest.Mock).mock.results[0].value
+    expect(shellUi.withRemoteEntry).toHaveBeenCalledWith('/onecx-shell/mf-manifest.json')
+    const workspaceUi = (WorkspaceUiContainer as unknown as jest.Mock).mock.results[0].value
+    expect(workspaceUi.withRemoteEntry).toHaveBeenCalledWith('/mfe/workspace/mf-manifest.json')
     expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.SHELL_UI, mockStartedShellUi)
     expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.WORKSPACE_UI, mockStartedWorkspaceUi)
   })

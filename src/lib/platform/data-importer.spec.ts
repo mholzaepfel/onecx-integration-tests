@@ -94,12 +94,16 @@ describe('DataImporter', () => {
       jest.spyOn(mockKeycloak, 'getNetworkAliases').mockReturnValue(['keycloak'])
       jest.spyOn(mockKeycloak, 'getPort').mockReturnValue(8080)
 
-      // Shell UI has no constructor-provided details (getDetails() -> undefined), so it must be skipped
-      // without throwing.
       const mockShellUi = new (StartedShellUiContainer as unknown as { new (): StartedShellUiContainer })()
       jest.spyOn(mockShellUi, 'getClientUserId').mockReturnValue('onecx-shell')
       jest.spyOn(mockShellUi, 'getNetworkAliases').mockReturnValue(['shell-ui'])
       jest.spyOn(mockShellUi, 'getPort').mockReturnValue(4200)
+      jest.spyOn(mockShellUi, 'getDetails').mockReturnValue({
+        appBaseHref: '/onecx-shell/',
+        appId: 'onecx-shell-ui',
+        productName: 'onecx-shell',
+        remoteEntry: '/onecx-shell/mf-manifest.json',
+      })
 
       // A UI container that declared an explicit remoteEntry (new mf-manifest approach).
       const uiContainerWithEntry = {
@@ -146,8 +150,11 @@ describe('DataImporter', () => {
       })
       expect(writtenData.uiEntries['onecx-tenant-ui']).not.toHaveProperty('entry')
 
-      // Shell UI (undefined getDetails()) must not be mapped and must not throw.
-      expect(writtenData.uiEntries).not.toHaveProperty('onecx-shell')
+      expect(writtenData.uiEntries['onecx-shell-ui']).toEqual({
+        alias: 'shell-ui',
+        port: 4200,
+        entry: '/onecx-shell/mf-manifest.json',
+      })
     })
 
     it('shoould throw error when keycloak container is missing', () => {

@@ -262,7 +262,12 @@ export class CoreContainerStarter {
     }
 
     const shellUiImage = await this.imageResolver.getUiImage(OnecxUi.SHELL_UI, this.config)
-    const container = await new ShellUiContainer(shellUiImage, keycloak)
+    const shellUiContainer = new ShellUiContainer(shellUiImage, keycloak)
+    const remoteEntry = this.config.platformOverrides?.ui?.shell?.remoteEntry
+    if (remoteEntry) {
+      shellUiContainer.withRemoteEntry(remoteEntry)
+    }
+    const container = await shellUiContainer
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.SHELL_UI]))
       .withLogFilePath(this.logFilePathProvider?.(CONTAINER.SHELL_UI) || '')
@@ -278,7 +283,12 @@ export class CoreContainerStarter {
     }
 
     const workspaceUiImage = await this.imageResolver.getUiImage(OnecxUi.WORKSPACE_UI, this.config)
-    const container = await new WorkspaceUiContainer(workspaceUiImage, keycloak)
+    const workspaceUiContainer = new WorkspaceUiContainer(workspaceUiImage, keycloak)
+    const remoteEntry = this.config.platformOverrides?.ui?.workspace?.remoteEntry
+    if (remoteEntry) {
+      workspaceUiContainer.withRemoteEntry(remoteEntry)
+    }
+    const container = await workspaceUiContainer
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.WORKSPACE_UI]))
       .withLogFilePath(this.logFilePathProvider?.(CONTAINER.WORKSPACE_UI) || '')

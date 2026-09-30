@@ -106,7 +106,10 @@ Use `platformOverrides` to test specific image versions.
 				"shell": { "image": "ghcr.io/onecx/onecx-shell-bff:main-native" }
 			},
 			"ui": {
-				"shell": { "image": "ghcr.io/onecx/onecx-shell-ui:main" }
+				"shell": {
+					"image": "ghcr.io/onecx/onecx-shell-ui:main",
+					"remoteEntry": "/onecx-shell/mf-manifest.json"
+				}
 			}
 		}
 	}
@@ -116,6 +119,8 @@ Use `platformOverrides` to test specific image versions.
 Apply release semantics consistently:
 
 * `main` for latest main-branch build images
+
+For the predefined Shell and Workspace UIs, set `platformOverrides.ui.<name>.remoteEntry` when the selected image serves its Module Federation entry under a non-default path or filename. The runner resolves relative paths against the predefined container's network alias and internal port. Omit the field for legacy images that expose `remoteEntry.js` at the container root.
 
 == Container Definition
 
@@ -161,6 +166,47 @@ Required fields:
 Optional fields:
 
 * `environments`
+* `uiDetails.remoteEntry` — relative path or absolute HTTP(S) URL of the Module Federation entry file
+
+Use `uiDetails.remoteEntry` for entries such as `mf-manifest.json` or for files served below a path prefix.
+
+[source,json]
+----
+{
+	"platformConfig": {
+		"container": {
+			"ui": [
+				{
+					"image": "ghcr.io/onecx/onecx-workspace-ui:main",
+					"networkAlias": "onecx-workspace-ui",
+					"uiDetails": {
+						"appBaseHref": "/mfe/workspace/",
+						"appId": "onecx-workspace-ui",
+						"productName": "onecx-workspace",
+						"remoteEntry": "/mfe/workspace/mf-manifest.json"
+					}
+				}
+			]
+		}
+	}
+}
+----
+
+Choose how to provide the entry location:
+
+* Prefer `uiDetails.remoteEntry` for user-defined UIs and `platformOverrides.ui.<name>.remoteEntry` for predefined Shell and Workspace UIs. This keeps import files independent of container aliases and ports.
+* Change the microfrontend import files only when the entry is served from the container root, for example `/mf-manifest.json`.
+* Use absolute `remoteEntry` and `remoteBaseUrl` values in import files only when coupling them to a specific container alias and port is acceptable.
+
+During product-store import, the runner:
+
+* Matches `uiDetails.appId` to the application ID in each microfrontend import filename.
+* Resolves a relative `remoteEntry` against the UI container's `networkAlias` and internal port.
+* Preserves the complete path and filename, including prefixes and `mf-manifest.json`.
+* Derives a relative `remoteBaseUrl` from the directory containing `remoteEntry`.
+* Keeps an absolute HTTP(S) `remoteEntry` unchanged.
+
+Omit `uiDetails.remoteEntry` for legacy applications that expose the entry file at the container root. The runner keeps the filename from the microfrontend import data, such as `remoteEntry.js`, and combines it with the discovered UI container alias and port.
 
 == E2E Container
 

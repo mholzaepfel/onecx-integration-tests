@@ -148,6 +148,18 @@
         }
       }
     },
+    "uiOverride": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/dockerImage"
+        },
+        "remoteEntry": {
+          "type": "string",
+          "description": "Optional path or absolute HTTP(S) URL of the module federation entry file"
+        }
+      }
+    },
     "coreOverrides": {
       "type": "object",
       "description": "Core service image overrides",
@@ -216,17 +228,17 @@
     },
     "uiOverrides": {
       "type": "object",
-      "description": "UI service image overrides",
+      "description": "UI service image and module federation entry overrides",
       "properties": {
         "shell": {
-          "$ref": "#/definitions/imageOverride"
+          "$ref": "#/definitions/uiOverride"
         },
         "workspace": {
-          "$ref": "#/definitions/imageOverride"
+          "$ref": "#/definitions/uiOverride"
         }
       },
       "additionalProperties": {
-        "$ref": "#/definitions/imageOverride"
+        "$ref": "#/definitions/uiOverride"
       }
     },
     "dockerImage": {
@@ -452,7 +464,7 @@
         },
         "remoteEntry": {
           "type": "string",
-          "description": "Optional path the module federation entry file is served under (e.g. /mfe/workspace/mf-manifest.json or /remoteEntry.js). Used to build the absolute entry URL for product-store MFE imports when the container does not serve the entry from its root."
+          "description": "Optional path or absolute HTTP(S) URL of the module federation entry file (e.g. /mfe/workspace/mf-manifest.json). Used to build the entry URL for product-store MFE imports."
         }
       },
       "required": ["appBaseHref", "appId", "productName"]

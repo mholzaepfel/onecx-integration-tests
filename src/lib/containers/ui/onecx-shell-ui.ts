@@ -19,6 +19,8 @@ export class ShellUiContainer extends UiContainer {
       .withEnvironment(getCommonEnvironmentVariables(this.keycloakContainer))
       .withNetworkAliases('onecx-shell-ui')
       .withAppBaseHref('/onecx-shell/')
+      .withAppId('onecx-shell-ui')
+      .withProductName('onecx-shell')
   }
 
   override async start(): Promise<StartedShellUiContainer> {

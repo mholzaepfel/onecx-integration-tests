@@ -179,33 +179,28 @@ function resolveRemoteUrls(
   const dataEntry = mfeData.remoteEntry
   const hasRelativeEntry = typeof dataEntry === 'string' && dataEntry.length > 0 && !dataEntry.startsWith('http')
 
-  // An explicit configured entry is authoritative and also selects the real UI container host;
-  // otherwise fall back to the appid host at the product-store port (legacy behaviour).
+  // A mapped UI container selects the real host. Its optional entry overrides only the path.
   const configured = uiEntries?.[appid]
   const configuredEntry = configured?.entry
-  const useConfigured = typeof configuredEntry === 'string' && configuredEntry.length > 0
-  const alias = useConfigured ? configured!.alias : appid
-  const hostPort = useConfigured ? configured!.port : port
-  // Entry path: the configured value when present, else the entry file name at the container root.
-  let entryPath = ''
-  if (useConfigured) {
-    entryPath = configuredEntry
+  const hasConfiguredEntry = typeof configuredEntry === 'string' && configuredEntry.length > 0
+  const alias = configured?.alias ?? appid
+  const hostPort = configured?.port ?? port
+  const hostBaseUrl = new URL(`http://${alias}:${hostPort}/`)
+  let resolvedEntry: URL | undefined
+  if (hasConfiguredEntry) {
+    resolvedEntry = new URL(configuredEntry, hostBaseUrl)
   } else if (hasRelativeEntry) {
-    entryPath = `/${path.posix.basename(dataEntry)}`
+    resolvedEntry = new URL(`/${path.posix.basename(dataEntry)}`, hostBaseUrl)
   }
 
-  if (hasRelativeEntry) {
-    const absoluteEntry = `http://${alias}:${hostPort}${entryPath}`
+  if (hasRelativeEntry && resolvedEntry) {
+    const absoluteEntry = resolvedEntry.toString()
     logger.info('PROCESSING_FILE', `URL Transform - Entry: ${dataEntry} -> ${absoluteEntry}`)
     mfeData.remoteEntry = absoluteEntry
   }
 
   if (mfeData.remoteBaseUrl && !mfeData.remoteBaseUrl.startsWith('http')) {
-    // The base URL is the folder containing the entry file; for the legacy root entry that is the
-    // container root, matching the previous transform.
-    const baseDir = entryPath.length > 0 ? path.posix.dirname(entryPath) : '/'
-    const normalizedBase = baseDir.endsWith('/') ? baseDir : `${baseDir}/`
-    const absoluteBase = `http://${alias}:${hostPort}${normalizedBase}`
+    const absoluteBase = resolvedEntry ? new URL('.', resolvedEntry).toString() : hostBaseUrl.toString()
     logger.info('PROCESSING_FILE', `URL Transform - BaseURL: ${mfeData.remoteBaseUrl} -> ${absoluteBase}`)
     mfeData.remoteBaseUrl = absoluteBase
   }

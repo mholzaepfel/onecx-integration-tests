@@ -32,7 +32,7 @@ const productStorePort = 8080
 
 /** Read back the MFE payload (the transformed data) that was PUT to the product store. */
 function putPayload(): { remoteEntry?: string; remoteBaseUrl?: string } {
-  return (putMock.mock.calls[0][1] as { remoteEntry?: string; remoteBaseUrl?: string })
+  return putMock.mock.calls[0][1] as { remoteEntry?: string; remoteBaseUrl?: string }
 }
 
 describe('importMicrofrontends URL transform', () => {
@@ -71,6 +71,20 @@ describe('importMicrofrontends URL transform', () => {
     expect(putPayload().remoteBaseUrl).toBe('http://onecx-workspace-ui:8080/')
   })
 
+  it('uses the recorded UI container host for a legacy entry without an explicit path', async () => {
+    const uiEntries: UiEntryMap = {
+      [appid]: { alias: 'workspace-ui', port: 4200 },
+    }
+    readFileMock.mockResolvedValue(
+      JSON.stringify({ remoteEntry: '/mfe/workspace/remoteEntry.js', remoteBaseUrl: '/mfe/workspace/' })
+    )
+
+    await importMicrofrontends('/data', 'http://ps:8080', productStorePort, uiEntries)
+
+    expect(putPayload().remoteEntry).toBe('http://workspace-ui:4200/remoteEntry.js')
+    expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/')
+  })
+
   it('honours an explicit mf-manifest entry served under a prefix, and derives the base from its folder', async () => {
     const uiEntries: UiEntryMap = {
       [appid]: { alias: 'workspace-ui', port: 4200, entry: '/mfe/workspace/mf-manifest.json' },
@@ -85,6 +99,26 @@ describe('importMicrofrontends URL transform', () => {
     expect(putPayload().remoteEntry).toBe('http://workspace-ui:4200/mfe/workspace/mf-manifest.json')
     // The base is the folder containing the entry, so assets stay on the same prefix and same host.
     expect(putPayload().remoteBaseUrl).toBe('http://workspace-ui:4200/mfe/workspace/')
+  })
+
+  it.each([
+    ['mfe/workspace/mf-manifest.json', 'http://workspace-ui:4200/mfe/workspace/mf-manifest.json'],
+    [
+      'https://cdn.example.org/mfe/workspace/mf-manifest.json',
+      'https://cdn.example.org/mfe/workspace/mf-manifest.json',
+    ],
+  ])('resolves configured entry %s as a URL', async (entry, expectedEntry) => {
+    const uiEntries: UiEntryMap = {
+      [appid]: { alias: 'workspace-ui', port: 4200, entry },
+    }
+    readFileMock.mockResolvedValue(
+      JSON.stringify({ remoteEntry: '/mfe/workspace/remoteEntry.js', remoteBaseUrl: '/mfe/workspace/' })
+    )
+
+    await importMicrofrontends('/data', 'http://ps:8080', productStorePort, uiEntries)
+
+    expect(putPayload().remoteEntry).toBe(expectedEntry)
+    expect(putPayload().remoteBaseUrl).toBe(new URL('.', expectedEntry).toString())
   })
 
   it('uses the recorded UI container alias/port (not the appid / product-store port) when configured', async () => {
