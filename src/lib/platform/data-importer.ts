@@ -3,6 +3,7 @@ import { ImportManagerContainer, StartedImportManagerContainer } from '../contai
 import { ImageResolver } from './image-resolver'
 import { CONTAINER } from '../models/enums/container.enum'
 import type { AllowedContainerTypes } from '../models/types/allowed-container.type'
+import type { UiEntryMap } from '../models/types/ui-entry-map.type'
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -29,12 +30,10 @@ export interface ContainerInfo {
   services: Record<string, { alias: string; port: number }>
   /**
    * Module federation host entries, keyed by the UI container's `appId` (which matches the
-   * `appid` segment of product-store MFE data filenames). `entry` is the declared
-   * `uiDetails.remoteEntry` (relative or absolute); `alias`/`port` describe the UI container the
-   * entry is served from, so the import script can build the absolute URL when the entry is not
-   * served from the container root.
+   * `appid` segment of product-store MFE data filenames). `entry` and `baseUrl` are the optional
+   * configured paths; `alias`/`port` describe the UI container used to build their absolute URLs.
    */
-  uiEntries: Record<string, { alias: string; port: number; entry?: string }>
+  uiEntries: UiEntryMap
 }
 
 const logger = new Logger('DataImporter')
@@ -52,10 +51,7 @@ interface ShellUiInfo {
 }
 
 export class DataImporter {
-  constructor(
-    private imageResolver: ImageResolver,
-    private readonly logFilePathProvider?: LogFilePathProvider
-  ) {}
+  constructor(private imageResolver: ImageResolver, private readonly logFilePathProvider?: LogFilePathProvider) {}
 
   /**
    * Import default data using the ImportManagerContainer
@@ -205,10 +201,8 @@ export class DataImporter {
    * @param startedContainers Map of all started containers
    * @returns Record of appId to its entry host info
    */
-  private buildUiEntriesInfo(
-    startedContainers: Map<string, AllowedContainerTypes>
-  ): Record<string, { alias: string; port: number; entry?: string }> {
-    const uiEntries: Record<string, { alias: string; port: number; entry?: string }> = {}
+  private buildUiEntriesInfo(startedContainers: Map<string, AllowedContainerTypes>): UiEntryMap {
+    const uiEntries: UiEntryMap = {}
 
     for (const [containerName, container] of startedContainers) {
       if (!isUiContainer(container)) {
@@ -226,11 +220,13 @@ export class DataImporter {
         alias: container.getNetworkAliases()[0],
         port: container.getPort(),
         ...(details?.remoteEntry ? { entry: details.remoteEntry } : {}),
+        ...(details?.remoteBaseUrl ? { baseUrl: details.remoteBaseUrl } : {}),
       }
 
       logger.info(
         `UI_ENTRY_MAPPED: ${containerName} -> ${appId} (${container.getNetworkAliases()[0]}:${container.getPort()})` +
-          (details?.remoteEntry ? ` entry=${details.remoteEntry}` : '')
+          (details?.remoteEntry ? ` entry=${details.remoteEntry}` : '') +
+          (details?.remoteBaseUrl ? ` baseUrl=${details.remoteBaseUrl}` : '')
       )
     }
 

@@ -287,6 +287,10 @@ export class UserDefinedContainerStarter {
       uiContainer.withRemoteEntry(uiConfig.uiDetails.remoteEntry)
     }
 
+    if (uiConfig.uiDetails.remoteBaseUrl) {
+      uiContainer.withRemoteBaseUrl(uiConfig.uiDetails.remoteBaseUrl)
+    }
+
     if (uiConfig.environments) {
       uiContainer.withEnvironment(uiConfig.environments)
     }

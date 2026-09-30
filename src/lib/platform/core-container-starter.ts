@@ -267,6 +267,10 @@ export class CoreContainerStarter {
     if (remoteEntry) {
       shellUiContainer.withRemoteEntry(remoteEntry)
     }
+    const remoteBaseUrl = this.config.platformOverrides?.ui?.shell?.remoteBaseUrl
+    if (remoteBaseUrl) {
+      shellUiContainer.withRemoteBaseUrl(remoteBaseUrl)
+    }
     const container = await shellUiContainer
       .withNetwork(this.network)
       .withLoggingEnabled(loggingEnabled(this.config, [CONTAINER.SHELL_UI]))
@@ -287,6 +291,10 @@ export class CoreContainerStarter {
     const remoteEntry = this.config.platformOverrides?.ui?.workspace?.remoteEntry
     if (remoteEntry) {
       workspaceUiContainer.withRemoteEntry(remoteEntry)
+    }
+    const remoteBaseUrl = this.config.platformOverrides?.ui?.workspace?.remoteBaseUrl
+    if (remoteBaseUrl) {
+      workspaceUiContainer.withRemoteBaseUrl(remoteBaseUrl)
     }
     const container = await workspaceUiContainer
       .withNetwork(this.network)

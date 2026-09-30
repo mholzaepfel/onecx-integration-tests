@@ -18,6 +18,7 @@ export class UiContainer extends GenericContainer {
     appId: '',
     productName: '',
     remoteEntry: undefined,
+    remoteBaseUrl: undefined,
   }
 
   private port = 8080
@@ -50,6 +51,11 @@ export class UiContainer extends GenericContainer {
 
   withRemoteEntry(remoteEntry: string): this {
     this.details.remoteEntry = remoteEntry
+    return this
+  }
+
+  withRemoteBaseUrl(remoteBaseUrl: string): this {
+    this.details.remoteBaseUrl = remoteBaseUrl
     return this
   }
 

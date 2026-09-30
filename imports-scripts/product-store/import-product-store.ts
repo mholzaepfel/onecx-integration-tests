@@ -7,11 +7,10 @@ const logger = new Logger('ImportProductStore')
 
 /**
  * Module federation host entries keyed by appId, as produced by the runner into
- * `container-info.json`. `alias`/`port` point at the UI container serving the entry; `entry` is the
- * declared `uiDetails.remoteEntry` — the path the entry file is served under (which may sit under a
- * prefix and/or be `mf-manifest.json` instead of `remoteEntry.js`).
+ * `container-info.json`. `alias`/`port` identify the UI container. `entry` and `baseUrl` optionally
+ * override the independently resolved module federation entry and application base paths.
  */
-export type UiEntryMap = Record<string, { alias: string; port: number; entry?: string }>
+export type UiEntryMap = Record<string, { alias: string; port: number; entry?: string; baseUrl?: string }>
 
 export async function importProducts(baseDir: string, endpointBase: string) {
   logger.info('IMPORT_PRODUCTS_START')
@@ -157,12 +156,10 @@ export async function importMicrofrontends(
 }
 
 /**
- * Rewrite a relative `remoteEntry` / `remoteBaseUrl` into absolute Docker-network URLs.
+ * Create absolute Docker-network URLs for `remoteEntry` and `remoteBaseUrl`.
  *
- * Both fields use the same UI container host but represent independent locations. A configured
- * `remoteEntry` (`uiEntries[appid].entry`) overrides only the entry path. Relative base URLs retain
- * the legacy behaviour and resolve to the container root. Absolute (`http://`) values are left
- * unchanged.
+ * Both fields use the same UI container host but represent independent locations. Values are chosen
+ * from configured paths first, import data second, and the defaults `/remoteEntry.js` and `/` last.
  *
  * Module-private: only called from {@link importMicrofrontends}.
  */
@@ -172,32 +169,18 @@ function resolveRemoteUrls(
   port: number,
   uiEntries: UiEntryMap | undefined
 ): void {
-  const dataEntry = mfeData.remoteEntry
-  const hasRelativeEntry = typeof dataEntry === 'string' && dataEntry.length > 0 && !dataEntry.startsWith('http')
-
-  // A mapped UI container selects the real host. Its optional entry overrides only the path.
   const configured = uiEntries?.[appid]
-  const configuredEntry = configured?.entry
-  const hasConfiguredEntry = typeof configuredEntry === 'string' && configuredEntry.length > 0
   const alias = configured?.alias ?? appid
   const hostPort = configured?.port ?? port
   const hostBaseUrl = new URL(`http://${alias}:${hostPort}/`)
-  let resolvedEntry: URL | undefined
-  if (hasConfiguredEntry) {
-    resolvedEntry = new URL(configuredEntry, hostBaseUrl)
-  } else if (hasRelativeEntry) {
-    resolvedEntry = new URL(`/${path.posix.basename(dataEntry)}`, hostBaseUrl)
-  }
 
-  if (hasRelativeEntry && resolvedEntry) {
-    const absoluteEntry = resolvedEntry.toString()
-    logger.info('PROCESSING_FILE', `URL Transform - Entry: ${dataEntry} -> ${absoluteEntry}`)
-    mfeData.remoteEntry = absoluteEntry
-  }
+  const entryPath = configured?.entry || mfeData.remoteEntry || '/remoteEntry.js'
+  const absoluteEntry = new URL(entryPath, hostBaseUrl).toString()
+  logger.info('PROCESSING_FILE', `URL Transform - Entry: ${entryPath} -> ${absoluteEntry}`)
+  mfeData.remoteEntry = absoluteEntry
 
-  if (mfeData.remoteBaseUrl && !mfeData.remoteBaseUrl.startsWith('http')) {
-    const absoluteBase = hostBaseUrl.toString()
-    logger.info('PROCESSING_FILE', `URL Transform - BaseURL: ${mfeData.remoteBaseUrl} -> ${absoluteBase}`)
-    mfeData.remoteBaseUrl = absoluteBase
-  }
+  const basePath = configured?.baseUrl || mfeData.remoteBaseUrl || '/'
+  const absoluteBase = new URL(basePath, hostBaseUrl).toString()
+  logger.info('PROCESSING_FILE', `URL Transform - BaseURL: ${basePath} -> ${absoluteBase}`)
+  mfeData.remoteBaseUrl = absoluteBase
 }

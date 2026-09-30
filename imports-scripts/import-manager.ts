@@ -10,6 +10,7 @@ import {
   importMicroservices,
   importProducts,
   importSlots,
+  UiEntryMap,
 } from './product-store/import-product-store'
 import { importPermissions } from './permissions/import-permissions'
 import { Logger } from './utils/imports-logger'
@@ -33,7 +34,7 @@ export interface ContainerInfo {
    * Optional Module Federation host entries keyed by appId (matches the MFE filename `appid`),
    * produced by the runner. Present only in newer container-info files.
    */
-  uiEntries?: Record<string, { alias: string; port: number; entry?: string }>
+  uiEntries?: UiEntryMap
 }
 
 /**

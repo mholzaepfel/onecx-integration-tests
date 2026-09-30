@@ -65,8 +65,8 @@ describe('CoreContainerStarter', () => {
   const config = {
     platformOverrides: {
       ui: {
-        shell: { remoteEntry: '/onecx-shell/mf-manifest.json' },
-        workspace: { remoteEntry: '/mfe/workspace/mf-manifest.json' },
+        shell: { remoteEntry: '/onecx-shell/mf-manifest.json', remoteBaseUrl: '/onecx-shell/' },
+        workspace: { remoteEntry: '/mfe/workspace/mf-manifest.json', remoteBaseUrl: '/workspace/' },
       },
     },
   } as PlatformConfig
@@ -110,6 +110,7 @@ describe('CoreContainerStarter', () => {
       withLoggingEnabled: jest.fn().mockReturnThis(),
       withLogFilePath: jest.fn().mockReturnThis(),
       withRemoteEntry: jest.fn().mockReturnThis(),
+      withRemoteBaseUrl: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedShellUi),
     }))
     ;(WorkspaceUiContainer as unknown as jest.Mock).mockImplementation(() => ({
@@ -117,6 +118,7 @@ describe('CoreContainerStarter', () => {
       withLoggingEnabled: jest.fn().mockReturnThis(),
       withLogFilePath: jest.fn().mockReturnThis(),
       withRemoteEntry: jest.fn().mockReturnThis(),
+      withRemoteBaseUrl: jest.fn().mockReturnThis(),
       start: jest.fn().mockResolvedValue(mockStartedWorkspaceUi),
     }))
     ;(IamKcContainer as unknown as jest.Mock).mockImplementation(() => ({
@@ -205,8 +207,10 @@ describe('CoreContainerStarter', () => {
 
     const shellUi = (ShellUiContainer as unknown as jest.Mock).mock.results[0].value
     expect(shellUi.withRemoteEntry).toHaveBeenCalledWith('/onecx-shell/mf-manifest.json')
+    expect(shellUi.withRemoteBaseUrl).toHaveBeenCalledWith('/onecx-shell/')
     const workspaceUi = (WorkspaceUiContainer as unknown as jest.Mock).mock.results[0].value
     expect(workspaceUi.withRemoteEntry).toHaveBeenCalledWith('/mfe/workspace/mf-manifest.json')
+    expect(workspaceUi.withRemoteBaseUrl).toHaveBeenCalledWith('/workspace/')
     expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.SHELL_UI, mockStartedShellUi)
     expect(containerRegistry.addContainer).toHaveBeenCalledWith(CONTAINER.WORKSPACE_UI, mockStartedWorkspaceUi)
   })

@@ -54,6 +54,7 @@ describe('UserDefinedContainerStarter', () => {
         withAppId: jest.fn().mockReturnThis(),
         withProductName: jest.fn().mockReturnThis(),
         withRemoteEntry: jest.fn().mockReturnThis(),
+        withRemoteBaseUrl: jest.fn().mockReturnThis(),
         withBaseUrl: jest.fn().mockReturnThis(),
         withLoggingEnabled: jest.fn().mockReturnThis(),
         withNetwork: jest.fn().mockReturnThis(),
@@ -97,6 +98,7 @@ describe('UserDefinedContainerStarter', () => {
               productName: 'prod',
               appBaseHref: '/',
               remoteEntry: '/mfe/app/mf-manifest.json',
+              remoteBaseUrl: '/app/',
             },
           },
         ],
@@ -130,6 +132,7 @@ describe('UserDefinedContainerStarter', () => {
     expect(uiInstance.withAppId).toHaveBeenCalledWith('app')
     expect(uiInstance.withAppBaseHref).toHaveBeenCalledWith('/')
     expect(uiInstance.withRemoteEntry).toHaveBeenCalledWith('/mfe/app/mf-manifest.json')
+    expect(uiInstance.withRemoteBaseUrl).toHaveBeenCalledWith('/app/')
   })
 
   it('should throw error when creating SVC but postgres is missing', async () => {

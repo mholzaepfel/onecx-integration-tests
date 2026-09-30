@@ -7,6 +7,7 @@ import { E2eContainerInterface } from './e2e.interface'
 interface UiOverride {
   image?: string
   remoteEntry?: string
+  remoteBaseUrl?: string
 }
 
 export interface PlatformConfig {

@@ -10,6 +10,8 @@ export interface UiDetails {
    * `/mfe/workspace/mf-manifest.json`). Used to build the entry URL for product-store MFE imports.
    */
   remoteEntry?: string
+  /** Optional path or absolute HTTP(S) URL used as the remote application base. */
+  remoteBaseUrl?: string
 }
 
 export interface UiContainerInterface {

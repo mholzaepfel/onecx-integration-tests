@@ -84,7 +84,7 @@ describe('DataImporter', () => {
       })
     })
 
-    it('should map UI entries into uiEntries keyed by appId, only recording entry when remoteEntry is declared', () => {
+    it('should map configured UI entry and base paths into uiEntries keyed by appId', () => {
       const mockWriteFileSync = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {
         return undefined
       })
@@ -103,6 +103,7 @@ describe('DataImporter', () => {
         appId: 'onecx-shell-ui',
         productName: 'onecx-shell',
         remoteEntry: '/onecx-shell/mf-manifest.json',
+        remoteBaseUrl: '/onecx-shell/',
       })
 
       // A UI container that declared an explicit remoteEntry (new mf-manifest approach).
@@ -110,6 +111,7 @@ describe('DataImporter', () => {
         getDetails: jest.fn().mockReturnValue({
           appId: 'onecx-workspace-ui',
           remoteEntry: '/mfe/workspace/mf-manifest.json',
+          remoteBaseUrl: '/workspace/',
         }),
         getAppId: jest.fn().mockReturnValue('onecx-workspace-ui'),
         getNetworkAliases: jest.fn().mockReturnValue(['workspace-ui']),
@@ -141,6 +143,7 @@ describe('DataImporter', () => {
         alias: 'workspace-ui',
         port: 8080,
         entry: '/mfe/workspace/mf-manifest.json',
+        baseUrl: '/workspace/',
       })
 
       // ...and the entry key omitted when it is not declared (not `entry: undefined`).
@@ -154,6 +157,7 @@ describe('DataImporter', () => {
         alias: 'shell-ui',
         port: 4200,
         entry: '/onecx-shell/mf-manifest.json',
+        baseUrl: '/onecx-shell/',
       })
     })
 

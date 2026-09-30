@@ -157,6 +157,10 @@
         "remoteEntry": {
           "type": "string",
           "description": "Optional path or absolute HTTP(S) URL of the module federation entry file"
+        },
+        "remoteBaseUrl": {
+          "type": "string",
+          "description": "Optional path or absolute HTTP(S) URL used as the remote application base"
         }
       }
     },
@@ -465,6 +469,10 @@
         "remoteEntry": {
           "type": "string",
           "description": "Optional path or absolute HTTP(S) URL of the module federation entry file (e.g. /mfe/workspace/mf-manifest.json). Used to build the entry URL for product-store MFE imports."
+        },
+        "remoteBaseUrl": {
+          "type": "string",
+          "description": "Optional path or absolute HTTP(S) URL used as the remote application base. Defaults to the UI container root."
         }
       },
       "required": ["appBaseHref", "appId", "productName"]
