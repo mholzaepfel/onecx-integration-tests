@@ -111,7 +111,10 @@ export async function importMicroservices(baseDir: string, endpointBase: string)
   }
 }
 
-export async function importMicrofrontends(baseDir: string, endpointBase: string, port: number) {
+export async function importMicrofrontends(baseDir: string, endpointBase: string) {
+  // Every UI container terminates TLS on 8443 (see generic UiContainer HTTPS support); use that
+  // so the https shell can load MFE assets without mixed-content errors.
+  const TLS_PORT = 8443
   logger.info('IMPORT_MICROFRONTENDS_START')
   const dir = path.join(baseDir, 'microfrontends')
   const files = await readdir(dir)
@@ -128,13 +131,15 @@ export async function importMicrofrontends(baseDir: string, endpointBase: string
     // The MFE assets are served from the UI container directly (no nginx proxy needed for loading).
     if (appid && mfeData.remoteBaseUrl && !mfeData.remoteBaseUrl.startsWith('http')) {
       const originalBaseUrl = mfeData.remoteBaseUrl
-      mfeData.remoteBaseUrl = `http://${appid}:${port}/`
+      mfeData.remoteBaseUrl = `https://${appid}:${TLS_PORT}/`
       logger.info('PROCESSING_FILE', `URL Transform - BaseURL: ${originalBaseUrl} -> ${mfeData.remoteBaseUrl}`)
     }
 
     if (appid && mfeData.remoteEntry && !mfeData.remoteEntry.startsWith('http')) {
       const originalEntry = mfeData.remoteEntry
-      mfeData.remoteEntry = `http://${appid}:${port}/remoteEntry.js`
+      // Keep the original filename (e.g. remoteEntry.js, or mf-manifest.json for shell v3+ MFEs).
+      const entryFileName = originalEntry.split('/').pop()
+      mfeData.remoteEntry = `https://${appid}:${TLS_PORT}/${entryFileName}`
       logger.info('PROCESSING_FILE', `URL Transform - Entry: ${originalEntry} -> ${mfeData.remoteEntry}`)
     }
 

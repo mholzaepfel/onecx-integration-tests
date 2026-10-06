@@ -15,6 +15,12 @@ export const E2E_OUTPUT_DIR = 'e2e-results'
 export const E2E_CONTAINER_OUTPUT_PATH = '/e2e-results'
 
 /**
+ * Container path where the shared ephemeral CA certificate is copied, so the E2E image can trust
+ * it (e.g. installing it into its own OS CA store) instead of disabling certificate validation.
+ */
+export const E2E_CONTAINER_CA_CERT_PATH = '/etc/onecx-it/ca.pem'
+
+/**
  * Default timeout for E2E container startup/termination wait in milliseconds.
  * 10 minutes is intended for slower CI/CD pipelines.
  * 1000 milli * 60 sec * 10 min

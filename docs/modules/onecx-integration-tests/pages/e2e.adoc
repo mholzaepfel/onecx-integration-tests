@@ -24,6 +24,7 @@ Before running E2E:
 * Provide a valid `platform.json`
 * Configure at least one entry in `platformConfig.container.e2e` with `image` and `networkAlias`
 * Ensure the E2E image can access Shell UI and Keycloak over the Docker network
+* Handle the HTTPS certificate in the Playwright config used by the E2E image: trust the exported CA or set `ignoreHTTPSErrors: true` (see xref:e2e.adoc#_tls_and_self_signed_certificates[TLS and Self-Signed Certificates])
 
 Minimal E2E configuration:
 
@@ -59,6 +60,24 @@ Use dry-run to validate setup without starting containers:
 npm run it:run -- --dry-run
 ----
 
+== TLS and Self-Signed Certificates
+
+Shell, Keycloak, and every UI/MFE container serve HTTPS on `8443` so the shell runs as a secure browser context (required for `keycloak-js` PKCE login). Each container is issued its own leaf certificate matching its actual alias, signed by one shared ephemeral CA generated fresh for the run — never persisted or reused across runs.
+
+The CA certificate is written to `e2e/ca.pem` in the run artifacts and copied into the E2E container itself; its in-container path is exposed via the `TLS_CA_CERT_PATH` environment variable.
+
+Two ways for the caller-owned Playwright config (`integration/e2e/playwright.config.ts`) to handle this, in order of preference:
+
+* *Trust the CA* (no certificate errors, closest to production behavior): install the file at `$TLS_CA_CERT_PATH` into the E2E image's OS CA trust store as part of its own Docker build (e.g. `update-ca-certificates` on Debian-based images), or point Node-based HTTP clients at it with `NODE_EXTRA_CA_CERTS`. This works for Playwright/Chromium and for any other HTTP client in the image that honors the OS trust store — it is not a Playwright-specific mechanism.
+* *Bypass validation* (simpler, no image changes): set `use: { ignoreHTTPSErrors: true }`. Chromium only, and does not help non-browser HTTP clients in the same image.
+
+[source,typescript]
+----
+use: {
+  ignoreHTTPSErrors: true,
+}
+----
+
 == Platform Metadata for E2E
 
 During startup, the runtime exports platform metadata to:
@@ -84,6 +103,7 @@ Key paths:
 
 * `summary.json`
 * `e2e/platform-info.json`
+* `e2e/ca.pem` — the shared TLS CA, see xref:e2e.adoc#_tls_and_self_signed_certificates[TLS and Self-Signed Certificates]
 * `e2e/e2e-executions.json`
 * `e2e-results/`
 * `logs/runner-output.log`

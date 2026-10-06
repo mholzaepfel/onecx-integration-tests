@@ -112,6 +112,7 @@ Implementation guidance:
 * Read runtime endpoints from exported platform metadata
 * Keep tests deterministic and environment-agnostic
 * Do not embed secrets directly in test sources
+* Handle the HTTPS certificate: either trust `$TLS_CA_CERT_PATH` in the E2E image's OS CA store, or set `ignoreHTTPSErrors: true` in `playwright.config.ts`; see xref:e2e.adoc#_tls_and_self_signed_certificates[TLS and Self-Signed Certificates]
 
 == Consumer dry-run check
 
@@ -146,3 +147,4 @@ Verify these items before opening a pull request:
 * The dry run passes: `onecx-it-runner --dry-run` exits with status `success`
 * Run succeeds with `onecx-it-runner --verbose --capture-logs`
 * Artifacts include `summary.json` and `e2e-results/`
+* `playwright.config.ts` either trusts `$TLS_CA_CERT_PATH` or sets `ignoreHTTPSErrors: true`

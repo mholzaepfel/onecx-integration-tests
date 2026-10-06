@@ -5,8 +5,9 @@ import Dockerode from 'dockerode'
 import { HealthCheckableContainer } from '../../models/interfaces/health-checkable-container.interface'
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { SkipHealthCheckExecutor } from '../../utils/health-check-executor'
-import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH } from '../../config/e2e-constants'
+import { getE2eOutputPath, E2E_CONTAINER_OUTPUT_PATH, E2E_CONTAINER_CA_CERT_PATH } from '../../config/e2e-constants'
 import { validateNetworkAlias } from '../../utils/network-alias.utils'
+import { getCaCertificatePem } from '../../utils/tls-ca'
 
 /**
  * E2E test container that runs playwright/cypress tests against the platform.
@@ -59,6 +60,14 @@ export class E2eContainer extends GenericContainer {
     if (this.baseUrl) {
       this.withEnvironment({ BASE_URL: this.baseUrl })
     }
+
+    // Trust path for the self-signed TLS chain used by Shell/Keycloak/UI containers: the CA cert
+    // is copied in and its in-container path exposed, so the image can install it into its own OS
+    // CA store (or point NODE_EXTRA_CA_CERTS at it) instead of disabling certificate validation.
+    this.withEnvironment({ TLS_CA_CERT_PATH: E2E_CONTAINER_CA_CERT_PATH })
+    this.withCopyContentToContainer([
+      { content: await getCaCertificatePem(), target: E2E_CONTAINER_CA_CERT_PATH, mode: 0o644 },
+    ])
 
     // Mount output directory for E2E results
     // Use networkAlias as subdirectory name

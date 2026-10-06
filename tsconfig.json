@@ -7,7 +7,9 @@
     "importHelpers": true,
     "target": "es2022",
     "module": "commonjs",
-    "lib": ["es2022"],
+    // "dom" is types-only here (no browser runtime involved); needed for WebCrypto ambient
+    // types (Crypto, CryptoKeyPair, etc.) used by @peculiar/x509 and src/lib/utils/tls-ca.ts.
+    "lib": ["es2022", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",

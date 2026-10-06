@@ -11,7 +11,9 @@ export class ShellUiContainer extends UiContainer {
       ONECX_PERMISSIONS_ENABLED: 'true',
       ONECX_PERMISSIONS_CACHE_ENABLED: 'false',
       ONECX_PERMISSIONS_PRODUCT_NAME: 'onecx-shell',
-      KEYCLOAK_URL: `http://${keycloakContainer.getNetworkAliases()[0]}:${keycloakContainer.getPort()}`,
+      // Browser-facing: must be the https origin, or keycloak-js's PKCE S256 login URL fails
+      // (Web Crypto API only available in a secure context).
+      KEYCLOAK_URL: `https://${keycloakContainer.getNetworkAliases()[0]}:8443`,
       KEYCLOAK_REALM: keycloakContainer.getRealm(),
       ONECX_VAR_REMAP: 'KEYCLOAK_REALM=KC_REALM;KEYCLOAK_CLIENT_ID=CLIENT_USER_ID',
       CLIENT_USER_ID: `${this.client_user_id}`,

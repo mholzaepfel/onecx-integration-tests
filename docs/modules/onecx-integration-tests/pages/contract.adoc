@@ -192,7 +192,7 @@ Example:
 				{
 					"image": "ghcr.io/onecx/onecx-shell-e2e:latest",
 					"networkAlias": "shell-e2e",
-					"baseUrl": "http://onecx-shell-ui:8080"
+					"baseUrl": "https://onecx-shell-ui:8443"
 				}
 			]
 		}
@@ -203,4 +203,9 @@ Example:
 [IMPORTANT]
 ====
 The E2E container runs as a one-shot test workload and is expected to terminate with an explicit exit code
+====
+
+[IMPORTANT]
+====
+Shell, Keycloak, and every MFE/UI container terminate TLS on `8443` using a certificate issued per container alias from a shared ephemeral CA (regenerated every run). The CA is exported to `e2e/ca.pem` and copied into the E2E container at the path in `$TLS_CA_CERT_PATH`. Either trust that CA in the E2E image (recommended) or set `use: { ignoreHTTPSErrors: true }` in the caller's Playwright config; see xref:e2e.adoc#_tls_and_self_signed_certificates[TLS and Self-Signed Certificates].
 ====

@@ -11,8 +11,11 @@ import {
   getInternalPort,
   isPortAwareContainer,
   isE2eContainer,
+  isTlsCapableContainer,
   getPlatformInfoExportDecision,
+  TLS_PORT,
 } from '../utils/container-utils'
+import { getCaCertificatePem } from '../utils/tls-ca'
 
 const logger = new Logger('PlatformInfoExporter')
 
@@ -145,20 +148,44 @@ export class PlatformInfoExporter {
   }
 
   /**
+   * Write the shared ephemeral CA certificate (that signs every container's TLS leaf cert) to the
+   * e2e artifacts dir, so consumers can trust it instead of disabling certificate validation.
+   */
+  async writeCaCertificateFile(filePath?: string): Promise<void> {
+    const outputPath = filePath ?? path.join(this.outputDir, 'ca.pem')
+
+    const dir = path.dirname(outputPath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+
+    fs.writeFileSync(outputPath, await getCaCertificatePem())
+    logger.info(`CA certificate written to: ${outputPath}`)
+  }
+
+  /**
    * Export all (log + file)
    */
 
   async exportAll(filePath?: string): Promise<void> {
     await this.logPlatformInfo()
     await this.writePlatformInfoFile(filePath)
+    await this.writeCaCertificateFile()
   }
 
   private async buildContainerInfo(containerName: string, container: PortAwareContainer): Promise<ContainerInfo> {
     // Get internal port from container
     const internalPort = getInternalPort(container)
 
+    // Keycloak and UI containers terminate TLS on TLS_PORT; reflect that in the exported URLs
+    // so consumers following this metadata load the shell as a secure origin (required for
+    // keycloak-js's PKCE S256 / Web Crypto API).
+    const isTlsCapable = isTlsCapableContainer(container)
+    const protocol = isTlsCapable ? 'https' : 'http'
+    const connectPort = isTlsCapable ? TLS_PORT : internalPort
+
     try {
-      const mappedPort = container.getMappedPort(internalPort)
+      const mappedPort = container.getMappedPort(connectPort)
       const host = container.getHost()
 
       return {
@@ -167,8 +194,8 @@ export class PlatformInfoExporter {
         host: host,
         port: mappedPort,
         internalPort,
-        internalUrl: `http://${containerName}:${internalPort}`,
-        externalUrl: `http://${host}:${mappedPort}`,
+        internalUrl: `${protocol}://${containerName}:${connectPort}`,
+        externalUrl: `${protocol}://${host}:${mappedPort}`,
         running: true,
       }
     } catch {
@@ -178,7 +205,7 @@ export class PlatformInfoExporter {
         host: '',
         port: 0,
         internalPort,
-        internalUrl: `http://${containerName}:${internalPort}`,
+        internalUrl: `${protocol}://${containerName}:${connectPort}`,
         externalUrl: '',
         running: false,
       }

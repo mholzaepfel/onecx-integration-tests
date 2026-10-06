@@ -9,8 +9,29 @@ import {
   HealthCheckConfig,
 } from '../../models/interfaces/testcontainers-health-check.adapter'
 import { buildWaitStrategies, toTestcontainersHealthCheck } from '../../utils/wait-strategy.utils'
+import { issueCertificateFor } from '../../utils/tls-ca'
 
 const DEFAULT_LOG_WAIT_MESSAGE = /start worker process/
+
+// Every UI container gets an 8443 TLS listener (reverse-proxied to its own plain-http port) +
+// CORS_ENABLED, so the https shell can load any MFE's manifest/assets cross-origin without
+// mixed-content/CORS errors. Certificate is issued per-alias at start() time (see tls-ca.ts);
+// consumers can either trust the exported CA or set ignoreHTTPSErrors: true in Playwright.
+function buildUiTlsServerConf(upstreamPort: number): string {
+  return `server {
+  listen 8443 ssl;
+  server_name _;
+  ssl_certificate     /etc/nginx/certs/tls.crt;
+  ssl_certificate_key /etc/nginx/certs/tls.key;
+  location / {
+    proxy_pass http://127.0.0.1:${upstreamPort};
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For $remote_addr;
+  }
+}
+`
+}
 
 export class UiContainer extends GenericContainer {
   private details: UiDetails = {
@@ -89,6 +110,7 @@ export class UiContainer extends GenericContainer {
       APP_BASE_HREF: `${this.details.appBaseHref}`,
       APP_ID: `${this.details.appId}`,
       PRODUCT_NAME: `${this.details.productName}`,
+      CORS_ENABLED: 'true',
     })
 
     if (this.logFilePath) {
@@ -98,7 +120,16 @@ export class UiContainer extends GenericContainer {
       })
     }
 
-    this.withExposedPorts(this.port)
+    this.withExposedPorts(this.port, 8443)
+
+    // Cert SAN must match this container's own alias(es), since MFE manifest/asset URLs are
+    // rewritten to https://<appid>:8443 and Chromium verifies hostname even with a trusted CA.
+    const { cert, key } = await issueCertificateFor([...this.networkAliases, 'localhost'])
+    this.withCopyContentToContainer([
+      { content: cert, target: '/etc/nginx/certs/tls.crt', mode: 0o644 },
+      { content: key, target: '/etc/nginx/certs/tls.key', mode: 0o644 },
+      { content: buildUiTlsServerConf(this.port), target: '/etc/nginx/conf.d/tls-ui.conf', mode: 0o644 },
+    ])
 
     const hasCustomConfig = this.commandHealthCheckConfig !== undefined || this.healthCheckConfigs.length > 0
 

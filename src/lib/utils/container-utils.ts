@@ -1,8 +1,12 @@
 import { StartedOnecxKeycloakContainer } from '../containers/core/onecx-keycloak'
 import { StartedShellUiContainer } from '../containers/ui/onecx-shell-ui'
+import { StartedUiContainer } from '../containers/basic/onecx-ui'
 import { StartedE2eContainer } from '../containers/e2e/onecx-e2e'
 import type { AllowedContainerTypes, PortAwareContainer } from '../models/types/allowed-container.type'
 import { PlatformInfoExportDecision } from '../models/interfaces/platform-info-exporter.interface'
+
+/** Port the generic UiContainer/OnecxKeycloakContainer TLS listener is exposed on. */
+export const TLS_PORT = 8443
 
 export function isPortAwareContainer(container: AllowedContainerTypes): container is PortAwareContainer {
   return 'getPort' in container && typeof container.getPort === 'function'
@@ -16,6 +20,16 @@ export function isKeycloakContainer(container: AllowedContainerTypes): container
 /** Type guard to check if container is a Shell UI container */
 export function isShellUiContainer(container: AllowedContainerTypes): container is StartedShellUiContainer {
   return container instanceof StartedShellUiContainer
+}
+
+/** Type guard to check if container is any UI container (shell, workspace, user-defined) */
+export function isUiContainer(container: AllowedContainerTypes): container is StartedUiContainer {
+  return container instanceof StartedUiContainer
+}
+
+/** Keycloak and UI containers terminate TLS on `TLS_PORT`; other containers (bff/svc) do not. */
+export function isTlsCapableContainer(container: AllowedContainerTypes): boolean {
+  return isKeycloakContainer(container) || isUiContainer(container)
 }
 
 /** Type guard to check if container is an E2E container */

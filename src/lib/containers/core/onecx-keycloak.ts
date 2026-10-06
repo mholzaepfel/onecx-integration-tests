@@ -7,6 +7,11 @@ import { HealthCheckableContainer } from '../../models/interfaces/health-checkab
 import { HealthCheckExecutor } from '../../models/interfaces/health-check-executor.interface'
 import { HttpHealthCheckExecutor, SkipHealthCheckExecutor } from '../../utils/health-check-executor'
 import { PlatformConfig } from 'src/lib/models'
+import { issueCertificateFor } from '../../utils/tls-ca'
+
+// Native Keycloak HTTPS on 8443 alongside the existing 8080 http listener, so browser auth calls
+// from keycloak-js are not blocked as mixed content by the https shell-ui origin. Certificate is
+// issued per-alias at start() time (see tls-ca.ts) off the same shared CA as UI containers.
 
 interface OnecxEnvironment {
   realm: string
@@ -208,12 +213,27 @@ export class OnecxKeycloakContainer extends GenericContainer {
       KC_DB_URL_HOST: this.databaseContainer.getNetworkAliases()[0],
       KC_DB_USERNAME: this.onecxEnvironment.keycloakDatabaseUsername,
       KC_DB_PASSWORD: this.onecxEnvironment.keycloakDatabasePassword,
-      KC_HOSTNAME_URL: `http://${this.onecxEnvironment.keycloakHostname}:${this.onecxEnvironment.port}`,
-      KC_HOSTNAME_STRICT: 'false',
+      // KC_HOSTNAME pins the issuer (`iss`) to one https identity, since this container is
+      // reachable on both the plain-http and https ports. BACKCHANNEL_DYNAMIC still lets
+      // backend services reach discovery/JWKS over plain http.
+      KC_HOSTNAME: `https://${this.onecxEnvironment.keycloakHostname}:8443`,
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true',
       KC_HTTP_ENABLED: 'true',
       KC_HTTP_PORT: `${this.onecxEnvironment.port}`,
       KC_HEALTH_ENABLED: 'true',
+      KC_HTTPS_CERTIFICATE_FILE: '/opt/keycloak/conf/tls.crt',
+      KC_HTTPS_CERTIFICATE_KEY_FILE: '/opt/keycloak/conf/tls.key',
+      KC_HTTPS_PORT: '8443',
     })
+
+    // Cert SAN must match this container's own hostname, so consumers trusting the exported CA
+    // get real hostname verification, not just a bypass.
+    const { cert, key } = await issueCertificateFor([this.onecxEnvironment.keycloakHostname, 'localhost'])
+    this.withCopyContentToContainer([
+      { content: cert, target: '/opt/keycloak/conf/tls.crt', mode: 0o644 },
+      { content: key, target: '/opt/keycloak/conf/tls.key', mode: 0o644 },
+    ])
+
     if (this.logFilePath) {
       this.withLogConsumer((stream) => {
         stream.on('data', (line) => this.writeLogToFile(line, this.logFilePath!))
@@ -231,7 +251,7 @@ export class OnecxKeycloakContainer extends GenericContainer {
       ])
     }
 
-    this.withExposedPorts(this.onecxEnvironment.port).withWaitStrategy(
+    this.withExposedPorts(this.onecxEnvironment.port, 8443).withWaitStrategy(
       Wait.forAll([Wait.forHealthCheck(), Wait.forListeningPorts()])
     )
 

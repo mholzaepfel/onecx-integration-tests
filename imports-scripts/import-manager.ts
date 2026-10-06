@@ -132,11 +132,7 @@ export class ImportManager {
       await importProducts(path.join(base, productStore), productStoreBase)
       await importSlots(path.join(base, productStore), productStoreBase)
       await importMicroservices(path.join(base, productStore), productStoreBase)
-      await importMicrofrontends(
-        path.join(base, productStore),
-        productStoreBase,
-        this.getServicePort('onecx-product-store-svc')
-      )
+      await importMicrofrontends(path.join(base, productStore), productStoreBase)
     } else {
       logger.info('SERVICE_UNAVAILABLE', 'onecx-product-store-svc - skipping product store imports')
     }
