@@ -2,10 +2,20 @@ name: Create Release
 
 on:
     workflow_dispatch:
+        inputs:
+            bump:
+                description: 'Version bump (patch / minor / major)'
+                required: true
+                type: choice
+                default: minor
+                options:
+                    - patch
+                    - minor
+                    - major
 
 permissions:
     id-token: write
-    contents: read
+    contents: write
 
 jobs:
     release:
@@ -21,4 +31,4 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test
-            - run: npm run release:minor
+            - run: npm run release ${{ inputs.bump }}
